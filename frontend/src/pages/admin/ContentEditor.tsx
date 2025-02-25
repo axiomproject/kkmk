@@ -163,7 +163,7 @@ export default function ContentEditor() {
 
   const loadContent = async () => {
     try {
-      const response = await api.get(`/api/content/${selectedPage}`);
+      const response = await api.get(`/content/${selectedPage}`);
       setContent(response.data.content);
     } catch (error) {
       console.error('Failed to load content:', error);
@@ -211,7 +211,7 @@ export default function ContentEditor() {
 
       console.log('Uploading file:', file.name);
 
-      const response = await api.post('/api/content/upload-image', formData, {
+      const response = await api.post('/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -244,7 +244,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/api/content/upload-image', formData, {
+      const response = await api.post('/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -270,7 +270,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/api/content/upload-image', formData, {
+      const response = await api.post('/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -296,7 +296,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/api/content/upload-image', formData, {
+      const response = await api.post('/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -322,7 +322,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/api/content/upload-image', formData, {
+      const response = await api.post('/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -351,7 +351,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/api/content/upload-image', formData, {
+      const response = await api.post('/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -377,7 +377,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/api/content/upload-image', formData, {
+      const response = await api.post('/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
