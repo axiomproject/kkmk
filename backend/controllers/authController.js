@@ -138,14 +138,17 @@ const verifyEmailHandler = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('Login attempt for:', email);
 
     if (!email || !password) {
+      console.log('Missing credentials');
       return res.status(400).json({ 
         error: 'Email/username and password are required' 
       });
     }
 
     const user = await findUserByEmailOrUsername(email);
+    console.log('User lookup result:', user ? 'Found' : 'Not found');
 
     if (!user) {
       return res.status(401).json({ 
@@ -220,7 +223,7 @@ const login = async (req, res) => {
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ 
-      error: error.message || 'An error occurred during login' 
+      error: 'An unexpected error occurred during login. Please try again.' 
     });
   }
 };
