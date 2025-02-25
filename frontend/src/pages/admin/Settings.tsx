@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import '../../styles/AdminSettings.css';  // Import the new CSS file
@@ -47,10 +47,7 @@ const AdminSettings = () => {
   useEffect(() => {
     const fetchMpinStatus = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5175/api/admin/mpin-status', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get('/admin/mpin-status');
         setIsMpinEnabled(response.data.isMpinEnabled);
         setMpin(''); // Clear MPIN when status changes
       } catch (error) {
@@ -79,27 +76,15 @@ const AdminSettings = () => {
     setPhotoError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       const formData = new FormData();
       formData.append('profilePhoto', selectedFile);
 
-      const endpoint = isAdmin ? '/api/admin/profile-photo' : '/api/staff/profile-photo';
-      console.log('Using endpoint:', endpoint);
-
-      const response = await axios.post(
-        `http://localhost:5175${endpoint}`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          }
+      const endpoint = isAdmin ? '/admin/profile-photo' : '/staff/profile-photo';
+      const response = await api.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
-      );
+      });
 
       if (response.data?.user) {
         console.log('Profile photo update response:', response.data);
@@ -140,10 +125,9 @@ const AdminSettings = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
       const endpoint = user?.role === 'admin' 
-        ? '/api/admin/profile' 
-        : '/api/staff/profile';
+        ? '/admin/profile' 
+        : '/staff/profile';
 
       console.log('Using endpoint:', endpoint); // Debug log
       console.log('Profile data being sent:', {
@@ -151,18 +135,13 @@ const AdminSettings = () => {
         newPassword: profileData.newPassword ? '[FILTERED]' : undefined
       });
 
-      const response = await axios.put(
-        `http://localhost:5175${endpoint}`,
+      const response = await api.put(
+        endpoint,
         {
           name: profileData.name,
           email: profileData.email,
           currentPassword: profileData.currentPassword,
           newPassword: profileData.newPassword || undefined
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
         }
       );
 
@@ -191,11 +170,9 @@ const AdminSettings = () => {
     } else {
       // If enabling MPIN, proceed as normal
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.post(
-          'http://localhost:5175/api/admin/toggle-mpin',
-          { enabled: !isMpinEnabled },
-          { headers: { Authorization: `Bearer ${token}` }}
+        const response = await api.post(
+          '/admin/toggle-mpin',
+          { enabled: !isMpinEnabled }
         );
         setIsMpinEnabled(response.data.isMpinEnabled);
         if (!response.data.isMpinEnabled) {
@@ -209,14 +186,12 @@ const AdminSettings = () => {
 
   const handleConfirmDisableMpin = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        'http://localhost:5175/api/admin/toggle-mpin',
+      const response = await api.post(
+        '/admin/toggle-mpin',
         { 
           enabled: false,
           password: confirmPassword 
-        },
-        { headers: { Authorization: `Bearer ${token}` }}
+        }
       );
       setIsMpinEnabled(response.data.isMpinEnabled);
       setMpin('');
@@ -236,11 +211,9 @@ const AdminSettings = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        'http://localhost:5175/api/admin/set-mpin',
-        { mpin },
-        { headers: { Authorization: `Bearer ${token}` }}
+      await api.post(
+        '/admin/set-mpin',
+        { mpin }
       );
       setMpinError(null);
       alert('MPIN updated successfully');
