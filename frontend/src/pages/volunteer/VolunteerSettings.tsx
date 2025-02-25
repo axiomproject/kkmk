@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import '../../styles/Layout.css';
 import { User, UserDetailsUpdateResponse } from '../../types/auth';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import phFlag from '../../img/phflag.png'
 
 interface ValidationErrors {
@@ -195,25 +195,16 @@ const VolunteerSettings = () => {
 
       console.log('Sending date to backend:', dateToSend);
 
-      const { data } = await axios.put<UserDetailsUpdateResponse>(
-        'http://localhost:5175/api/user/details',
-        {
-          userId: user.id,
-          name: formData.name,
-          email: formData.email,
-          username: formData.username,
-          dateOfBirth: dateToSend,
-          phone: formData.phone,
-          intro: user.intro,        // Preserve intro
-          knownAs: user.knownAs    // Preserve knownAs
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const { data } = await api.put('/user/details', {
+        userId: user.id,
+        name: formData.name,
+        email: formData.email,
+        username: formData.username,
+        dateOfBirth: dateToSend,
+        phone: formData.phone,
+        intro: user.intro,
+        knownAs: user.knownAs
+      });
 
       if (data.user) {
         // Format the date for storage and preserve existing fields
@@ -244,28 +235,17 @@ const VolunteerSettings = () => {
   };
 
   const handlePasswordSubmit = async () => {
-    if (!validatePasswordForm()) {
-      return;
-    }
+    if (!validatePasswordForm()) return;
 
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = localStorage.getItem('token');
 
-      await axios.put(
-        'http://localhost:5175/api/user/password',
-        {
-          userId: user.id,
-          oldPassword: passwordForm.oldPassword,
-          newPassword: passwordForm.newPassword
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      await api.put('/user/password', {
+        userId: user.id,
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword
+      });
 
       alert('Password changed successfully!');
       setPasswordForm({
@@ -329,18 +309,7 @@ const VolunteerSettings = () => {
     if (isConfirmed) {
       try {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const token = localStorage.getItem('token');
-
-        await axios.put(
-          'http://localhost:5175/api/user/archive',
-          { userId: user.id },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        await api.put('/user/archive', { userId: user.id });
 
         // Clear local storage and redirect to login
         localStorage.clear();

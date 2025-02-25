@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../config/axios'; // Replace axios import
 import { PATHS } from '../routes/paths';
 import '../styles/Auth.css';
 
@@ -19,7 +19,7 @@ const EmailVerification = () => {
         console.log('Starting email verification...');
         console.log('Token:', token);
         
-        const response = await axios.get(`http://localhost:5175/api/verify-email/${token}`);
+        const response = await api.get(`/verify-email/${token}`);
         console.log('Verification response:', response.data);
         
         setStatus('success');

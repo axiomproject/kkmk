@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import '../styles/StudentProfile.css';
+import api from '../config/axios'; // Replace axios import
 
 interface ScholarDonation {
   id: number;
@@ -64,6 +65,12 @@ const MyScholars: React.FC = () => {
   const [sponsoredScholars, setSponsoredScholars] = useState<SponsoredScholar[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getImageUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('http')) return path;
+    return `${import.meta.env.VITE_API_URL}${path}`;
+  };
+
   useEffect(() => {
     if (!user?.id) {
       setLoading(false);
@@ -72,10 +79,8 @@ const MyScholars: React.FC = () => {
     
     const fetchSponsorDonations = async () => {
       try {
-        const response = await fetch(`http://localhost:5175/api/scholardonations/sponsor/${user.id}`);
-        if (!response.ok) throw new Error('Failed to fetch donations');
-        
-        const donations: ScholarDonation[] = await response.json();
+        const response = await api.get(`/scholardonations/sponsor/${user.id}`);
+        const donations: ScholarDonation[] = response.data;
         
         // Group donations by scholar
         const scholarMap = new Map<number, SponsoredScholar>();
@@ -148,7 +153,7 @@ const MyScholars: React.FC = () => {
                   key={scholar.scholarId}
                 >
                   <img
-                    src={`http://localhost:5175${scholar.image}`}
+                    src={getImageUrl(scholar.image)}
                     alt={scholar.name}
                     className="student-profile-image"
                     onClick={() => navigate(`/StudentProfile/${scholar.scholarId}`)}
