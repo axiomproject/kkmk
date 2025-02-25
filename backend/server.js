@@ -124,10 +124,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/donations', donationRoutes);
 
 
+
 // Handle SPA routing - serve index.html for all non-API routes
 app.get('*', (req, res, next) => {
   if (req.url.startsWith('/api')) return next();
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'uploads', 'index.html'));
 });
 
 // Update middleware to only log errors
