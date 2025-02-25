@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import Coverpphotoprofile from '../../img/volunteer/coverphoto.png';
 import defaultProfile from '../../img/volunteer/defaultProfile.png';
 import editbutton from '../../img/volunteer/editbutton.png';
@@ -132,19 +132,13 @@ const VolunteerProfile: React.FC = () => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         
         // First, check for any active (pending/in_review) submission
-        const activeResponse = await axios.get(
-          `http://localhost:5175/api/scholars/report-card/${user.id}/active`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+        const activeResponse = await api.get(
+          `/scholars/report-card/${user.id}/active`
         );
         
         // Then, check for any submission regardless of status
-        const submissionResponse = await axios.get(
-          `http://localhost:5175/api/scholars/report-card/${user.id}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+        const submissionResponse = await api.get(
+          `/scholars/report-card/${user.id}`
         );
 
         setHasActiveSubmission(!!activeResponse.data);
@@ -171,8 +165,8 @@ const VolunteerProfile: React.FC = () => {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const token = localStorage.getItem('token');
         
-        const response = await axios.get(
-          `http://localhost:5175/api/scholars/location-remarks/${user.id}`,
+        const response = await api.get(
+          `/scholars/location-remarks/${user.id}`,
           { headers: { Authorization: `Bearer ${token}` }}
         );
         
@@ -203,8 +197,8 @@ const VolunteerProfile: React.FC = () => {
         const token = localStorage.getItem('token');
         
         // Call the dismiss endpoint
-        await axios.post(
-          `http://localhost:5175/api/events/${currentFeedbackEvent.id}/dismiss-feedback`,
+        await api.post(
+          `/events/${currentFeedbackEvent.id}/dismiss-feedback`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -233,8 +227,8 @@ const VolunteerProfile: React.FC = () => {
         const token = localStorage.getItem('token');
         
         // Modified endpoint to exclude dismissed feedback
-        const response = await axios.get(
-          'http://localhost:5175/api/events/pending-feedback',
+        const response = await api.get(
+          '/events/pending-feedback',
           { headers: { Authorization: `Bearer ${token}` } }
         );
         
@@ -288,8 +282,8 @@ const VolunteerProfile: React.FC = () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = localStorage.getItem('token');
 
-      const { data } = await axios.put<UserInfoUpdateResponse>(
-        'http://localhost:5175/api/user/info',
+      const { data } = await api.put<UserInfoUpdateResponse>(
+        '/user/info',
         {
           userId: user.id,
           intro,
@@ -316,8 +310,8 @@ const VolunteerProfile: React.FC = () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = localStorage.getItem('token');
 
-      const { data } = await axios.put<UserInfoUpdateResponse>(
-        'http://localhost:5175/api/user/info',
+      const { data } = await api.put<UserInfoUpdateResponse>(
+        '/user/info',
         {
           userId: user.id,
           intro,
@@ -344,8 +338,8 @@ const VolunteerProfile: React.FC = () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = localStorage.getItem('token');
 
-      const { data } = await axios.put(
-        'http://localhost:5175/api/user/socials',
+      const { data } = await api.put(
+        '/user/socials',
         {
           userId: user.id,
           facebookUrl: socialLinks.facebook,
@@ -398,8 +392,8 @@ const VolunteerProfile: React.FC = () => {
         throw new Error('User not authenticated');
       }
 
-      const { data } = await axios.put<PhotoUpdateResponse>(
-        'http://localhost:5175/api/user/photos',
+      const { data } = await api.put<PhotoUpdateResponse>(
+        '/user/photos',
         {
           userId: user.id,
           profilePhoto: photoType === 'profile' ? photoData : undefined,
@@ -528,8 +522,8 @@ const VolunteerProfile: React.FC = () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = localStorage.getItem('token');
 
-      const { data } = await axios.post<ReportCardSubmissionResponse>(
-        'http://localhost:5175/api/scholars/report-card',
+      const { data } = await api.post<ReportCardSubmissionResponse>(
+        '/scholars/report-card',
         {
           userId: user.id,
           frontImage: reportCardFront,
@@ -587,8 +581,8 @@ const VolunteerProfile: React.FC = () => {
           const token = localStorage.getItem('token');
 
           // This URL is correct, we fixed the backend route to match it
-          const { data } = await axios.put(
-            'http://localhost:5175/api/user/location',
+          const { data } = await api.put(
+            '/user/location',
             {
               userId: user.id,
               latitude: position.coords.latitude,
@@ -647,11 +641,9 @@ const VolunteerProfile: React.FC = () => {
     if (!currentFeedbackEvent) return;
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `http://localhost:5175/api/events/${currentFeedbackEvent.id}/feedback`,
-        { rating, comment: feedbackComment },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await api.post(
+        `/events/${currentFeedbackEvent.id}/feedback`,
+        { rating, comment: feedbackComment }
       );
 
       // Remove current event and show next if available
@@ -1018,9 +1010,9 @@ const VolunteerProfile: React.FC = () => {
                 className="modal-close" 
                 onClick={handleCloseFeedback}
                 title="Skip feedback"
-              >
-                ×
-              </span>
+              >×</span>
+                
+              </div>
               
               <h2>Event Feedback</h2>
               <p>Please share your experience at:<br/>{currentFeedbackEvent.title}</p>
@@ -1053,7 +1045,7 @@ const VolunteerProfile: React.FC = () => {
                 Submit Feedback
               </button>
             </div>
-          </div>
+        
         )}
 
         <input

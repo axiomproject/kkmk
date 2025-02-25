@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import axios from 'axios';
+import api from '../config/axios'; // Replace axios import
 import { useNavigate, Link } from 'react-router-dom';
 import { PATHS } from '../routes/paths';
 import { LoginResponse } from '../types/auth';
@@ -53,7 +53,7 @@ const Login: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5175/api/admin/auth/verify-mpin', {
+      const response = await api.post('/admin/auth/verify-mpin', {
         mpin,
         token: tempAuthData?.token
       });
@@ -77,13 +77,12 @@ const Login: React.FC = () => {
     
     try {
       let response;
-      const baseUrl = 'http://localhost:5175';
       
       if (identifier.includes('@kkmk.com')) {
         if (identifier.startsWith('staff.')) {
           // Staff login remains unchanged
           console.log('Attempting staff login...');
-          response = await axios.post(`${baseUrl}/api/staff/auth/login`, {
+          response = await api.post('/staff/auth/login', {
             email: identifier,
             password
           });
@@ -94,7 +93,7 @@ const Login: React.FC = () => {
           }
         } else {
           // Admin login with MPIN check
-          response = await axios.post(`${baseUrl}/api/admin/auth/login`, {
+          response = await api.post('/admin/auth/login', {
             email: identifier,
             password
           });
@@ -114,7 +113,7 @@ const Login: React.FC = () => {
         }
       } else {
         // Regular user login remains unchanged
-        response = await axios.post(`${baseUrl}/api/login`, {
+        response = await api.post('/login', {
           email: identifier,
           password
         });
@@ -149,13 +148,12 @@ const Login: React.FC = () => {
   };
 
   const handleFaceLogin = async (faceData: string) => {
-    const baseUrl = 'http://localhost:5175';
     try {
       setError('');
       setInactiveAccount(false);
       console.log('Attempting face login...');
       
-      const response = await axios.post(`${baseUrl}/api/login/face`, { 
+      const response = await api.post('/login/face', { 
         faceData,
         attemptNumber: faceLoginAttempts + 1
       });
