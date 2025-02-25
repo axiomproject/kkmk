@@ -8,7 +8,7 @@
     "build": "cd frontend && npm run build-only", 
     "lint": "eslint .",
     "preview": "vite preview",
-    "install-all": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps",
+    "install-all": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps && cd ../backend && npm install",
     "start": "cd backend && node server.js"
   },
   "dependencies": {
