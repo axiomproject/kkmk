@@ -6,6 +6,7 @@ import '../styles/StudentProfile.css';
 import { formatDate } from '../utils/dateUtils';
 import { FaTimes } from 'react-icons/fa';
 import { FiUpload } from 'react-icons/fi'; // Add this import
+import api from '../config/axios';
 
 interface StudentDetails {
   id: number;
@@ -202,34 +203,32 @@ const StudentDetails: React.FC = () => {
         formData.append('proof', donationForm.proof);
       }
 
-      const response = await fetch('http://localhost:5175/api/scholardonations/submit', {
-        method: 'POST',
-        body: formData,
+      const response = await api.post('/scholardonations/submit', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
       });
   
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Failed to submit donation');
+      if (response.status === 201) {
+        const result = response.data;
+        console.log('Donation submitted successfully:', result);
+    
+        alert('Thank you for your donation! We will verify your payment shortly.');
+        setShowDonationModal(false);
+        
+        // Reset form
+        setDonationForm({
+          scholarId: studentId || '',
+          amount: 0,
+          name: '',
+          email: '',
+          phone: '',
+          message: '',
+          paymentMethod: '',
+          proof: null,
+          proofPreview: ''
+        });
       }
-  
-      const result = await response.json();
-      console.log('Donation submitted successfully:', result);
-  
-      alert('Thank you for your donation! We will verify your payment shortly.');
-      setShowDonationModal(false);
-      
-      // Reset form
-      setDonationForm({
-        scholarId: studentId || '',
-        amount: 0,
-        name: '',
-        email: '',
-        phone: '',
-        message: '',
-        paymentMethod: '',
-        proof: null,
-        proofPreview: ''
-      });
     } catch (error) {
       console.error('Error submitting donation:', error);
       alert(error instanceof Error ? error.message : 'Failed to submit donation. Please try again.');
@@ -505,10 +504,8 @@ const StudentDetails: React.FC = () => {
     const fetchDonationUpdates = async () => {
       if (!studentId) return;
       try {
-        const response = await fetch(`http://localhost:5175/api/scholardonations/history/${studentId}`);
-        if (!response.ok) throw new Error('Failed to fetch updates');
-        const data = await response.json();
-        setDonationUpdates(data);
+        const response = await api.get(`/scholardonations/history/${studentId}`);
+        setDonationUpdates(response.data);
       } catch (error) {
         console.error('Error fetching donation updates:', error);
       }
@@ -530,6 +527,12 @@ const StudentDetails: React.FC = () => {
     });
   };
 
+  const getImageUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('http')) return path;
+    return `${import.meta.env.VITE_API_URL}${path}`;
+  };
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
   if (!student) return <div>No student found</div>;
@@ -547,7 +550,7 @@ const StudentDetails: React.FC = () => {
           <div className="student-details-header">
             <div className="student-details-image-container">
               <img 
-                src={`http://localhost:5175${student.image_url}`}
+                src={getImageUrl(student.image_url)}
                 alt={`${student.first_name} ${student.last_name}`}
                 className="student-details-image"
               />

@@ -5,6 +5,7 @@ import '../styles/StudentProfile.css';
 import '../routes/paths'
 import PATHS from '../routes/paths';
 import { formatDate } from '../utils/dateUtils';
+import api from '../config/axios';
 
 interface StudentDetails {
   id: number;
@@ -130,6 +131,12 @@ const StudentProfile: React.FC = () => {
     setSelectedGender(event.target.value);
   };
 
+  const getImageUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('http')) return path;
+    return `${import.meta.env.VITE_API_URL}${path}`;
+  };
+
   return (
     <div className="student-profile-container">
       <div className="student-profile-sidebar">
@@ -204,7 +211,7 @@ const StudentProfile: React.FC = () => {
                 onClick={() => handleCardClick(student.id)}
               >
                 <img
-                  src={`http://localhost:5175${student.image_url}`}
+                  src={getImageUrl(student.image_url)}
                   alt={`${student.first_name} ${student.last_name}`}
                   className="student-profile-image"
                 />
