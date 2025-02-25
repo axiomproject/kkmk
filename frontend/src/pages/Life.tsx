@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../config/axios'
 import lifeImage from "../img/life.png";
 import "../styles/Life.css";
 
@@ -46,7 +46,7 @@ const Life: React.FC = () => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     if (path.startsWith('/uploads')) {
-      return `http://localhost:5175${path}`;
+      return `${import.meta.env.VITE_API_URL}${path}`;
     }
     return path;
   };
@@ -54,7 +54,7 @@ const Life: React.FC = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await axios.get('/api/content/life');
+        const response = await api.get('/api/content/life');
         if (response.data?.content) {
           const savedContent = response.data.content;
           setContent(prev => ({
