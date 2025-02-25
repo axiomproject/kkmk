@@ -18,8 +18,6 @@ Icon.Default.mergeOptions({
   shadowUrl: markerIconShadow,
 });
 
-// Update axios base URL configuration
-axios.defaults.baseURL = 'http://localhost:5175'; // Match the backend port
 
 // Update the EventType interface to include latitude and longitude
 interface EventType {
