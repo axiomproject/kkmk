@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../config/axios'; // Replace axios import
 import * as XLSX from 'xlsx';
 import '../../styles/Bank.css';
 import DonationService from '../../services/donationService';
+import { AxiosResponse } from 'axios';
 
 interface Transaction {
   id: number;
@@ -22,6 +24,20 @@ interface Transaction {
   message?: string;
 }
 
+interface DonationResponse {
+  id: number;
+  amount: string;
+  full_name: string;
+  date: string;
+  verification_status: string;
+  proof_of_payment?: string;
+  message?: string;
+  verified_at?: string;
+  verified_by?: string;
+  email: string;
+  contact_number: string;
+}
+
 const Bank: React.FC = () => {
   const [activeView, setActiveView] = useState<'verified' | 'pending'>('verified');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -37,12 +53,8 @@ const Bank: React.FC = () => {
   useEffect(() => {
     const loadDonations = async () => {
       try {
-        console.log('Fetching donations...');
-        const donations = await DonationService.getDonations();
-        console.log('Received donations:', donations);
-        
-        // Use the full URLs directly from the backend
-        const transformedDonations = donations.map((donation: any) => ({
+        const response = await api.get('/donations');
+        const transformedDonations = response.data.map((donation: any) => ({
           id: donation.id,
           amount: parseFloat(donation.amount),
           donor: donation.full_name,
@@ -101,7 +113,7 @@ const Bank: React.FC = () => {
 
   const handleVerify = async (id: number) => {
     try {
-      const result = await DonationService.verifyDonation(id);
+      const result = await api.put(`/donations/${id}/verify`);
       console.log('Verification result:', result);
       
       // Update local state with the verified donation
@@ -110,8 +122,8 @@ const Bank: React.FC = () => {
           transaction.id === id ? {
             ...transaction,
             verificationStatus: 'verified',
-            verifiedAt: result.verified_at,
-            verifiedBy: result.verified_by
+            verifiedAt: result.data.verified_at,
+            verifiedBy: result.data.verified_by
           } : transaction
         )
       );
@@ -127,7 +139,7 @@ const Bank: React.FC = () => {
     const reason = window.prompt('Please enter reason for rejection:');
     if (reason) {
       try {
-        const result = await DonationService.rejectDonation(id, reason);
+        const result = await api.put(`/donations/${id}/reject`, { reason });
         console.log('Rejection result:', result);
 
         // Update local state with the rejected donation
@@ -136,8 +148,8 @@ const Bank: React.FC = () => {
             transaction.id === id ? {
               ...transaction,
               verificationStatus: 'rejected',
-              rejectedAt: result.rejected_at,
-              rejectedBy: result.rejected_by,
+              rejectedAt: result.data.rejected_at,
+              rejectedBy: result.data.rejected_by,
               rejectionReason: reason
             } : transaction
           )
@@ -196,32 +208,31 @@ const Bank: React.FC = () => {
     }
 
     try {
-      const result = await DonationService.submitDonation(formData);
-      if (result) {
-        // Transform the new donation to match the Transaction interface
-        const newDonation: Transaction = {
-          id: result.id,
-          amount: parseFloat(result.amount),
-          donor: result.full_name,
-          date: result.date,
-          verificationStatus: result.verification_status,
-          proofOfPayment: result.proof_of_payment,
-          remarks: result.message,
-          fullName: result.full_name,
-          email: result.email,
-          contactNumber: result.contact_number,
-          message: result.message
-        };
+      const response: AxiosResponse<DonationResponse> = await api.post('/donations', formData);
+      const data = response.data;
 
-        // Update the local state by adding the new donation
-        setTransactions(prevTransactions => [...prevTransactions, newDonation]);
-        
-        alert('Donation added successfully!');
-        setShowAddModal(false);
-        form.reset();
-      }
+      // Transform the new donation using the response data
+      const newDonation: Transaction = {
+        id: data.id,
+        amount: parseFloat(data.amount),
+        donor: data.full_name,
+        date: data.date,
+        verificationStatus: data.verification_status as 'pending' | 'verified' | 'rejected',
+        proofOfPayment: data.proof_of_payment,
+        remarks: data.message,
+        fullName: data.full_name,
+        email: data.email,
+        contactNumber: data.contact_number,
+        message: data.message
+      };
+
+      setTransactions(prev => [...prev, newDonation]);
+      alert('Donation added successfully!');
+      setShowAddModal(false);
+      (e.target as HTMLFormElement).reset();
     } catch (error) {
-      alert('Error adding donation: ' + (error as Error).message);
+      console.error('Error adding donation:', error);
+      alert('Failed to add donation');
     }
   };
 
@@ -432,7 +443,7 @@ const Bank: React.FC = () => {
 
       {activeView === 'verified' ? (
         <>
-          <div className="stats-grid">
+          <div className="stats-grid"></div>
             <div className="stat-card total">
               <h3 className="stat-title">Total Verified Donations</h3>
               <p className="stat-value">₱{calculateVerifiedTotal()}</p>
@@ -445,7 +456,7 @@ const Bank: React.FC = () => {
               <h3 className="stat-title">Pending Verification</h3>
               <p className="stat-value">₱{calculatePendingTotal()}</p>
             </div>
-          </div>
+         
 
           <div className="bank-table">
             <table>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import '../../styles/ContentEditor.css';
 
 interface ContentSection {
@@ -145,7 +145,7 @@ export default function ContentEditor() {
 
   const loadPages = async () => {
     try {
-      const response = await axios.get('/api/content/pages');
+      const response = await api.get('/content/pages');
       console.log('API Response:', response.data);
       
       if (Array.isArray(response.data)) {
@@ -163,7 +163,7 @@ export default function ContentEditor() {
 
   const loadContent = async () => {
     try {
-      const response = await axios.get(`/api/content/${selectedPage}`);
+      const response = await api.get(`/api/content/${selectedPage}`);
       setContent(response.data.content);
     } catch (error) {
       console.error('Failed to load content:', error);
@@ -177,12 +177,7 @@ export default function ContentEditor() {
 
       console.log('Uploading file:', file.name);
 
-      const response = await axios.post('/api/content/upload-image', formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/content/upload-image', formData);
 
       console.log('Upload response:', response.data);
 
@@ -216,7 +211,7 @@ export default function ContentEditor() {
 
       console.log('Uploading file:', file.name);
 
-      const response = await axios.post('/api/content/upload-image', formData, {
+      const response = await api.post('/api/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -249,7 +244,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post('/api/content/upload-image', formData, {
+      const response = await api.post('/api/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -275,7 +270,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post('/api/content/upload-image', formData, {
+      const response = await api.post('/api/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -301,7 +296,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post('/api/content/upload-image', formData, {
+      const response = await api.post('/api/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -327,7 +322,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post('/api/content/upload-image', formData, {
+      const response = await api.post('/api/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -356,7 +351,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post('/api/content/upload-image', formData, {
+      const response = await api.post('/api/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -382,7 +377,7 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axios.post('/api/content/upload-image', formData, {
+      const response = await api.post('/api/content/upload-image', formData, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
@@ -445,15 +440,9 @@ export default function ContentEditor() {
 
       console.log('Sending content:', contentToSave);
 
-      const response = await axios.put(
-        `/api/content/${selectedPage}`,
-        contentToSave,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+      const response = await api.put(
+        `/content/${selectedPage}`,
+        contentToSave
       );
 
       console.log('Save response:', response.data);
