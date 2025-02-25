@@ -6,7 +6,7 @@ services:
       npm run install-all
       cd frontend && cp tsconfig.prod.json tsconfig.json && cd ..
       npm run build
-    startCommand: npm start
+    startCommand: cd backend && node server.js
     envVars:
       - key: NODE_ENV
         value: production
