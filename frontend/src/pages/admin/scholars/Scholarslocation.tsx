@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios, { AxiosError } from 'axios';
+import api from '../../../config/axios';
+import { AxiosError } from 'axios';
 import '../../../styles/ScholarLocation.css';
 import { FiMapPin, FiCheck, FiX, FiMap, FiMessageSquare, FiTrash2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
@@ -42,8 +43,8 @@ const ScholarsLocation: React.FC = () => {
 
       // Fetch both pending and verified scholars
       const [pendingResponse, verifiedResponse] = await Promise.all([
-        axios.get('http://localhost:5175/api/scholars/pending-locations', { headers }),
-        axios.get('http://localhost:5175/api/scholars/verified-locations', { headers })
+        api.get('/scholars/pending-locations', { headers }),
+        api.get('/api/scholars/verified-locations', { headers })
       ]);
 
       setPendingScholars(pendingResponse.data);
@@ -68,7 +69,7 @@ const ScholarsLocation: React.FC = () => {
       
       let address = '';
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
         );
         
@@ -84,8 +85,8 @@ const ScholarsLocation: React.FC = () => {
       }
 
       const token = localStorage.getItem('token');
-      const response = await axios.put(
-        `http://localhost:5175/api/scholars/verify-location/${scholarId}`, 
+      const response = await api.put(
+        `/scholars/verify-location/${scholarId}`, 
         { 
           verified: isVerified,
           address: address
@@ -108,8 +109,8 @@ const ScholarsLocation: React.FC = () => {
       }
 
       // After successful verification, send notification
-      await axios.post(
-        'http://localhost:5175/api/notifications/send',
+      await api.post(
+        '/notifications/send',
         {
           userId: scholarId,
           type: 'location_verification',
@@ -131,8 +132,8 @@ const ScholarsLocation: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `http://localhost:5175/api/scholars/location-remarks/${scholarId}/reject`,
+      const response = await api.post(
+        `/scholars/location-remarks/${scholarId}/reject`,
         {
           location_remark: 'Location verification rejected. Please update your location.'
         },
@@ -167,15 +168,15 @@ const ScholarsLocation: React.FC = () => {
       const token = localStorage.getItem('token');
       
       // First save the remark
-      await axios.post(
-        `http://localhost:5175/api/scholars/location-remark/${selectedScholar.id}`,
+      await api.post(
+        `/scholars/location-remark/${selectedScholar.id}`,
         { remark, visitDate },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Then send notification
-      await axios.post(
-        'http://localhost:5175/api/notifications/send',
+      await api.post(
+        '/notifications/send',
         {
           userId: selectedScholar.id,
           type: 'location_remark',
@@ -212,8 +213,8 @@ const ScholarsLocation: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const resetResponse = await axios.put(
-        `http://localhost:5175/api/scholars/reset-location/${scholarId}`,
+      const resetResponse = await api.put(
+        `/scholars/reset-location/${scholarId}`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }

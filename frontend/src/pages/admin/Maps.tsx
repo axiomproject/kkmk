@@ -703,7 +703,7 @@ const AdminMap: React.FC = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await api.get('http://localhost:5175/api/events');
+        const response = await api.get('/events');
         
         const eventsWithCoordinates = response.data.filter((event: DBEvent) => {
           // Filter out events that don't have coordinates or are past due
