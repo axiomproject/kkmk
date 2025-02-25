@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "cd frontend && npm run build",
+    "build": "cd frontend && npm run build-only", 
     "lint": "eslint .",
     "preview": "vite preview",
     "install-all": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps",

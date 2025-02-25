@@ -2,7 +2,10 @@ services:
   - type: web
     name: kkmk
     env: node
-    buildCommand: npm run install-all && npm run build
+    buildCommand: |
+      npm run install-all
+      cd frontend && cp tsconfig.prod.json tsconfig.json && cd ..
+      npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
