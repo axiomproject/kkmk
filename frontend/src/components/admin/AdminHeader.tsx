@@ -11,7 +11,12 @@ const AdminHeader = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const defaultProfilePic = defaultAvatarImg;  // Update this line
-  const baseUrl = 'http://localhost:5175'; // Add base URL
+
+  const getImageUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('http')) return path;
+    return `${import.meta.env.VITE_API_URL}${path}`;
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -48,18 +53,7 @@ const AdminHeader = () => {
       return defaultProfilePic;
     }
     
-    // Debug logs
-    console.log('User role:', user.role);
-    console.log('Profile photo path:', user.profilePhoto);
-    console.log('Base URL:', baseUrl);
-    
-    const photoPath = user.profilePhoto.startsWith('http') 
-      ? user.profilePhoto 
-      : `${baseUrl}${user.profilePhoto}`;
-    
-    console.log('Final photo URL:', photoPath);
-    // Add timestamp to force reload
-    return `${photoPath}?t=${new Date().getTime()}`;
+    return getImageUrl(user.profilePhoto);
   };
 
   return (

@@ -15,6 +15,12 @@ const AdminHomeHeader = () => {
   const baseUrl = 'http://localhost:5175'; // Add base URL
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const getImageUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('http')) return path;
+    return `${import.meta.env.VITE_API_URL}${path}`;
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -141,7 +147,7 @@ const AdminHomeHeader = () => {
         <div className="profile-dropdown-container" ref={dropdownRef}>
           <div className="profile-trigger" onClick={() => setShowProfileDropdown(!showProfileDropdown)}>
             <img 
-              src={user?.profilePhoto ? `${baseUrl}${user.profilePhoto}` : defaultProfilePic}
+              src={user?.profilePhoto ? getImageUrl(user.profilePhoto) : defaultProfilePic}
               alt={user?.name || 'Admin'}
               className="admin-avatar"
               onError={(e) => {
