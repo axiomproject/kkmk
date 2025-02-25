@@ -1,0 +1,107 @@
+
+
+/* Sidebar styling */
+.sidebar {
+  width: 20%;
+  background-color: #e6e1cf;
+  padding: 10px;
+  border-radius: 8px;
+  margin-right: 20px;
+}
+
+.sidebar-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: none;
+  background-color: #d4c99f;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 16px;
+}
+
+.sidebar-button:hover {
+  background-color: #c4b892;
+}
+
+/* Main content styling */
+.main-content {
+  width: 75%;
+}
+
+.main-content h1 {
+  font-size: 24px;
+  color: #333;
+}
+
+.main-content p {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.filters {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.search-bar {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.dropdown {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Student grid and card styling */
+.student-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.student-card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 15px;
+  text-align: center;
+}
+
+.student-image {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.student-card h3 {
+  font-size: 18px;
+  color: #333;
+  margin: 10px 0;
+}
+
+.progress-bar {
+  background-color: #e0e0e0;
+  border-radius: 8px;
+  height: 10px;
+  margin: 10px 0;
+}
+
+.progress {
+  height: 100%;
+  background-color: #4caf50;
+  border-radius: 8px;
+}
+
+.student-card p {
+  font-size: 14px;
+  color: #555;
+}

@@ -1,0 +1,1085 @@
+/* Admin-Dashboard */
+
+
+/* Container for the entire dashboard */
+.container-total {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap; /* Allow wrapping for smaller screens */
+  overflow-x: auto;
+  padding-left: 5%;
+  padding-right: 5%;
+  font-family: "Poppins";
+  gap: 1rem;
+  padding: 0 2%;
+  margin-bottom: 2rem;
+}
+
+/* Generic styling for all admin cards */
+
+
+
+
+
+/* balance */
+
+.balance-admin {
+  font-family: "Poppins";
+  display: flex;
+  align-items: flex-start; /* Align items to the top */
+  background: transparent;
+  border-radius: 12px;
+  padding: 15px 20px;
+  min-width: 200px;
+  max-width: 280px; /* Optional for consistent card sizing */
+  position: relative;
+  flex: 1; /* Allows cards to scale evenly */
+  gap: 20px; /* Adjust gap between the icon and the text for better alignment */
+  flex: 1;
+  min-width: 160px;
+  max-width: 200px;
+  padding: 1rem;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center; /* Center align flag and arrow vertically */
+  justify-content: center; /* Center the icon content */
+}
+
+.flag-icon {
+  width: 50px;
+  height: 5;
+}
+
+.arrow-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.balance-admin-text {
+  font-family: "Poppins";
+  display: flex;
+  flex-direction: column; /* Stack text vertically */
+  align-items: flex-start; /* Align text to the left */
+  font-size: 16px;
+  font-weight: bold;
+  color: #A3AED0;
+  text-align: left; /* Align text to the left */
+  margin: 0; /* Remove any default margin */
+  padding: 0; /* Ensure no padding is added */
+  margin-bottom: 5px; /* Adjustable gap between text and the amount */
+}
+
+.balance-amount {
+  font-family: "Poppins";
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B3674;
+  display: flex;
+  align-items: baseline; /* Align peso sign and number to the baseline */
+  gap: 3px; /* Space between peso sign and the number */
+  margin: 0; /* Remove vertical margin */
+  margin-top: -15px;
+  font-size: 1.25rem;
+}
+
+.balance-peso-sign {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B3674;
+  margin: 0; /* Ensure no extra margin between peso sign and number */
+}
+
+
+
+/* Task admin card styling */
+
+
+.task-admin {
+  display: flex;
+  align-items: flex-start; /* Align items to the top */
+  background: transparent;
+  border-radius: 12px;
+  padding: 15px 20px;
+  min-width: 200px;
+  max-width: 280px; /* Optional for consistent card sizing */
+  position: relative;
+  gap: 10px; /* Space between elements */
+  flex: 1; /* Allows cards to scale evenly */
+  flex: 1;
+  min-width: 160px;
+  max-width: 200px;
+  padding: 1rem;
+}
+
+.task-admin-text {
+  display: flex;
+  align-items: center;
+  gap: 0; /* Remove space between the image and the text/number block */
+  padding-bottom: 50px;
+}
+
+.taskicon-admin img {
+  width: 50; /* Adjust the width as needed */
+  height: 50px; /* Adjust the height as needed */
+  object-fit: contain;
+}
+
+.task-info {
+  
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-left: 10px;
+}
+
+.task-admin-p {
+  font-family: "Poppins";
+  font-size: 20px;
+  font-weight: bold;
+  color: #A3AED0;
+  font-size: 0.875rem;
+}
+
+
+.task-total {
+  font-family: "Poppins";
+  font-size: 25px;
+  font-weight: bold;
+  color: #2B3674;
+  margin-top: -15px;
+  font-size: 1.25rem;
+}
+
+
+/* Total admin card styling */
+
+.total-admin {
+  display: flex;
+  align-items: flex-start; /* Align items to the top */
+  background: transparent;
+  border-radius: 12px;
+  padding: 15px 20px;
+  min-width: 200px;
+  max-width: 280px; /* Optional for consistent card sizing */
+  position: relative;
+  gap: 10px; /* Space between elements */
+  flex: 1; /* Allows cards to scale evenly */
+  flex: 1;
+  min-width: 160px;
+  max-width: 200px;
+  padding: 1rem;
+
+}
+
+.total-admin-text {
+  display: flex;
+  align-items: center;
+  gap: 0px; /* Remove space between the image and the text/number block */
+}
+
+.totalicon-admin img {
+  height: 60px;  /* Adjust the image height as needed */
+  width: 60px;   /* Adjust the image width as needed */
+  object-fit: contain;
+  margin-right: 10px; /* Add space between image and text */
+margin-bottom: 30px;
+
+}
+
+
+.total-admin-p {
+  font-size: 16px;
+  font-weight: bold;
+  color: #A3AED0;
+  text-align: left; /* Align text to the left */
+  margin: 0; /* Remove any default margin */
+  font-size: 0.875rem;
+}
+
+.total-total {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B3674;
+  text-align: left; /* Align numbers to the left */
+  font-size: 1.25rem;
+
+}
+
+
+
+/*Donations*/
+
+
+
+.donation-admin {
+  display: flex;
+  background: transparent;
+  border-radius: 12px;
+  padding: 15px 20px;
+  min-width: 200px;
+  max-width: 280px; /* Optional for consistent card sizing */
+  position: relative;
+  gap: 10px; /* Space between elements */
+  flex: 1; /* Allows cards to scale evenly */
+  font-family: "Poppins";
+  flex: 1;
+  min-width: 160px;
+  max-width: 200px;
+  padding: 1rem;
+}
+
+.plus-sign {
+  font-size: 16px;
+  font-weight: bold;
+  color: #05CD99;
+}
+
+.percent-rate {
+  font-size: 16px;
+  font-weight: bold;
+  color: #05CD99;
+}
+
+.donations-admin-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #A3AED0;
+  text-align: left; /* Align text to the left */
+  margin: 0; /* Remove any default margin */
+  padding: 15px; /* Remove padding to ensure no extra space */
+  font-family: "Poppins";
+}
+
+/* Styling for the donations amount */
+.donations-total {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B3674;
+  text-align: left; /* Align numbers to the left */
+  margin: 0; /* Remove margin to reduce gap */
+  padding: 0; /* Remove padding to reduce gap */
+  font-size: 1.25rem;
+  
+}
+
+/* Donations peso sign styling */
+.donations-peso-sign {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B3674;
+  margin-right: 5px; /* Add space between peso sign and the number */
+}
+
+/* Donations admin p (to remove gap) */
+.donations-admin-p {
+  font-size: 16px;
+  font-weight: bold;
+  color: #A3AED0;
+  margin: 0; /* Remove any margin */
+  padding: 0; /* Remove padding */
+  line-height: 1.2; /* Adjust line spacing for compactness */
+  font-size: 0.875rem;
+}
+
+
+
+
+
+
+
+/* Styling for earning card */
+.earning-admin {
+  display: flex;
+  align-items: flex-start; /* Align items to the top */
+  background: transparent;
+  border-radius: 12px;
+  padding: 15px 20px;
+  min-width: 200px;
+  max-width: 280px; /* Optional for consistent card sizing */
+  position: relative;
+  gap: 10px; /* Space between elements */
+  flex: 1; /* Allows cards to scale evenly */
+  font-family: "Poppins";
+  flex: 1;
+  min-width: 160px;
+  max-width: 200px;
+  padding: 1rem;
+  
+}
+
+/* Styling for the image inside the earning card */
+.earning-admin .pic-earning img {
+  height: 60px;  /* Adjust the image height as needed */
+  width: 60px;   /* Adjust the image width as needed */
+  object-fit: contain;
+  margin-right: 10px; /* Add space between image and text */
+}
+
+/* Text styling for the "Earnings" section */
+.earnings-text {
+  font-size: 16px;
+  font-family: "Poppins";
+  font-weight: bold;
+  color: #A3AED0;
+  text-align: left; /* Align text to the left */
+  margin: 0; /* Remove any default margin */
+  font-size: 0.875rem;
+}
+
+/* Styling for the earnings amount */
+.earnings-total {
+  font-size: 24px;
+  font-family: "Poppins";
+  font-weight: bold;
+  color: #2B3674;
+  text-align: left; /* Align numbers to the left */
+  font-size: 1.25rem;
+}
+
+/* Peso sign styling */
+.earnings-peso-sign {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B3674;
+  margin-right: 5px; /* Add space between peso sign and the number */
+}
+
+
+
+.spend-admin {
+  display: flex;
+  align-items: flex-start; /* Align items to the top */
+  background: transparent;
+  border-radius: 12px;
+  padding: 15px 20px;
+  font-family: "Poppins";
+  min-width: 200px;
+  max-width: 280px; /* Optional for consistent card sizing */
+  position: relative;
+  gap: 10px; /* Space between elements */
+  flex: 1; /* Allows cards to scale evenly */
+  flex: 1;
+  min-width: 160px;
+  max-width: 200px;
+  padding: 1rem;
+  
+}
+
+/* Styling for the image inside the earning card */
+.spend-admin img {
+  height: 60px;  /* Adjust the image height as needed */
+  width: 60px;   /* Adjust the image width as needed */
+  object-fit: contain;
+  margin-right: 10px; /* Add space between image and text */
+}
+
+/* Text styling for the "Earnings" section */
+.spend-text {
+  font-size: 16px;
+  font-weight: bold;
+  color: #A3AED0;
+  text-align: left; /* Align text to the left */
+  margin: 0; /* Remove any default margin */
+  font-size: 0.875rem;
+}
+
+/* Styling for the earnings amount */
+.spend-total {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B3674;
+  text-align: left; /* Align numbers to the left */
+  font-size: 1.25rem;
+}
+
+/* Peso sign styling */
+.spend-peso-sign {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B3674;
+  margin-right: 5px; /* Add space between peso sign and the number */
+}
+
+
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container-total {
+    flex-direction: column; /* Stack cards vertically */
+    gap: 15px;
+    padding: 0 1rem;
+  }
+
+  .earning-admin, .spend-admin, .donations-admin, .balance-admin, .task-admin, .total-admin {
+    width: 100%; /* Full width for each card */
+    max-width: none;
+  }
+}
+
+
+
+/* Bar Chart Container */
+
+.chart-bar-container {
+  display: flex;
+  width: 100%;
+  margin-top: 20px;
+  width: 65%;
+}
+
+
+/* Container for the entire chart + text + button */
+.chart-container {
+  width: 170%;
+  max-width: 1610px; /* Limit the maximum width of the entire container */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Align the container to the left */
+  width: 100%;
+  max-width: 1200px;
+}
+
+
+
+/* Header with text and button */
+.chart-header {
+  display: flex;
+  justify-content: space-between; /* Space between the text and the button */
+  align-items: flex-start; /* Align items at the top */
+  margin-bottom: 10px;
+}
+
+/* Left text side (Revenue, PHP, Percentage) */
+.chart-text-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-right: 10px; /* Adds space between left and right */
+  font-family: Poppins;
+}
+
+/* Right side (View Report button) */
+.chart-text-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-family: Poppins;
+}
+
+/* Revenue Text */
+.p-text {
+  font-size: 30px;
+  font-family: Poppins;
+  margin-bottom: 5px;
+  font-size: 1.25rem;
+}
+
+/* PHP Amount */
+.p-text-view-report-no {
+  font-size: 35px;
+  margin-bottom: 5px;
+  font-family: Poppins;
+  font-size: 1.5rem;
+}
+
+/* Percentage */
+.p-text-view-report-percent-week {
+  font-size:25px;
+  color: #6c6c6c; /* Text color for the "vs last week" part */
+  display: flex;
+  align-items: center; /* Vertically center the arrow with the text */
+  font-family: Poppins;
+  margin-top: -5px;
+  font-size: 1rem;
+}
+
+.arrow-up {
+  color: #28a745; /* Green color for the up arrow */
+  font-size: 18px; /* Adjust the size of the arrow */
+  font-weight: bold; /* Make the arrow thicker */
+  margin-right: 5px; /* Add space between the arrow and the percentage */
+ margin-top: -5px;
+
+}
+
+.p-text-view-report-percent {
+  font-size: 18px;
+  font-weight: bold;
+  color: #28a745; /* Green color for the percentage */
+  font-family: Poppins;
+}
+
+
+/* Revenue period text - Left-aligned */
+.p-text-view-report-Revenue-month {
+  font-size: 25px;
+  color: #6c6c6c;
+  margin-top: 20px; /* Increase the gap from percentage */
+  text-align: left;
+}
+
+/* Button for "View Report" */
+.view-report-button {
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  color: #EE3F24;
+  font-weight: bold;
+  padding: 10px 20px;
+  cursor: pointer;
+  align-self: flex-start; /* Align the button to the left side */
+  margin-top: 0; /* Remove gap from top */
+  margin-left: 970px; /* Optional: adds slight space from the border */
+}
+
+
+/* Container for the bar chart */
+.Revenue-container {
+  width: 130%; /* Or set a fixed percentage for the width */
+  max-width: 1600px; /* Adjust the max width as needed */
+  height: 400px; /* Chart height remains the same */
+  padding: 0 10px;
+  margin-top: 20px;
+  box-sizing: border-box;
+}
+
+
+
+/* DONUT CHART */
+
+/* DONUT CHART CONTAINER */
+.chart-donut-container {
+  display: flex;
+  justify-content: center;
+  width: 100%; /* Default width set to 100% of the parent */
+  max-width: 1200px; /* Maximum width limit for the container */
+  min-width: 800px; /* Ensure the container doesn't shrink below this width */
+  box-sizing: border-box; /* Includes padding and border in width calculations */
+  width: 30%;
+  min-width: auto;
+}
+
+/* CONTAINER FOR TEXT + BUTTON */
+.donut-chart-container {
+  width: 100%;
+  max-width: 800px;
+  padding: 10px 10px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+}
+
+/* HEADER WITH TEXT AND BUTTON */
+.donut-chart-header {
+  display: flex;
+  justify-content: space-between; /* Space between the text and the button */
+  align-items: flex-start;
+  width: 100%;
+  
+  
+}
+
+
+/* LEFT SIDE TEXT ALIGNMENT */
+.donut-p-text {
+  font-size: 35px;
+  font-family: Poppins;
+  margin: 0; /* Removes any margin */
+  padding-left: 0px; /* Slight padding for better alignment */
+  text-align: left; /* Left-align text */
+  font-size: 1.25rem;
+}
+
+
+.donut-p-text-period {
+  font-size: 25px;
+  color: #6c6c6c;
+  margin: 0; /* Removes any margin */
+  padding-left: 2px; /* Slight padding for better alignment */
+  text-align: left; /* Left-align text */
+  font-size: 1rem;
+}
+
+/* RIGHT SIDE BUTTON ALIGNMENT */
+.donut-view-report-button {
+  background: transparent;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  color: #EE3F24;
+  font-weight: bold;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin: 0; /* Removes any margin */
+  align-self: flex-end; /* Aligns button to the right edge */
+  box-sizing: border-box; /* Includes padding/border in size calculations */
+}
+
+
+/* Donut chart container */
+.donut-chart-section {
+  width: 90%;
+  height: 400px; /* Adjust the height to fit your design */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 100px;
+}
+
+/* Adjust the size of the donut chart itself */
+.donut-chart-container {
+  width: 70%; /* Adjust donut chart size to your preference (percentage of container width) */
+  max-width: 1500px; /* Max width to prevent it from becoming too large */
+  border: none; /* Remove any border */
+}
+
+/* Tooltip Customization */
+.chartjs-tooltip {
+  background-color: #622226 !important; /* Background color */
+  color: #fff !important; /* Text color */
+}
+
+.chartjs-tooltip .tooltip-body {
+  color: #fff !important; /* Ensure all tooltip text is white */
+}
+
+
+
+/* Parent container for both charts */
+.charts-container {
+  display: flex; /* Align both charts side by side */
+  justify-content: space-between; /* Add space between the two charts */
+  gap: 20px; /* Optional: Add a gap between the charts */
+  margin-top: 20px; /* Add some margin on top */
+  padding-left: 5%;
+  padding-right: 5%;
+  padding: 0 2%;
+  gap: 1rem;
+}
+
+/* Optional: Adjust width if necessary */
+.chart-bar-container {
+  width: 60%; /* You can adjust this based on how much space you want for the bar chart */
+}
+
+.chart-donut-container {
+  width: 35%; /* You can adjust this based on how much space you want for the donut chart */
+}
+
+
+
+
+
+/* circle */
+
+/* General Wrapper for Horizontal Layout */
+.rating-donors-donation-container {
+  display: flex; /* Flexbox layout for horizontal alignment */
+  justify-content: space-between; /* Space out the sections evenly */
+  align-items: flex-start; /* Align the items to the top */
+  gap: 20px; /* Space between each section */
+  margin: 0 auto; /* Center the container horizontally */
+  padding: 20px 0 90px; /* Increased padding at the bottom */
+  padding-left: 5%;
+  padding-right: 5%;
+}
+
+
+/* Circles Section (Rating) */
+
+.your-rating-container {
+  flex: 1; /* Allow this section to grow and take up space */
+  border-radius: 15px; /* Rounded corners */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center the content vertically */
+  align-items: center; /* Center the content horizontally */
+  position: relative; /* For positioning child elements */
+}
+
+.your-rating-text {
+  width: 100%; /* Make sure the text spans the full width of the container */
+  text-align: left; /* Align the text to the left */
+  margin-bottom: 20px; /* Space between the text and the circles */
+  
+}
+
+.your-rating-text-p {
+  font-size: 35px; /* Main text size */
+  font-family: Poppins;
+  margin: 0; /* Remove any default margin */
+}
+
+.your-rating-text-p1 {
+  font-size: 25px; /* Subtext size */
+  color: #6c6c6c; /* Gray color for subtext */
+  font-family: Poppins;
+  margin-top: 10px; /* Space between the lines */
+}
+
+/* Circles Section */
+.three-circles-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px; /* Add some space between the text and circles */
+}
+
+/* Common circle styles */
+.circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.7;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.circle1 {
+  background-color: #F99C30;
+  width: 300px;
+  height: 300px;
+  top: 40px;
+  left: 300px; /* This makes it centered within the parent container */
+  width: 150px;
+  height: 150px;
+  left: 150px;
+}
+
+.circle2 {
+  background-color: #6463D6;
+  width: 220px;
+  height: 220px;
+  top: 5px;
+  left: 115px;
+  width: 120px;
+  height: 120px;
+  left: 60px;
+}
+
+.circle3 {
+  background-color: #2FBFDE;
+  width: 250px;
+  height: 250px;
+  top: 260px;
+  left: 80px;
+  width: 130px;
+  height: 130px;
+  left: 40px;
+}
+
+/* Text inside circles */
+.circle-text-number {
+  font-size: 40px;
+  color: white;
+  margin: 0;
+  font-family: Poppins;
+}
+  
+
+.circle-text {
+  font-size: 30px;
+  color: white;
+  margin: 0;
+  font-family: Poppins;
+}
+
+
+/* Donors Section */
+.generous-donors-container {
+  flex: 1; /* Equal width as rating and feature */
+  border-radius: 15px; /* Rounded corners */
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start; /* Align items to the left */
+  box-sizing: border-box;
+}
+
+.generous-donor-text {
+  text-align: left; /* Align text to the left */
+  width: 100%; /* Take full width */
+  margin-bottom: 20px; /* Space below the text */
+}
+
+.generous-donor-text-p {
+  font-size: 30px;
+  font-family: Poppins;
+  font-size: 1.25rem;
+}
+
+.generous-donor-text-p1 {
+  font-size: 30px;
+  color: #6c6c6c;
+  font-size: 1rem;
+}
+/* Donor Items */
+.generos-donor-no1, .generos-donor-no2, .generos-donor-no3, .generos-donor-no4 {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.generos-donor-img1, .generos-donor-img2, .generos-donor-img3, .generos-donor-img4 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  border-radius: 8px; 
+}
+
+
+
+/* Donor Name and Donation Amount Styling (both text and number) */
+.generos-donor-img1 p, .generos-donor-img2 p, .generos-donor-img3 p, .generos-donor-img4 p {
+  margin: 0;
+  color: #333; /* Color for the text */
+  font-family: Poppins, sans-serif; /* Choose your preferred font */
+}
+
+/* Adjust the donation amount for a slightly different style */
+.generos-donor-img1 p:last-child,
+.generos-donor-img2 p:last-child,
+.generos-donor-img3 p:last-child,
+.generos-donor-img4 p:last-child {
+  font-size:25px; /* Smaller font for donation amount */
+  color: #6c6c6c; /* Lighter color for the amount */
+}
+
+
+
+.generos-donor-img1 img, .generos-donor-img2 img, .generos-donor-img3 img, .generos-donor-img4 img {
+  width: 100px; /* Adjust the width */
+  height: 100px; /* Adjust the height */
+  border-radius: 50%; /* Keep the circular shape */
+  margin-right: 10px; /* Space between image and text */
+
+
+}
+
+
+.generos-donor-img1 p, .generos-donor-img2 p, .generos-donor-img3 p, .generos-donor-img4 p {
+  margin: 0;
+  font-size: 25px;
+  padding-right: 30px;
+}
+
+
+
+/* Main Container */
+.donations-chart-line-container {
+  width: 100%;
+  max-width: 800px;
+  height: 500px;
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 600px;
+  height: 400px;
+}
+
+/* Header Section */
+.donations-line-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 20px;
+}
+
+/* Left-aligned Text Container */
+.donations-text-container {
+  display: flex;
+  flex-direction: column; /* Stack text vertically */
+  align-items: flex-start; /* Align all text to the left */
+  
+}
+
+/* Donations Title */
+.donations-title {
+  font-size: 30px;
+  font-family: Poppins;
+  font-size: 1.25rem;
+}
+
+/* Total Donations Text */
+.donations-total-donates {
+  font-size: 40px;
+  margin: 5px 0 0;
+  font-weight: bold;
+  font-family: Poppins;
+  font-size: 1.5rem;
+}
+
+/* Comparison Indicator */
+.donations-rates {
+  font-size: 25px;
+  color: #6c6c6c;
+  margin: 5px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: Poppins;
+  
+}
+
+.donations-rates-percentage {
+  color: red;  /* Red color for arrow and percentage */
+  font-family: Poppins;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.donations-rates-arrow{
+  color: red;
+  font-family: Poppins;
+ padding-bottom: 1px;
+ font-size: 19px;
+
+}
+
+/* Right-aligned Button */
+.donations-view-report-button {
+  margin-left: auto; /* Push button to the far right */
+  padding: 8px 16px;
+  background-color: transparent;
+  color: #007bff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 20px;
+  font-family: Poppins;
+}
+
+
+/* Chart Title */
+.donations-line-chart-title {
+  text-align: left;
+  font-size: 25px;
+  font-weight: 600;
+  margin: 15px 0 20px;
+  font-family: Poppins;
+  color:#6c6c6c;
+  padding-top: 20px;
+}
+
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .rating-donors-donation-container {
+    flex-direction: column; /* Stack items vertically */
+    align-items: center;
+  }
+
+  .your-rating-container, .generous-donors-container, .new-feature-container {
+    width: 100%; /* Full width for each container */
+    margin-bottom: 20px; /* Add spacing between sections */
+  }
+}
+
+/* Reset base container */
+.Admin-dashboard-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 1rem;
+  font-size: 14px; /* Base font size */
+
+}
+
+/* Adjust card container */
+.container-total {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding: 0 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Adjust card sizes */
+.earning-admin,
+.spend-admin,
+.donations-admin,
+.balance-admin,
+.task-admin,
+.total-admin {
+  flex: 1;
+  min-width: 160px;
+  max-width: 200px;
+  padding: 1rem;
+}
+
+/* Adjust font sizes */
+.earnings-text,
+.spend-text,
+.donations-admin-p,
+.balance-admin-p,
+.task-admin-p,
+.total-admin-p {
+  font-size: 0.875rem;
+}
+
+.earnings-total,
+.spend-total,
+.donations-total,
+.balance-amount,
+.task-total,
+.total-total {
+  font-size: 1.25rem;
+}
+
+/* Chart containers */
+.charts-container {
+  padding: 0 2rem;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.chart-bar-container {
+  width: 65%;
+}
+
+.chart-donut-container {
+  width: 35%;
+}
+
+/* Bottom section */
+.rating-donors-donation-container {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+  .Admin-dashboard-container {
+    transform: scale(0.9);
+  }
+}
+
+@media (max-width: 1200px) {
+  .Admin-dashboard-container {
+    transform: scale(1);
+  }
+  
+  .charts-container {
+    flex-direction: column;
+  }
+
+  .chart-bar-container,
+  .chart-donut-container {
+    width: 100%;
+  }
+}
+
+/* ...rest of existing styles remain unchanged... */
+

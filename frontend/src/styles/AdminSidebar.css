@@ -1,0 +1,1236 @@
+/* ...existing styles... */
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.admin-sidebar {
+  width: 280px;
+  min-width: 280px;
+  background: white;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  left: 0;
+  overflow-y: auto;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.admin-content {
+  flex: 1;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #f5f5f5;
+}
+
+@media screen and (max-width: 1280px) and (min-height: 853px) {
+  .admin-sidebar {
+    position: fixed;
+    left: -280px;
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+
+  .admin-sidebar.mobile-open {
+    left: 0;
+  }
+
+  .admin-content {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* Remove any fixed positioning from mobile styles */
+@media screen and (max-width: 768px) {
+  .admin-sidebar {
+    position: fixed;
+    left: -280px; /* Start offscreen */
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    height: 100vh;
+    background: white;
+    z-index: 1100;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+  }
+
+  .admin-sidebar.mobile-open {
+    left: 0; /* Slide in */
+    transform: none;
+  }
+
+  /* Remove any transform animations */
+  .admin-sidebar.mobile-open .sidebar-content {
+    transform: none;
+  }
+
+  /* Remove any scale or transform effects */
+  .sidebar-content {
+    transform: none !important;
+    transform-origin: unset;
+  }
+
+  /* Mobile overlay fade timing */
+  .mobile-overlay {
+    transition: opacity 0.3s ease;
+    backdrop-filter: none;
+  }
+
+  .admin-sidebar.mobile-open {
+    transform: translateX(280px); /* Move right by its width */
+  }
+
+  /* When closing, slide to the right */
+  .admin-sidebar:not(.mobile-open) {
+    transform: translateX(280px); /* Slide out to the right */
+  }
+
+  .admin-sidebar.mobile-open {
+    left: 0; /* Slide in from left */
+    transform: none;
+    overflow-y: auto;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-content {
+    transform: none;
+  }
+
+  .admin-content {
+    margin-left: 0;
+  }
+
+  .mobile-overlay {
+    /* ...existing properties... */
+    transition: opacity 0.3s ease; /* Reduced from 0.5s to 0.3s */
+    backdrop-filter: none; /* Remove blur for better performance */
+    -webkit-backdrop-filter: none;
+  }
+
+  .hamburger-menu {
+    /* ...existing properties... */
+    transition: transform 0.2s ease; /* Even faster transition for hamburger */
+  }
+
+  .sidebar-content {
+    flex: 1 1 auto;
+    min-height: 100vh; /* Set minimum height */
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    overflow-y: auto;
+  }
+
+  .sidebar-category {
+    flex: 0 0 auto; /* Prevent category shrinking */
+    transition: none;
+    transition-delay: 0s;
+    opacity: 1;
+  }
+
+  .sidebar-category:last-child {
+    margin-bottom: 80px; /* Add bottom spacing for last category */
+  }
+
+  /* Ensure submenus don't get cut off */
+  .sidebar-item-with-subitems.expanded .sidebar-subitems {
+    position: relative;
+    height: auto;
+    max-height: none;
+  }
+
+  .sidebar-category:last-child {
+    margin-bottom: 0; /* Remove bottom margin from last category */
+  }
+
+  .sidebar-category:last-child li:last-child {
+    margin-bottom: 0 !important; /* Remove bottom margin from last item */
+  }
+
+  .admin-sidebar.mobile-open {
+    padding-bottom: 0; /* Remove bottom padding */
+  }
+
+  .admin-sidebar.mobile-open .sidebar-content {
+    padding-bottom: 0; /* Remove bottom padding */
+  }
+
+  .admin-sidebar.mobile-open .sidebar-category {
+    margin-bottom: 8px; /* Consistent spacing between categories */
+  }
+
+  .admin-sidebar.mobile-open {
+    padding: 0; /* Remove all padding */
+  }
+
+  .admin-sidebar.mobile-open .sidebar-content {
+    padding: 16px 16px 0 16px; /* Remove bottom padding */
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  .sidebar-category {
+    margin: 0 0 16px 0; /* Add margin only between categories */
+  }
+
+  .sidebar-category:last-child {
+    margin: 0; /* Remove margin from last category */
+    padding: 0; /* Remove padding from last category */
+  }
+
+  .sidebar-category:last-child li:last-child {
+    margin: 0; /* Remove margin from last list item */
+    padding: 0; /* Remove padding from last list item */
+  }
+
+  .sidebar-category:last-child li:last-child a,
+  .sidebar-category:last-child li:last-child .sidebar-item-header {
+    margin-bottom: 0; /* Remove margin from last link/header */
+    padding-bottom: 16px; /* Add consistent padding to last item */
+  }
+
+  .admin-sidebar.mobile-open {
+    /* ...existing properties... */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .admin-sidebar {
+    /* ...existing styles... */
+    left: -280px;
+    transform: none;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .admin-sidebar.mobile-open {
+    left: 0;
+    transform: none;
+  }
+
+  .hamburger-menu.visible {
+    transform: translateX(0);
+  }
+
+  .hamburger-menu.visible ~ .quick-access-menu {
+    transform: translateX(0);
+  }
+
+  .hamburger-menu.hidden ~ .quick-access-menu,
+  .admin-sidebar.mobile-open ~ .quick-access-menu {
+    transform: translateX(-100%);
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    left: -280px; /* Start from off-screen */
+    top: 0;
+    width: 280px;
+    height: 100vh;
+    background: white;
+    z-index: 1100;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    transform: none;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  .admin-sidebar.mobile-open {
+    left: 0; /* Slide to visible position */
+    transform: none;
+  }
+
+  /* Remove transform animations */
+  .admin-sidebar.mobile-open .sidebar-content {
+    transform: none;
+    padding: 16px 0;
+    height: 100%;
+  }
+
+  /* Ensure overlay matches the timing */
+  .mobile-overlay {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Common transition timing for all animations */
+  .admin-sidebar,
+  .admin-sidebar.mobile-open,
+  .hamburger-menu,
+  .quick-access-menu,
+  .mobile-overlay,
+  .sidebar-content,
+  .sidebar-item-header,
+  .subitem-link,
+  .expand-icon {
+    transition-duration: 0.5s !important;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    left: -280px;
+    transition-property: left, visibility, opacity !important;
+  }
+
+  .admin-sidebar.mobile-open {
+    left: 0;
+  }
+
+  .quick-access-menu {
+    transition-property: transform !important;
+  }
+
+  .mobile-overlay {
+    transition-property: opacity !important;
+  }
+
+  /* Hover transitions should remain quick */
+  .admin-sidebar.mobile-open .sidebar-item-header:hover,
+  .admin-sidebar.mobile-open li a:hover,
+  .quick-access-item:hover {
+    transition-duration: 0.2s !important;
+  }
+
+  /* Quick transitions for all animations */
+  .admin-sidebar,
+  .admin-sidebar.mobile-open,
+  .hamburger-menu,
+  .quick-access-menu,
+  .mobile-overlay,
+  .sidebar-content,
+  .sidebar-item-header,
+  .subitem-link,
+  .expand-icon {
+    transition-duration: 0.2s !important;
+    transition-timing-function: ease !important;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    left: -280px;
+    transition-property: left !important;
+  }
+
+  .admin-sidebar.mobile-open {
+    left: 0;
+  }
+
+  .quick-access-menu {
+    transition-property: transform !important;
+  }
+
+  .mobile-overlay {
+    transition-property: opacity !important;
+  }
+
+  /* Remove all delays and transition delays */
+  .sidebar-category {
+    transition: none !important;
+    transition-delay: 0s !important;
+  }
+
+  /* Make hover effects instant */
+  .admin-sidebar.mobile-open .sidebar-item-header:hover,
+  .admin-sidebar.mobile-open li a:hover,
+  .quick-access-item:hover {
+    transition-duration: 0s !important;
+  }
+}
+
+/* ...existing styles... */
+
+/* Scholar Management Section Styles */
+.sidebar-item-with-subitems {
+  position: relative;
+  width: 100%;
+  margin: 5px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sidebar-item-header {
+  display: flex;
+  align-items: center;
+  padding: 15px 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #4b4b4b;
+  font-family: "Poppins";
+}
+
+.sidebar-item-header:hover {
+  background-color: #ee3f2492;
+  color: #EE3F24;
+}
+
+.sidebar-item-header span {
+  margin-right: 12px;
+}
+
+.sidebar-item-header span:not(.material-icons) {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 500;
+
+}
+
+.sidebar-item-header a:hover .material-icons 
+.sidebar-item-header a:active .material-icons{
+ 
+  color: #EE3F24;
+}
+
+.sidebar-item-header .admin-sidebar .material-icons:hover{
+  color: #EE3F24;
+}
+
+.expand-icon {
+  margin-left: auto !important;
+  transition: transform 0.3s ease;
+}
+
+.expanded .expand-icon {
+  transform: rotate(180deg);
+}
+
+.sidebar-subitems {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+  color: #4b4b4b;
+  background-color: rgba(232, 225, 209, 0.3);
+}
+
+.expanded .sidebar-subitems {
+  max-height: 250px;
+}
+
+.subitem-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px 10px 48px;
+  color: #4b4b4b;
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.subitem-link:hover {
+  background-color: #EE3F24;
+}
+
+.subitem-link.active {
+  background-color: #EE3F24;
+  font-weight: 600;
+}
+
+.subitem-icon {
+  font-size: 18px !important;
+  margin-right: 10px;
+}
+
+/* Active state styling */
+.sidebar-item-with-subitems.expanded .sidebar-item-header {
+  background-color: #ee3f2481;
+  color: #EE3F24;
+  font-weight: 600;
+}
+.sidebar-item-with-subitems.expanded .sidebar-item-header .material-icons {
+    color: #EE3F24;
+  }
+
+/* Ensure proper spacing */
+.sidebar-category ul li:last-child .sidebar-item-with-subitems {
+  margin-bottom: 0;
+}
+
+/* Mobile Responsive Styles */
+.hamburger-menu {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Change from center to flex-start */
+  position: fixed;
+  left: 0; /* Change from 20px to 0 */
+  top: 80px;
+  width: 40px;
+  height: 40px;
+  background: #EE3F24;
+  border: none;
+  border-radius: 0 4px 4px 0; /* Only round the right corners */
+  cursor: pointer;
+  z-index: 1001;
+  color: white;
+  padding-left: 8px; /* Add some padding for better alignment */
+  transition: transform 0.2s ease; /* Even faster transition for hamburger */
+  transform: translateX(-100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* When hamburger menu should be shown */
+.hamburger-menu.visible {
+  display: flex;
+  transform: translateX(0);
+  opacity: 1;
+}
+
+@media screen and (max-width: 768px) {
+  .admin-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0; /* Start from top */
+    bottom: 0; /* Extend to bottom */
+    width: 100%;
+    height: 100vh;
+    transform: translateY(100%); /* Start from bottom */
+    background: white;
+    z-index: 1100; /* Higher z-index to be above zoom controls */
+    transition: visibility 0.3s, opacity 0.3s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    overflow-y: hidden; /* Change to hidden */
+    -webkit-overflow-scrolling: touch;
+    visibility: hidden; /* Hide sidebar by default on mobile */
+    opacity: 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(238, 63, 36, 0.6) transparent;
+  }
+
+  .admin-sidebar.mobile-open {
+    transform: translateY(0); /* Slide up to fill screen */
+    visibility: visible;
+    opacity: 1;
+    padding-right: 6px; /* Add space for scrollbar */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding-bottom: 60px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 100vh;
+    padding: 8px 8px 60px 8px;
+    transform: scale(0.95); /* Scale down entire sidebar */
+    transform-origin: top center;
+  }
+
+  /* Pull indicator only at top */
+  .admin-sidebar::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 8px; /* Reduced from 12px */
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    transform: translateX(-50%);
+  }
+
+  /* Content layout */
+  .sidebar-category {
+    padding: 24px 16px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    transition-delay: 0.1s;
+    padding: 10px 8px;
+    margin: 5px 0;
+    padding: 6px;
+    margin: 2px 0;
+    padding: 4px;
+    margin: 0;
+  }
+
+  .mobile-open .sidebar-category {
+    opacity: 1;
+  }
+
+  /* Enhance mobile items spacing */
+  .sidebar-category:first-child {
+    margin-top: 10px; /* Reduced from 20px */
+    margin-top: 6px;
+    margin-top: 0;
+  }
+
+  .sidebar-item-header,
+  .admin-sidebar li a {
+    padding: 16px;
+    margin: 4px 0;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  /* Enhance the mobile overlay */
+  .mobile-overlay {
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.9) 0%,
+      rgba(0, 0, 0, 0.7) 50%,
+      rgba(0, 0, 0, 0.9) 100%
+    );
+    z-index: 1099; /* Just below the sidebar */
+  }
+
+  .hamburger-menu {
+    z-index: 1001;
+    position: fixed;
+    left: 0;
+    top: 80px;
+    background: #EE3F24;
+    display: flex;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .hamburger-menu.hidden {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  .admin-sidebar.mobile-open ~ .hamburger-menu {
+    display: none;
+  }
+
+  .hamburger-menu {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+
+  .hamburger-menu.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .mobile-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100vh;
+    width: 100vw;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8));
+    z-index: 999;
+    transition: opacity 0.3s ease; /* Reduced from 0.5s to 0.3s */
+    backdrop-filter: none; /* Remove blur for better performance */
+    -webkit-backdrop-filter: none;
+  }
+
+  .mobile-overlay.active {
+    display: block;
+    opacity: 1;
+  }
+
+  .sidebar-content {
+    flex: 1;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 80px; /* Add extra padding to avoid zoom controls */
+    max-height: calc(100vh - 80px); /* Account for bottom padding */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(238, 63, 36, 0.6) transparent;
+    padding: 16px;
+    padding-bottom: 60px;
+    height: auto;
+    transform: scale(1.15); /* Increase size instead of reducing it */
+    transform-origin: top center;
+    height: auto;
+    padding: 0;
+    overflow: visible;
+    padding-top: 0; /* Remove top padding */
+    margin-top: -10px; /* Pull content up slightly */
+    margin-top: 0;
+    transform: scale(0.9);
+    padding: 8px 4px;
+  }
+
+  /* Custom scrollbar for mobile */
+  .sidebar-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar-content::-webkit-scrollbar-thumb {
+    background-color: rgba(238, 63, 36, 0.6);
+    border-radius: 4px;
+  }
+
+  .sidebar-content::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(238, 63, 36, 0.8);
+  }
+
+  /* Hide zoom controls when sidebar is open */
+  .admin-sidebar.mobile-open ~ .leaflet-control-zoom {
+    display: none;
+  }
+  
+  /* Alternative: Move zoom controls when sidebar is open */
+  .admin-sidebar.mobile-open ~ .leaflet-control-container .leaflet-control-zoom {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  /* Enhance scrollbar styling for both touch and mouse */
+  .admin-sidebar.mobile-open::-webkit-scrollbar,
+  .sidebar-content::-webkit-scrollbar {
+    width: 6px;
+    display: block;
+  }
+
+  .admin-sidebar.mobile-open::-webkit-scrollbar-track,
+  .sidebar-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .admin-sidebar.mobile-open::-webkit-scrollbar-thumb,
+  .sidebar-content::-webkit-scrollbar-thumb {
+    background-color: rgba(238, 63, 36, 0.6);
+    border-radius: 4px;
+  }
+
+  .admin-sidebar.mobile-open::-webkit-scrollbar-thumb:hover,
+  .sidebar-content::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(238, 63, 36, 0.8);
+  }
+
+  /* Enhanced hover effects for mobile sidebar items */
+  .admin-sidebar.mobile-open .sidebar-item-header:hover,
+  .admin-sidebar.mobile-open li a:hover {
+    background-color: rgba(238, 63, 36, 0.1);
+    color: #EE3F24;
+    transform: translateX(4px);
+    transition: all 0.3s ease;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-header:active,
+  .admin-sidebar.mobile-open li a:active {
+    background-color: rgba(238, 63, 36, 0.2);
+  }
+
+  .admin-sidebar.mobile-open .subitem-link:hover {
+    background-color: rgba(238, 63, 36, 0.1);
+    color: #EE3F24;
+    transform: translateX(4px);
+  }
+
+  .admin-sidebar.mobile-open .material-icons {
+    transition: color 0.3s ease;
+  }
+
+  .admin-sidebar.mobile-open a:hover .material-icons,
+  .admin-sidebar.mobile-open .sidebar-item-header:hover .material-icons {
+    color: #EE3F24;
+  }
+
+  /* Adjust sizes for better fit */
+  .category-title {
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+    margin: 8px 0;
+    padding: 0 4px;
+  }
+
+  .material-icons {
+    font-size: 22px !important;
+  }
+
+  .subitem-link {
+    padding: 8px 14px 8px 36px;
+    font-size: 1rem;
+  }
+
+  .expanded .sidebar-subitems {
+    max-height: 160px;
+    max-height: 140px;
+  }
+
+  /* Compact spacing */
+  .sidebar-item-with-subitems {
+    margin: 4px 0;
+  }
+
+  li {
+    margin: 3px 0 !important;
+  }
+
+  /* Adjust icon sizes */
+  .subitem-icon {
+    font-size: 20px !important;
+    margin-right: 10px;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-with-subitems.expanded .sidebar-subitems {
+    max-height: none !important;
+    height: auto;
+    opacity: 1;
+    visibility: visible;
+    transition: all 0.3s ease;
+    padding: 8px 0;
+    background-color: rgba(238, 63, 36, 0.05);
+    border-radius: 8px;
+    margin: 4px 0;
+  }
+
+  .admin-sidebar.mobile-open .expanded .expand-icon {
+    transform: rotate(180deg);
+    color: #EE3F24;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-with-subitems .subitem-link {
+    padding: 12px 16px 12px 48px;
+    opacity: 1;
+    transform: none;
+    transition: all 0.3s ease;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-with-subitems {
+    border-radius: 8px;
+    overflow: visible;
+    margin-bottom: 8px;
+  }
+
+  /* Adjust spacing between categories */
+  .sidebar-category + .sidebar-category {
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .admin-sidebar.mobile-open .expand-icon {
+    font-size: 18px !important;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-with-subitems .subitem-link {
+    padding: 8px 12px 8px 36px;
+    font-size: 0.9rem;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-with-subitems.expanded .sidebar-subitems {
+    padding: 4px 0;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-header {
+    padding: 10px 16px;
+  }
+
+  .admin-sidebar.mobile-open .subitem-icon {
+    font-size: 16px !important;
+    margin-right: 8px;
+  }
+
+  .admin-sidebar.mobile-open .category-title {
+    font-size: 0.95rem;
+    margin: 6px 0;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-header {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+
+  .admin-sidebar.mobile-open .material-icons {
+    font-size: 18px !important;
+  }
+
+  .admin-sidebar.mobile-open .expand-icon {
+    font-size: 16px !important;
+    margin-left: 8px !important;
+  }
+
+  .admin-sidebar.mobile-open .subitem-link {
+    padding: 6px 12px 6px 32px;
+    font-size: 0.85rem;
+  }
+
+  .admin-sidebar.mobile-open .subitem-icon {
+    font-size: 16px !important;
+    margin-right: 6px;
+  }
+
+  .admin-sidebar.mobile-open {
+    /* Position and size */
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    
+    /* Transform and visibility */
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    
+    /* Layout */
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    
+    /* Style */
+    background: white;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 0;
+    z-index: 1100;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-content {
+    padding: 16px 0;
+    margin: 0;
+    height: 100%;
+    width: 100%;
+    transform: none;
+    overflow-y: auto;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-category {
+    padding: 0 16px;
+    margin: 16px 0;
+  }
+
+  .admin-sidebar.mobile-open .sidebar-item-header,
+  .admin-sidebar.mobile-open .subitem-link {
+    padding: 12px 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+@media screen and (min-width: 769px) {
+  /* Hide hamburger on desktop when sidebar is visible */
+  .admin-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(238, 63, 36, 0.6) transparent;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: 100vh;
+  }
+
+  .hamburger-menu {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .hamburger-menu,
+  .mobile-overlay {
+    display: none;
+  }
+}
+
+/* Custom scrollbar styling */
+.admin-sidebar::-webkit-scrollbar {
+  width: 6px;
+  height: 100%;
+}
+
+.admin-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(238, 63, 36, 0.6);
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(238, 63, 36, 0.8);
+}
+
+.sidebar-content::-webkit-scrollbar,
+.admin-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track,
+.admin-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb,
+.admin-sidebar::-webkit-scrollbar-thumb {
+  background-color: rgba(238, 63, 36, 0.6);
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover,
+.admin-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(238, 63, 36, 0.8);
+}
+
+/* Add this to prevent body scroll when sidebar is open */
+body.sidebar-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* ...existing styles... */
+
+/* ...existing styles... */
+
+/* Update all transitions to be smoother */
+.admin-sidebar,
+.hamburger-menu,
+.quick-access-menu,
+.quick-access-item,
+.mobile-overlay,
+.sidebar-content,
+.sidebar-item-header,
+.subitem-link,
+.expand-icon,
+.sidebar-subitems {
+  transition-duration: 0.3s !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Smooth slide animations */
+.admin-sidebar {
+  transition-property: transform, left, opacity, visibility !important;
+}
+
+.quick-access-menu {
+  transition-property: transform, opacity !important;
+}
+
+/* Smooth hover transitions */
+.quick-access-item:hover,
+.sidebar-item-header:hover,
+.subitem-link:hover {
+  transition-duration: 0.2s !important;
+  transition-timing-function: ease-out !important;
+}
+
+/* Smooth expand/collapse for subitems */
+.sidebar-subitems {
+  transition-property: max-height, opacity !important;
+  transition-duration: 0.3s !important;
+}
+
+/* Smooth overlay fade */
+.mobile-overlay {
+  transition-property: opacity !important;
+  transition-duration: 0.3s !important;
+}
+
+/* Smooth icon rotations */
+.expand-icon {
+  transition-property: transform !important;
+  transition-duration: 0.3s !important;
+}
+
+/* ...existing styles... */
+
+.quick-access-menu {
+  position: fixed;
+  left: 0;
+  top: 130px; /* Position below hamburger */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1000;
+  background: white;
+  padding: 8px 4px;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-access-item {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b4b4b;
+  border-radius: 4px;
+  cursor: pointer; /* Re-enable cursor pointer */
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-access-item:hover {
+  background-color: #ee3f2420;
+  color: #EE3F24;
+  transform: translateX(2px);
+}
+
+.quick-access-item.active {
+  color: #EE3F24;
+  background-color: #ee3f2420;
+  position: relative;
+}
+
+.quick-access-item.active:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: #EE3F24;
+  border-radius: 0 2px 2px 0;
+}
+
+.quick-access-item:active {
+  transform: scale(0.95) translateX(2px);
+}
+
+.quick-access-item.active {
+  color: #EE3F24;
+}
+
+.quick-access-menu.visible {
+  transform: translateX(0);
+}
+
+@media screen and (min-width: 769px) {
+  .quick-access-menu {
+    display: none;
+  }
+}
+
+/* ...existing styles... */
+
+/* Quick Access Menu Enhancements */
+.quick-access-menu {
+  position: fixed;
+  left: 0;
+  top: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  background: white;
+  padding: 12px 8px;
+  border-radius: 0 12px 12px 0;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.quick-access-menu.visible {
+  transform: translateX(0);
+}
+
+.quick-access-item {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b4b4b;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+}
+
+.quick-access-item:hover {
+  background-color: #ee3f2420;
+  color: #EE3F24;
+  transform: translateX(4px);
+}
+
+.quick-access-item.active {
+  color: #EE3F24;
+  background-color: #ee3f2420;
+}
+
+.quick-access-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background-color: #EE3F24;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Enhanced Hamburger Menu */
+.hamburger-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  left: 0;
+  top: 80px;
+  width: 48px;
+  height: 48px;
+  background: #EE3F24;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  z-index: 1001;
+  color: white;
+  transition: all 0.3s ease;
+  transform: translateX(-100%);
+  opacity: 0;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hamburger-menu.visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.hamburger-menu:hover {
+  background: #ff4f33;
+  width: 52px;
+}
+
+.hamburger-menu .material-icons {
+  font-size: 24px;
+}
+
+/* Mobile Overlay Enhancement */
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 999;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* ...existing styles... */

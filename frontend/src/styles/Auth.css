@@ -1,0 +1,1530 @@
+@import url('https://fonts.googleapis.com/css2?family=Poltawski+Nowy:ital,wght@0,400..700;1,400..700&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900&display=swap');
+
+.auth-container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+}
+
+.auth-container.full-screen {
+  max-width: none;
+  margin: 0;
+  padding: 50px;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-image: url('../img/loginBG.svg') !important; 
+  background-size: cover;
+  background-position: center;
+}
+
+
+
+.auth-container-register.full-screen {
+  max-width: none;
+  margin: 0;
+  padding: 50px;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background-image: url('../img/loginBG.svg') !important; 
+  background-size: cover;
+  background-position: center;
+}
+
+.auth-inner-container {
+  width: 45rem; 
+  margin: 0 auto;
+  padding: 10rem; 
+  background-color: #FEF6E4;
+  border-radius: 25px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.auth-inner-container-forgot-password{
+  width: 45rem; 
+  margin: 0 auto;
+  padding: 10rem;
+  background-color: #FEF6E4;
+  border-radius: 25px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: left;
+  position: relative;
+
+  font-size: 1.1rem;
+  line-height: 2rem;
+}
+
+.auth-inner-container-forgot-password {
+  transition: all 0.3s ease;
+}
+
+.auth-inner-container-forgot-password p{
+  margin-top: 1rem;
+  font-weight: 300;
+  font-family: "Poppins";
+}
+
+.auth-container h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #242424;
+    font-family: "Poppins";
+    font-weight: 500;
+  }
+
+  .auth-container-register h1 {
+    text-align: left;
+    margin-bottom: 50px;
+    color: #242424;
+    font-family: "Poppins";
+    font-weight: 500;
+  }
+
+.auth-container h3 {
+  text-align: center;
+  margin-bottom: 5px;
+  color: #242424;
+  font-family: "Poppins";
+  font-weight: 500;
+}
+
+.auth-inner-container-register {
+    width: 40rem; 
+    margin: 0 auto;
+    padding: 5rem; 
+    background-color: #FEF6E4;
+    border-radius: 25px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    min-height: 50rem; 
+  }
+  
+  .auth-container h4 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: #242424;
+      font-family: "Poppins";
+      font-weight: 500;
+    }
+  
+  .auth-container p {
+    margin-bottom: 20px;
+    color: #242424;
+    font-family: "Poppins";
+    text-align: center;
+  }
+
+.auth-form label {
+  display: block;
+  color: #242424;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: transparent;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #242424;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  transition: background-color 0.3s ease; /* Add transition for background color */
+}
+
+.auth-button:hover {
+  background-color: #555758;
+}
+
+.auth-button-forgot {
+  width: 100%;
+  padding: 15px;
+  background-color: #EE3F24;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: background-color 0.3s ease; /* Add transition for background color */
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-button-forgot::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.auth-button-forgot:hover::after {
+  transform: translateX(0);
+}
+
+.auth-button-forgot:hover {
+  background-color: #ae240e;
+}
+
+
+.auth-button-register {
+    margin-top: 10px;
+    width: 100%;
+    padding: 10px;
+    background-color: #EE3F24;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: "Poppins";
+    transition: background-color 0.3s ease; /* Add transition for background color */
+  }
+  
+  .auth-button-register:hover {
+    background-color: #b1301c;
+  }
+
+.auth-logo {
+    width: 15rem;
+    align-items: center;
+    align-content: center;
+    height: auto;
+    margin-bottom: 20px;
+  }
+
+.auth-account-link{
+   
+    font-family: "Poppins";
+    color: #242424;
+    text-align: center;
+    text-decoration: none;
+}
+
+.auth-account-link a:hover {
+    text-decoration: underline;
+  }
+
+  .auth-account-link a {
+    color: #080808;
+    text-decoration: none;
+  }
+  .auth-account-link p {
+    margin-bottom: 0px !important;
+  }
+
+.auth-link {
+  margin-top: 15px;
+  font-family: "Poppins";
+  color: #242424;
+}
+
+.auth-link a {
+  color: #080808;
+  text-decoration: none;
+}
+
+.auth-link a:hover {
+  text-decoration: underline;
+}
+
+.error-message {
+  color: #ff4d4f;
+  text-align: center;
+  margin-bottom: 15px;
+  margin: 8px 0;
+  font-family: "Poppins";
+}
+
+.success-message {
+  color: #52c41a;
+  text-align: center;
+  margin-bottom: 15px;
+  margin: 8px 0;
+}
+
+.form-group-row {
+  display: flex;
+  gap: 10px;
+}
+
+.form-group {
+  flex: 1;
+  margin-bottom: 16px;
+}
+.form-group h3 {
+  color: #242424;
+  font-family: "Poppins";
+  font-weight: 500;
+  margin-top: 25px;
+}
+
+.error-input {
+  border-color: #ff4d4f !important;
+}
+
+.error-text {
+  color: #ff4d4f;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: block;
+  font-family: "Poppins";
+}
+
+.verification-status {
+  text-align: center;
+  padding: 20px;
+}
+
+.verification-status.success {
+  color: #4CAF50;
+}
+
+.verification-status.error {
+  color: #f44336;
+}
+
+.verification-status a {
+  color: #2196F3;
+  text-decoration: none;
+}
+
+.verification-status a:hover {
+  text-decoration: underline;
+}
+
+.forgot-password a{
+  font-family: "Poppins";
+  color: #242424;
+  margin-bottom: 0px !important;
+  text-decoration: none;
+}
+.forgot-password a:hover{
+  font-family: "Poppins";
+  color: #242424;
+  text-decoration: underline;
+}
+
+
+
+.form-group-forgot {
+  flex: 1;
+  margin-bottom: 16px;
+}
+.form-group-forgot h3 {
+  color: #242424;
+  font-family: "Poppins";
+  font-weight: 500;
+  margin-top: 25px;
+}
+
+.form-group-forgot .input[type="text"],
+.input[type="email"],
+.input[type="password"],
+.input[type="date"] {
+  width: 100%;
+  padding: 20px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background-color: transparent;
+  font-family: "Poppins";
+  font-weight: 300;
+  font-size: 1rem;
+}
+
+.back-button {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  width: 50px;  
+  height: 50px; 
+  border: 1px solid #8F8F8F;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.back-button:hover {
+  background-color: #4d4c4c;
+  border: 1px solid #4d4c4c;
+}
+
+.back-button svg {
+  width: 25px;  
+  height: 25px; 
+  transition: all 0.3s ease;
+}
+
+.back-button:hover svg {
+  fill: #FEF6E4;
+}
+
+.role-selection {
+  width: 100%;
+  text-align: center;
+  padding: 20px;
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.role-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.role-button {
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.role-button:hover {
+  border-color: #EE3F24;
+
+}
+
+.role-button.selected {
+  border-color: #EE3F24;
+
+}
+
+.role-button h5 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.role-button p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+}
+
+/* Modify the role-selection and auth-form to handle animations */
+.role-selection, .registration-form {
+  width: 100%;
+  padding: 20px;
+}
+
+.form-group select{
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+    margin-bottom: 5px;
+    width: 100% !important;
+    text-align: left;
+    font-family: "Poppins";
+    background: none;
+}
+
+.form-group select option {
+  background-color: #FEF6E4;
+  color: #242424;
+  font-family: "Poppins";
+  padding: 10px;
+}
+
+/* For Firefox */
+.form-group select:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 #242424;
+}
+
+/* For Chrome/Safari */
+.form-group select option:checked {
+  background-color: #FEF6E4;
+}
+
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-toggle-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+
+.password-toggle-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: #666;
+  transition: fill 0.3s ease;
+}
+
+.password-toggle-icon:hover svg {
+  fill: #333;
+}
+
+.terms-checkbox {
+  margin: 20px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+
+.terms-checkbox input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #EE3F24;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  margin-top: 2px;
+  background-color: transparent;
+  transition: all 0.2s ease;
+  z-index: 2; /* Ensure checkbox is clickable */
+  pointer-events: auto; /* Ensure checkbox remains clickable */
+}
+
+.terms-checkbox input[type="checkbox"]:checked {
+  background-color: #EE3F24;
+  border-color: #EE3F24;
+}
+
+.terms-checkbox input[type="checkbox"]:checked::before {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.terms-checkbox input[type="checkbox"]:hover {
+  border-color: #b1301c;
+}
+
+.terms-checkbox input[type="checkbox"]:checked:hover {
+  background-color: #b1301c;
+  border-color: #b1301c;
+}
+
+.terms-checkbox label {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #242424;
+  font-family: "Poppins";
+  font-weight: 400;
+  flex: 1;
+  pointer-events: none; /* Disable pointer events on the label itself */
+}
+
+.terms-checkbox.error input[type="checkbox"] {
+  border-color: #ff4d4f;
+}
+
+.terms-checkbox .error-text {
+  position: absolute;
+  left: 0;
+  bottom: -20px;
+}
+
+.terms-checkbox {
+  margin: 20px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.terms-checkbox input[type="checkbox"] {
+  width: auto;
+  margin-top: 4px;
+}
+
+.terms-checkbox label {
+  font-size: 14px;
+  color: #242424;
+  font-family: "Poppins";
+}
+
+.terms-link {
+  color: #EE3F24;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  pointer-events: auto; /* Re-enable pointer events specifically for the links */
+  position: relative; /* Ensure links appear above label */
+  z-index: 1;
+}
+
+.terms-link:hover {
+  color: #b1301c;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+
+}
+
+.modal-content {
+  background-color: #FEF6E4;
+  padding: 2rem;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-content h2 {
+  color: #242424;
+  margin-bottom: 1rem;
+  font-family: "Poppins";
+}
+
+.modal-body {
+  color: #242424;
+  font-family: "Poppins";
+}
+
+.modal-content button {
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  border-radius: 50%;
+
+  display: flex
+;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #666;
+  
+  transition: background, color 0.2s ease;
+}
+
+.modal-content button:hover {
+  background-color: #EE3F24;
+  color: white;
+}
+
+
+
+
+
+
+.face-verification-section {
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.face-verify-button {
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.face-verify-button.verified {
+  background: #4CAF50;
+  color: white;
+}
+
+.face-verify-button:hover {
+  opacity: 0.9;
+}
+
+.mpin-input {
+  font-size: 24px;
+  letter-spacing: 8px;
+  text-align: center;
+  padding: 10px;
+  width: 150px;
+  margin: 20px auto;
+}
+
+.auth-button.secondary {
+  background-color: #6c757d;
+  margin-top: 10px;
+}
+
+.auth-button.secondary:hover {
+  background-color: #5a6268;
+}
+
+.mpin-input-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+}
+
+.mpin-display {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+  justify-content: center;
+}
+
+.mpin-digit {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid #242424;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.mpin-digit.filled {
+  background-color: #242424;
+}
+
+.mpin-hidden-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.mpin-form {
+  position: relative;
+}
+
+/* Update back button and content positioning */
+.forgot-password-content {
+  position: relative;
+  padding-top: 2rem;
+}
+
+/* Enhanced reset password and forgot password styles */
+.reset-password-content,
+.forgot-password-content {
+  position: relative;
+  padding-top: 4rem;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.reset-instructions,
+.forgot-password-description {
+  margin-bottom: 2rem;
+}
+
+.reset-password-form,
+.forgot-password-form {
+  margin-top: 1.5rem;
+}
+
+.password-input-wrapper {
+  margin-bottom: 1.5rem;
+}
+
+.password-input {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  transition: border-color 0.3s ease;
+}
+
+.password-input:focus {
+  border-color: #EE3F24;
+  outline: none;
+}
+
+/* Media Queries for Responsive Design */
+@media screen and (max-width: 1024px) {
+  .auth-inner-container {
+    width: 35rem;
+    padding: 6rem;
+  }
+
+  .auth-inner-container-register {
+    width: 35rem;
+    padding: 4rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .auth-inner-container {
+    width: 90%;
+    max-width: 30rem;
+    padding: 4rem 2rem;
+  }
+
+  .auth-inner-container-register {
+    width: 90%;
+    max-width: 30rem;
+    padding: 3rem 2rem;
+  }
+
+  .auth-container.full-screen {
+    padding: 20px;
+  }
+
+  .auth-logo {
+    width: 12rem;
+  }
+
+  .auth-container h1 {
+    font-size: 1.8rem;
+  }
+
+  .auth-container h4 {
+    font-size: 1.6rem;
+  }
+
+  .auth-inner-container-forgot-password {
+    width: 90%;
+    max-width: 30rem;
+    padding: 4rem 2rem;
+    position: relative;
+  }
+
+  .forgot-password-description p,
+  .reset-instructions {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .form-group-forgot h3 {
+    font-size: 1.1rem;
+    margin-top: 20px;
+  }
+
+  .password-input-wrapper input,
+  .form-group-forgot input {
+    padding: 15px;
+    font-size: 0.9rem;
+  }
+
+  .forgot-password-content {
+    padding-top: 3.5rem;
+  }
+
+  .back-button {
+    top: 20px;
+    left: 20px;
+  }
+
+  .auth-inner-container-forgot-password {
+    width: 90%;
+    padding: 3rem 2rem;
+    margin: 1rem auto;
+  }
+
+  .reset-password-content,
+  .forgot-password-content {
+    padding-top: 3rem;
+  }
+
+  .reset-instructions,
+  .forgot-password-description {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .form-group-forgot h3 {
+    font-size: 1.1rem;
+    margin: 1rem 0 0.5rem;
+  }
+
+  .auth-button-forgot {
+    margin-top: 1rem;
+  }
+
+  .auth-container-register.full-screen {
+    padding: 1rem;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-attachment: fixed;
+  }
+
+  .auth-inner-container-register {
+    width: 100%;
+    max-width: 100%;
+    min-height: auto;
+    padding: 2rem 1.5rem;
+    margin: 0.5rem;
+    border-radius: 15px;
+    overflow-y: auto;
+    max-height: 90vh;
+  }
+
+  .role-selection {
+    position: relative;
+    padding: 1rem;
+    margin-top: 2rem;
+  }
+
+  .role-selection h4 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .role-selection p {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .role-buttons {
+    gap: 0.8rem;
+  }
+
+  .registration-form {
+    padding: 1rem;
+  }
+}
+
+/* Small mobile devices */
+@media screen and (max-width: 480px) {
+  .auth-inner-container {
+    padding: 2rem 1.5rem;
+  }
+
+  .auth-inner-container-register {
+    width: 100%;
+    padding: 2rem 1.5rem;
+    min-height: auto;
+  }
+
+  .auth-container.full-screen {
+    padding: 10px;
+  }
+
+  .auth-logo {
+    width: 10rem;
+  }
+
+  .auth-container h1 {
+    font-size: 1.5rem;
+  }
+
+  .auth-container h4 {
+    font-size: 1.4rem;
+  }
+
+  .form-group-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .auth-button,
+  .auth-button-register,
+  .auth-button-forgot {
+    padding: 12px;
+    font-size: 1rem;
+  }
+
+  .back-button {
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .back-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mpin-display {
+    gap: 10px;
+  }
+
+  .mpin-digit {
+    width: 12px;
+    height: 12px;
+  }
+
+  .auth-inner-container-forgot-password {
+    width: 100%;
+    padding: 2rem 1.5rem;
+    margin: 0;
+  }
+
+  .forgot-password-description p,
+  .reset-instructions {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .form-group-forgot h3 {
+    font-size: 1rem;
+    margin-top: 15px;
+  }
+
+  .password-input-wrapper input,
+  .form-group-forgot input {
+    padding: 12px;
+    font-size: 0.85rem;
+  }
+
+  .auth-button-forgot {
+    padding: 12px;
+    font-size: 0.9rem;
+  }
+
+  .forgot-password-content {
+    padding-top: 3rem;
+  }
+
+  .back-button {
+    width: 40px;
+    height: 40px;
+    top: 15px;
+    left: 15px;
+  }
+
+  .back-button svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .auth-inner-container-forgot-password h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .auth-inner-container-forgot-password {
+    width: 100%;
+    padding: 2rem 1.5rem;
+    border-radius: 15px;
+  }
+
+  .reset-password-content,
+  .forgot-password-content {
+    padding-top: 2.5rem;
+  }
+
+  .reset-instructions,
+  .forgot-password-description {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .password-input {
+    padding: 0.875rem;
+  }
+
+  .auth-button-forgot {
+    padding: 0.875rem;
+  }
+
+  .back-button {
+    top: 1rem;
+    left: 1rem;
+  }
+
+  .auth-container-register.full-screen {
+    padding: 0.5rem;
+  }
+
+  .auth-inner-container-register {
+    padding: 1.5rem 1rem;
+    margin: 0;
+  }
+
+  .back-button {
+    top: 0.75rem;
+    left: 0.75rem;
+    width: 35px;
+    height: 35px;
+  }
+
+  .back-button svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* Extra small devices */
+@media screen and (max-width: 320px) {
+  .auth-inner-container,
+  .auth-inner-container-register {
+    padding: 1.5rem 1rem;
+  }
+
+  .auth-container h1 {
+    font-size: 1.3rem;
+  }
+
+  .auth-container p {
+    font-size: 0.9rem;
+  }
+
+  .auth-logo {
+    width: 8rem;
+  }
+
+  .auth-inner-container-forgot-password {
+    padding: 1.5rem 1rem;
+  }
+
+  .forgot-password-content {
+    padding-top: 2.5rem;
+  }
+
+  .back-button {
+    width: 35px;
+    height: 35px;
+    top: 10px;
+    left: 10px;
+  }
+
+  .back-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .forgot-password-content h1,
+  .reset-password-content h1 {
+    font-size: 1.3rem;
+  }
+
+  .forgot-password-description p,
+  .reset-instructions {
+    font-size: 0.8rem;
+  }
+
+  .form-group-forgot input {
+    padding: 10px;
+  }
+
+  .auth-inner-container-forgot-password {
+    padding: 1.5rem 1rem;
+  }
+
+  .reset-password-content,
+  .forgot-password-content {
+    padding-top: 2rem;
+  }
+
+  .reset-instructions,
+  .forgot-password-description {
+    font-size: 0.85rem;
+  }
+
+  .form-group-forgot h3 {
+    font-size: 1rem;
+  }
+
+  .password-input {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .auth-inner-container-register {
+    padding: 1rem 0.75rem;
+  }
+
+  .role-selection {
+    padding: 0.75rem;
+  }
+
+  .role-button {
+    padding: 0.75rem;
+  }
+}
+
+/* Handle height-based media queries for shorter screens */
+@media screen and (max-height: 700px) {
+  .auth-inner-container,
+  .auth-inner-container-register {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .auth-logo {
+    margin-bottom: 10px;
+  }
+
+  .auth-container h1 {
+    margin-bottom: 10px;
+  }
+
+  .auth-inner-container-forgot-password {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+
+  .forgot-password-description,
+  .reset-instructions {
+    margin-bottom: 1rem;
+  }
+
+  .auth-inner-container-register {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}
+
+/* Additional responsive touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  .back-button,
+  .password-toggle-icon {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .auth-button-forgot {
+    min-height: 44px;
+  }
+
+  .form-group-forgot input {
+    min-height: 44px;
+  }
+
+  .password-input {
+    min-height: 48px;
+  }
+
+  .auth-button-forgot {
+    min-height: 48px;
+  }
+
+  .password-toggle-icon {
+    padding: 12px;
+  }
+
+  .back-button {
+    padding: 8px;
+  }
+
+  .auth-inner-container-register {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .role-button {
+    min-height: 60px;
+    padding: 0.875rem;
+  }
+}
+
+/* iPad-specific styles */
+@media screen and (min-width: 768px) and (max-width: 1024px) {
+  .auth-inner-container-forgot-password {
+    width: 80%;
+    max-width: 40rem;
+    padding: 4rem 3rem;
+    margin: 2rem auto;
+  }
+
+  .forgot-password-content {
+    padding-top: 3rem;
+  }
+
+  .forgot-password-description {
+    margin-bottom: 2.5rem;
+  }
+
+  .forgot-password-description p {
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  .form-group-forgot h3 {
+    font-size: 1.2rem;
+    margin: 1.2rem 0 0.8rem;
+  }
+
+  .form-group-forgot input {
+    padding: 1rem;
+    font-size: 1rem;
+  }
+
+  .auth-button-forgot {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    font-size: 1rem;
+  }
+
+  .back-button {
+    top: 2rem;
+    left: 2rem;
+    width: 45px;
+    height: 45px;
+  }
+
+  /* Adjust for iPad in landscape mode */
+  @media (orientation: landscape) {
+    .auth-inner-container-forgot-password {
+      padding: 3rem;
+      margin: 1.5rem auto;
+    }
+
+    .forgot-password-content {
+      padding-top: 2.5rem;
+    }
+  }
+}
+
+/* Enhanced Register Form Responsiveness */
+.registration-form {
+  width: 100%;
+  max-width: 100%;
+  transition: all 0.3s ease;
+}
+
+/* Tablet and iPad */
+@media screen and (max-width: 1024px) {
+  .auth-inner-container-register {
+    width: 90%;
+    padding: 3rem 2.5rem;
+    margin: 1rem auto;
+  }
+
+  .registration-form h4 {
+    font-size: 1.8rem;
+    text-align: center;
+  }
+
+  .form-group-row {
+    gap: 1.5rem;
+  }
+
+  .form-group input,
+  .form-group select {
+    padding: 0.8rem;
+    font-size: 1rem;
+  }
+}
+
+/* Mobile Devices */
+@media screen and (max-width: 768px) {
+  .auth-inner-container-register {
+    width: 95%;
+    padding: 2rem 1.5rem;
+    min-height: auto;
+  }
+
+  .form-group-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .registration-form h4 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .registration-form p {
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .role-buttons {
+    gap: 10px;
+  }
+
+  .role-button {
+    padding: 15px;
+  }
+
+  .role-button h5 {
+    font-size: 16px;
+  }
+
+  .role-button p {
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .terms-checkbox {
+    font-size: 0.85rem;
+  }
+}
+
+/* Small Mobile Devices */
+@media screen and (max-width: 480px) {
+  .auth-inner-container-register {
+    padding: 1.5rem 1rem;
+    border-radius: 15px;
+  }
+
+  .registration-form h4 {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+  }
+
+  .form-group input,
+  .form-group select {
+    padding: 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  .auth-button-register {
+    padding: 12px;
+    font-size: 0.95rem;
+  }
+
+  .face-verify-button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+
+  .error-text {
+    font-size: 0.75rem;
+  }
+}
+
+/* iPad Specific */
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+  .auth-inner-container-register {
+    max-width: 85%;
+    padding: 3rem;
+  }
+
+  /* iPad Landscape */
+  @media (orientation: landscape) {
+    .auth-inner-container-register {
+      padding: 2.5rem;
+    }
+
+    .role-buttons {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .form-group input,
+  .form-group select,
+  .auth-button-register,
+  .face-verify-button {
+    min-height: 44px;
+  }
+
+  .role-button {
+    min-height: 70px;
+  }
+
+  .terms-checkbox input[type="checkbox"] {
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+/* Handle smaller height screens */
+@media screen and (max-height: 700px) {
+  .auth-inner-container-register {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .role-buttons {
+    gap: 0.8rem;
+  }
+
+  .form-group {
+    margin-bottom: 0.8rem;
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  .auth-container-register.full-screen {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Add these styles at the end of the existing file */
+
+.error-message.inactive-account {
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  color: #856404;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.contact-admin-link {
+  background-color: #856404;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  align-self: center;
+}
+
+.contact-admin-link:hover {
+  background-color: #6d5304;
+}

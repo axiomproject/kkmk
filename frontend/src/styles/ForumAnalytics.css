@@ -1,0 +1,601 @@
+.forum-analytics-container {
+  padding: 2rem;
+  background-color: #f5f5f5;
+}
+
+.forum-analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.forum-analytics-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.forum-analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.analytics-card {
+  padding: 1.5rem;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  min-height: 400px; /* Ensure enough height for the chart and labels */
+  width: 100%; /* Add this */
+  height: 450px; /* Add fixed height for consistent sizing */
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-card.full-width {
+  grid-column: 1 / -1;
+  height: auto; /* Remove fixed height */
+  min-height: auto; /* Remove min-height if exists */
+}
+
+.chart-container {
+  height: 300px;
+  position: relative;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem; /* Add padding for labels */
+  flex: 1; /* Make chart container fill remaining space */
+  min-height: 300px;
+  padding: 1rem;
+}
+
+.poll-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem;
+  height: auto; /* Remove max-height constraint */
+  overflow: visible; /* Change from auto to visible */
+}
+
+.poll-item {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  height: fit-content; /* Ensure card takes needed height */
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.poll-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.poll-item h4 {
+  color: #242424;
+  font-size: 1.1rem;
+  margin-bottom: 1.2rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.poll-options {
+  margin: 1rem 0;
+}
+
+.poll-option {
+  margin-bottom: 1rem;
+}
+
+.option-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.option-text {
+  color: #444;
+  font-weight: 500;
+}
+
+.option-votes {
+  color: #666;
+}
+
+.option-bar {
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.option-progress {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.poll-meta {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #666;
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.forum-analytics-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  gap: 1rem;
+}
+
+@media print {
+  .forum-analytics-container {
+    padding: 0;
+    background-color: white;
+  }
+
+  .forum-analytics-actions {
+    display: none;
+  }
+
+  .analytics-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 2rem;
+    box-shadow: none !important;
+    border: 1px solid #eee;
+  }
+}
+
+@media (max-width: 768px) {
+  .forum-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .forum-analytics-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+
+  .poll-details {
+    grid-template-columns: 1fr;
+    padding: 0.5rem;
+  }
+}
+
+.forum-analytics {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-top: 2rem;
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: relative; /* Add this */
+}
+
+.header-lefts {
+  position: absolute; /* Add this */
+  left: 50%; /* Add this */
+  transform: translateX(-50%); /* Add this */
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-icon {
+  font-size: 2rem;
+  color: #FF3D00;
+}
+
+.header-lefts h2 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0;
+  color: #2B3674;
+}
+
+/* Add this for header actions */
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  margin-left: auto; /* Add this */
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-button.print {
+  background-color: #FF3D00;
+  color: white;
+}
+
+.action-button.export {
+  background-color: transparent;
+  border: 2px solid #FF3D00;
+  color: #FF3D00;
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+}
+
+.action-button.print:hover {
+  background-color: #E73600;
+  box-shadow: 0 4px 12px rgba(255, 61, 0, 0.3);
+}
+
+.action-button.export:hover {
+  background-color: rgba(255, 61, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(255, 61, 0, 0.15);
+}
+
+.action-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+}
+
+.analytics-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  min-height: 400px; /* Ensure enough height for the chart and labels */
+  width: 100%; /* Add this */
+  height: 450px; /* Add fixed height for consistent sizing */
+  display: flex;
+  flex-direction: column;
+  padding: 1rem; /* Reduce padding */
+  margin: 0; /* Remove margin */
+  max-width: none; /* Remove max-width if any */
+}
+
+.analytics-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.card-icon {
+  color: #FF3D00;
+  font-size: 1.25rem;
+}
+
+.card-header h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.1rem;
+  margin: 0;
+  color: #242424;
+}
+
+.chart-container {
+  height: 300px;
+  position: relative;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem; /* Add padding for labels */
+  flex: 1; /* Make chart container fill remaining space */
+  min-height: 300px;
+  padding: 1rem;
+}
+
+.poll-details {
+  max-height: 600px;
+  overflow-y: auto;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Reduce minimum card width */
+  gap: 1rem; /* Reduce gap */
+  padding: 0.5rem; /* Reduce padding */
+}
+
+.poll-item {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.poll-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.poll-item h4 {
+  color: #242424;
+  font-size: 1.1rem;
+  margin-bottom: 1.2rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.poll-options {
+  margin: 1rem 0;
+}
+
+.poll-option {
+  margin-bottom: 1rem;
+}
+
+.option-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.option-text {
+  color: #444;
+  font-weight: 500;
+}
+
+.option-votes {
+  color: #666;
+}
+
+.option-bar {
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.option-progress {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.poll-meta {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #666;
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.chart-tooltip {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+}
+
+.chart-pair-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 0; /* Remove padding */
+  justify-content: space-between; /* Ensure cards use full width */
+  grid-column: 1 / -1;
+}
+
+@media print {
+  .forum-analytics {
+    padding: 0;
+    background-color: white;
+  }
+
+  .header-actions {
+    display: none !important;
+  }
+
+  .analytics-grid {
+    gap: 1rem;
+  }
+
+  .analytics-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1rem;
+    box-shadow: none !important;
+    border: 1px solid #eee;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+
+  .poll-details {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .poll-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
+@media (max-width: 768px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center; /* Change from flex-start to center */
+  }
+
+  .header-lefts {
+    position: static; /* Reset position on mobile */
+    transform: none; /* Reset transform on mobile */
+    margin-bottom: 1rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+
+  .poll-details {
+    grid-template-columns: 1fr;
+    padding: 0.5rem;
+  }
+
+  .chart-pair-container {
+    flex-direction: column;
+  }
+  
+  .analytics-card {
+    height: 400px; /* Slightly smaller on mobile */
+  }
+}
+
+.analytics-grid {
+  display: grid;
+  gap: 1rem; /* Reduce gap */
+  padding: 0; /* Remove padding */
+  width: 100%; /* Ensure full width */
+}
+
+@media print {
+  .analytics-section.forum-analytics {
+    padding: 0;
+    margin: 0;
+  }
+
+  .analytics-header {
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+
+  .analytics-grid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .analytics-card {
+    page-break-inside: avoid;
+    margin: 0;
+    padding: 1rem;
+    border: 1px solid #eee;
+    box-shadow: none !important;
+  }
+
+  .chart-container {
+    height: 400px;
+    margin-bottom: 0;
+  }
+
+  .chart-pair-container {
+    display: flex;
+    gap: 1rem;
+    page-break-inside: avoid;
+  }
+
+  .poll-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    max-height: none;
+  }
+
+  .poll-item {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
+@media print {
+  .analytics-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+    padding: 0;
+  }
+
+  .analytics-card {
+    width: 100% !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin: 0 0 1rem 0;
+    padding: 1rem;
+  }
+
+  .analytics-card.full-width .chart-container {
+    max-height: 300px !important;
+    height: 300px !important;
+    width: 100% !important;
+  }
+
+  .chart-container {
+    height: 250px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .chart-pair-container {
+    display: flex;
+    gap: 1rem;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .poll-details {
+    max-height: none;
+    overflow: visible;
+  }
+}

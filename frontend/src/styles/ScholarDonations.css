@@ -1,0 +1,462 @@
+/* Import the Bank styles */
+
+
+.donation-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card .amount {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.pending .amount { color: #f59e0b; }
+.verified .amount { color: #10b981; }
+.rejected .amount { color: #ef4444; }
+
+.donation-table {
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.donation-table th,
+.donation-table td {
+  padding: 1rem;
+  text-align: left;
+}
+
+.donation-table th {
+  background: #f3f4f6;
+  font-weight: 500;
+}
+
+.donation-table tr:hover {
+  background: #f9fafb;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-button {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.view-button { background: #3b82f6; }
+.verify-button { background: #10b981; }
+.reject-button { background: #ef4444; }
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+/* Add these new styles for proof modal */
+.modal-overlay.proof-overlay {
+  z-index: 1100; /* Higher than regular modal */
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  max-width: 600px;
+  width: 100%;
+  z-index: 1001;
+}
+
+.proof-image {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+}
+
+.scholar-donations-container {
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.scholar-donations-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.stat-card p {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.stat-card.pending p { color: #f59e0b; }
+.stat-card.verified p { color: #10b981; }
+.stat-card.rejected p { color: #ef4444; }
+
+.tab-navigation {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.donations-table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.donations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.donations-table th {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.donations-table td {
+  padding: 12px 16px;
+  border-top: 1px solid #eee;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: white;
+}
+
+.view-btn { background: #3b82f6; }
+.verify-btn { background: #10b981; }
+.reject-btn { background: #ef4444; }
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1001;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.close-button {
+  position: absolute;
+  right: 1.5rem;
+  top: 1.5rem;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #666;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: #f3f4f6;
+  color: #1a1a1a;
+}
+
+.modal-body {
+  display: grid;
+  gap: 20px;
+}
+
+.detail-group {
+  margin-bottom: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-group:last-child {
+  border-bottom: none;
+}
+
+.detail-group h3 {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.detail-group label {
+  display: block;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.detail-group p {
+  margin: 0;
+  color: #334155;
+  font-size: 1rem;
+  margin-top: 0.25rem;
+}
+
+.proof-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+.proof-preview {
+  margin-top: 0.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #f8fafc;
+  padding: 1rem;
+}
+
+.proof-preview img {
+  transition: transform 0.2s ease;
+}
+
+.proof-preview img:hover {
+  transform: scale(1.05);
+}
+
+.close-btn:hover {
+  background: #555;
+}
+
+/* Add these additional styles */
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.details-section {
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.details-section h3 {
+  margin-bottom: 10px;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #333;
+}
+
+.details-section p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.proof-section {
+  grid-column: span 2;
+}
+
+.proof-thumbnail {
+  max-height: 200px;
+  object-fit: contain;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.2s;
+}
+
+.proof-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+.modal-title {
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Additional styles specific to ScholarDonations */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.verified {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-badge.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.scholar-donation-table table{
+  border-spacing: 0;
+    table-layout: fixed;
+    width: 100%;
+}
+
+table{
+  width: 100%;
+}
+
+/* Add these new styles */
+.proof-modal {
+ 
+  max-height: 90vh;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1101; /* Higher than proof overlay */
+}
+
+.proof-modal.enlarged {
+
+  max-height: 95vh;
+  z-index: 1000;
+}
+
+.proof-modal-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.proof-modal-image {
+  max-width: 100%;
+  max-height: calc(90vh - 100px);
+  object-fit: contain;
+  transition: transform 0.3s ease;
+  cursor: zoom-in;
+}
+
+.proof-modal.enlarged .proof-modal-image {
+  transform: scale(1.5);
+  cursor: zoom-out;
+}
+
+.proof-thumbnail {
+  max-height: 200px;
+  width: 100%;
+  object-fit: contain;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.2s;
+}
+
+.proof-thumbnail:hover {
+  transform: scale(1.05);
+}
+
+.proof-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}

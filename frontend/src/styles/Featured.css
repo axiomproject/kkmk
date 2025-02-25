@@ -1,0 +1,351 @@
+.h1Featured {
+  text-align: left;
+  margin-bottom: 1rem; /* Reduced from 1.5rem to 1rem */
+  font-family: "Poppins";
+  font-weight: 600;
+  font-size: 1.5em;
+}
+
+.mainfeatured {
+  display: grid;
+  justify-content: center;
+}
+
+.featured-highlights {
+  padding: 2rem;
+  font-family: Arial, sans-serif;
+}
+
+.highlights-header {
+  margin-bottom: 1rem; /* Reduced from 1.5rem to 1rem */
+  display: flex;
+  justify-content: center;
+  gap: 5rem;
+  align-items: center;
+}
+
+.highlightstext {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Ensures all content aligns to the left */
+  gap: 1rem;
+}
+
+.highlights-header h1 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  font-family: 'Poppins';
+  font-weight: bold;
+}
+
+.highlights-header p {
+  font-size: 1.2rem; 
+  margin-bottom: 1rem;
+  font-family: 'Poppins';
+  font-weight: 600;
+  width: 25rem;
+  color: #242424;
+}
+
+.highlights-header .explore {
+  font-size: 1.2rem;
+  margin-bottom: 3rem;
+  font-family: 'Poppins';
+  font-weight: 400;
+  color: #696969;
+  width: 28rem;
+}
+
+.highlights-header .report-link {
+  font-size: 1rem;
+  font-weight: bold;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  color: #000 !important;
+  font-family: "Poppins";
+  display: inline-block;
+  margin-top: 0.5rem;
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.highlights-header .report-link:hover {
+  transition: all 0.3s ease;
+  color: #ff0000;
+}
+
+.highlights-grid {
+  display: flex;
+  gap: 3rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+  margin-right: 2rem;
+}
+
+.highlight-card {
+  border-radius: 10px;
+  overflow: hidden;
+  width: 300px;
+  text-align: left;
+}
+
+.highlightbg {
+  width: 100%;
+  height: 20rem;
+}
+
+.card-image {
+  width: 100%;
+  height: 230px;
+  object-fit: cover;
+  border-radius: 20px;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5rem;
+  font-family: 'Poppins';
+  color: #242424;
+}
+
+.card-description {
+  font-size: 1rem;
+  color: #555;
+  margin: 0.5rem;
+  font-family: 'Poppins';
+}
+
+.card-link {
+  display: block;
+  margin: 0.5rem;
+  color: #000;
+  text-decoration: none;
+  font-weight: 600;
+  font-family: 'Poppins';
+}
+
+/* Responsive Design */
+@media screen and (max-width: 1200px) {
+  .highlights-grid {
+    gap: 2rem;
+  }
+
+  .highlight-card {
+    width: 280px;
+  }
+}
+
+@media screen and (max-width: 992px) {
+  .highlights-header {
+    flex-direction: column;
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .highlights-header p, 
+  .highlights-header .explore {
+    width: 90%;
+    margin: 0 auto;
+    font-size: 1.1rem;
+    line-height: 1.5;
+  }
+
+  .highlightstext {
+    align-items: center;
+    text-align: center;
+  }
+
+  .highlights-header .report-link {
+    align-self: center;
+    margin-top: 1rem;
+  }
+
+  .card-title {
+    font-size: 1.15rem;
+  }
+
+  .card-description {
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .highlight-card {
+    width: 100%;
+    max-width: 400px;
+  }
+
+  .card-image {
+    height: 200px;
+  }
+
+  .highlightbg {
+    height: 15rem;
+  }
+
+  .h1Featured {
+    font-size: 1.3em;
+    margin-bottom: 0.75rem; /* Reduced from 0.2rem to 0.75rem */
+  }
+
+  .highlights-header {
+    margin-bottom: 0.75rem; /* Reduced from 1rem to 0.75rem */
+  }
+
+  .highlights-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .highlights-header p, 
+  .highlights-header .explore {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .h1Featured {
+    font-size: 1.2em;
+    margin-bottom: 0.5rem; /* Reduced from 0.2rem to 0.5rem */
+  }
+
+  .highlights-header {
+    margin-bottom: 0.5rem; /* Reduced from 1rem to 0.5rem */
+  }
+
+  .highlights-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+}
+
+@media screen and (min-width: 1400px) {
+  .h1Featured {
+    font-size: 1.8em;
+  }
+
+  .highlights-header h1 {
+    font-size: 2.2rem;
+  }
+
+  .highlights-header p {
+    font-size: 1.3rem;
+  }
+
+  .highlights-header .explore {
+    font-size: 1.3rem;
+  }
+
+  .card-title {
+    font-size: 1.35rem;
+  }
+
+  .card-description {
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+}
+
+@media screen and (max-width: 375px) {
+  .h1Featured {
+    font-size: 1.2em;
+    margin-bottom: 0.35rem; /* Reduced from 0.2rem to 0.35rem */
+  }
+
+  .highlights-header {
+    margin-bottom: 0.35rem; /* Reduced from 1rem to 0.35rem */
+  }
+
+  .highlights-header h1 {
+    font-size: 1.4rem;
+  }
+
+  .highlights-header p, 
+  .highlights-header .explore {
+    font-size: 0.9rem;
+    line-height: 1.3;
+  }
+
+  .card-title {
+    font-size: 1rem;
+  }
+
+  .card-description {
+    font-size: 0.85rem;
+  }
+}
+
+@media screen and (min-width: 1280px) {
+  .h1Featured {
+    font-size: 1.7em;
+  }
+
+  .highlights-header h1 {
+    font-size: 2.1rem;
+    line-height: 1.3;
+  }
+
+  .highlights-header p {
+    font-size: 1.25rem;
+    width: 28rem;
+  }
+
+  .highlights-header .explore {
+    font-size: 1.25rem;
+    width: 30rem;
+  }
+
+  .highlight-card {
+    width: 320px;
+  }
+
+  .card-title {
+    font-size: 1.3rem;
+  }
+
+  .card-description {
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+}
+
+@media screen and (min-width: 1201px) and (max-width: 1279px) {
+  .h1Featured {
+    font-size: 1.65em;
+  }
+
+  .highlights-header h1 {
+    font-size: 2rem;
+    line-height: 1.25;
+  }
+
+  .highlights-header p {
+    font-size: 1.2rem;
+    width: 26rem;
+  }
+
+  .highlights-header .explore {
+    font-size: 1.2rem;
+    width: 29rem;
+  }
+
+  .highlight-card {
+    width: 310px;
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+  }
+
+  .card-description {
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+}

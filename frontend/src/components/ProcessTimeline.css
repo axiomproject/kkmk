@@ -1,0 +1,57 @@
+.timeline-container {
+  padding: 20px;
+  width: 100%;
+}
+
+.timeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 0;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 150px;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.timeline-step.active {
+  opacity: 1;
+}
+
+.timeline-line {
+  flex-grow: 1;
+  height: 3px;
+  background-color: #ccc;
+  margin: 0 10px;
+  transition: background-color 0.3s;
+}
+
+.timeline-line.active {
+  background-color: #4CAF50;
+}
+
+.process-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #ccc;
+  margin-bottom: 10px;
+  transition: background-color 0.3s;
+}
+
+.timeline-step.active .process-icon {
+  background-color: #4CAF50;
+}
+
+.timeline-step p {
+  font-size: 12px;
+  font-weight: bold;
+  color: #333;
+  font-family: "Poppins";
+}

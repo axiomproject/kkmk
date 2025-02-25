@@ -1,0 +1,223 @@
+.feedback-analytics-container {
+  padding: 2rem;
+  background: #f8f9fa;
+}
+
+.feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  justify-self: center;
+  margin-bottom: 2rem;
+}
+
+.feedback-header p{
+  color: #2B3674;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Change to fixed 3 columns */
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  min-width: 200px; /* Add minimum width */
+  width: 100%; /* Ensure full width */
+  justify-items: center;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-card h2 {
+  font-size: 2rem;
+  margin: 0.5rem 0;
+  color: #FF3D00;
+}
+
+.stat-card h3 {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+}
+
+.charts-section {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 5rem;
+  align-items: stretch; /* Add this to ensure equal height */
+}
+
+.sentiment-chart {
+  flex: 1;
+  min-width: 300px;
+  height: 400px;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Add this to contain the chart */
+}
+
+.sentiment-chart h2 {
+  margin-bottom: 1rem;
+  color: #2B3674;
+}
+
+.sentiment-chart > div {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  height: calc(100% - 2rem); /* Subtract header height */
+  justify-items: center;
+}
+
+.word-cloud-container {
+  flex: 1;
+  min-width: 300px;
+  height: 400px;
+  background: white;
+  color: #2B3674;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.events-feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.event-feedback-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.feedback-filters {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.feedback-filters select {
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background-color: white;
+  color: #2B3674;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  min-width: 200px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FF3D00' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1em;
+}
+
+.feedback-filters select:hover {
+  border-color: #FF3D00;
+  box-shadow: 0 0 0 3px rgba(255, 61, 0, 0.1);
+}
+
+.feedback-filters select:focus {
+  border-color: #FF3D00;
+  box-shadow: 0 0 0 3px rgba(255, 61, 0, 0.2);
+}
+
+.feedback-filters select option {
+  padding: 0.5rem;
+}
+
+.feedback-filters label {
+  font-weight: 500;
+  color: #2B3674;
+  margin-right: 0.5rem;
+}
+
+.feedback-item {
+  border-left: 3px solid #ff3d00;
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+}
+
+.rating-distribution {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.rating-bar {
+  flex-grow: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #e9ecef;
+  margin: 0 1rem;
+  overflow: hidden;
+}
+
+.rating-bar-fill {
+  height: 100%;
+  background: #ff3d00;
+  transition: width 0.3s ease;
+}
+
+.feedback-trends {
+  height: 300px;
+  margin-bottom: 2rem;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.highlight-card {
+  animation: pulse 2s infinite;
+}
+
+/* Add responsive behavior */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  
+  .feedback-filters {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .feedback-filters select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 968px) {
+  .charts-section {
+    flex-direction: column;
+  }
+}
