@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from 'axios';
+import api from '../../config/axios';
 import "../../styles/OurTeam.css";
 import bannerImage from "../../img/team.png";
 
@@ -25,7 +25,7 @@ const Team = () => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     if (path.startsWith('/uploads')) {
-      return `http://localhost:5175${path}`;
+      return `${import.meta.env.VITE_API_URL}${path}`;
     }
     return path;
   };
@@ -33,7 +33,7 @@ const Team = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await axios.get('/api/content/team');
+        const response = await api.get('/content/team');
         if (response.data?.content) {
           const savedContent = response.data.content;
           setContent(prev => ({

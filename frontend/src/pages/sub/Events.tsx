@@ -2,13 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaMapMarkerAlt, FaCalendarAlt, FaClock } from "react-icons/fa";
 import Carousel from "react-bootstrap/Carousel";
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../../styles/Layout.css";
 import { motion } from "framer-motion";
 
-// Add axios configuration
-axios.defaults.baseURL = 'http://localhost:5175';
+// Remove axios.defaults.baseURL configuration
 
 // Update the BackendEvent interface to include both camelCase and snake_case properties
 interface BackendEvent {
@@ -83,7 +82,7 @@ const EventPage: React.FC = () => {
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get<BackendEvent[]>('/api/admin/events');
+      const response = await api.get<BackendEvent[]>('/admin/events');
       console.log('Raw response:', response.data);
 
       const currentDate = new Date();
@@ -94,7 +93,7 @@ const EventPage: React.FC = () => {
         ...event,
         image: event.image.startsWith('http') 
           ? event.image 
-          : `${axios.defaults.baseURL}${event.image}`,
+          : `${import.meta.env.VITE_API_URL}${event.image}`,
         // Handle both camelCase and snake_case properties
         totalVolunteers: parseInt(String(event.total_volunteers ?? event.totalVolunteers ?? 0)),
         currentVolunteers: parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0)),

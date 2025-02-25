@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import "../../styles/OurStory.css";
 import bannerImage from '../../img/story.png';
 import storyImage from '../../img/father.png'; 
@@ -39,10 +39,8 @@ const Story = () => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     if (path.startsWith('/uploads')) {
-      // Use backend URL for uploaded images
-      return `http://localhost:5175${path}`; // Update with your backend port
+      return `${import.meta.env.VITE_API_URL}${path}`;
     }
-    // For local images from imports
     return path;
   };
 
@@ -59,7 +57,7 @@ const Story = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await axios.get(`/api/content/story`);
+        const response = await api.get('/content/story');
         console.log('Loaded content:', response.data); // Debug log
         
         if (response.data && response.data.content) {

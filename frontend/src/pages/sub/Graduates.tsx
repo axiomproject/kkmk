@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import "../../styles/Graduates.css";
 import bannerImage from "../../img/coverphoto1.png";
 
@@ -31,7 +31,7 @@ const Graduates = () => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     if (path.startsWith('/uploads')) {
-      return `http://localhost:5175${path}`;
+      return `${import.meta.env.VITE_API_URL}${path}`;
     }
     return path;
   };
@@ -39,7 +39,7 @@ const Graduates = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await axios.get(`/api/content/graduates`);
+        const response = await api.get('/content/graduates');
         if (response.data?.content) {
           const savedContent = response.data.content;
           setContent(prev => ({

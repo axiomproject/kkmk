@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import "../../styles/Layout.css";
 import bannerImage from '../../img/partner.png';
 import storyImage from '../../img/org1.png'; 
@@ -35,7 +35,7 @@ const Partner = () => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     if (path.startsWith('/uploads')) {
-      return `http://localhost:5175${path}`;
+      return `${import.meta.env.VITE_API_URL}${path}`;
     }
     return path;
   };
@@ -52,13 +52,9 @@ const Partner = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await axios.get(`/api/content/partner`);
-        console.log('Loaded content:', response.data);
-        
+        const response = await api.get('/content/partner');
         if (response.data && response.data.content) {
           const savedContent = response.data.content;
-          console.log('Processing saved content:', savedContent);
-          
           setContent(prev => ({
             bannerImage: savedContent.bannerImage ? getImageUrl(savedContent.bannerImage) : bannerImage,
             sections: prev.sections.map((section, index) => ({

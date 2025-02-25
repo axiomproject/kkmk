@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polygon } from 'react-leaflet';
 import L from 'leaflet';
 import { Icon } from 'leaflet';
-import axios from 'axios';
+import api from '../config/axios'; // Replace axios import
 import { useNavigate } from 'react-router-dom';
 import '../styles/InteractiveMap.css';
 
@@ -66,42 +66,35 @@ const InteractiveMap: React.FC = () => {
   const navigate = useNavigate();
   const PAYATAS_COORDINATES: [number, number] = [14.7164, 121.1194];
 
+  const getImageUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('http')) return path;
+    return `${import.meta.env.VITE_API_URL}${path}`;
+  };
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get('http://localhost:5175/api/events/locations');
-        
-        const eventsWithCoordinates = response.data.filter((event: any) => {
-          const eventDate = new Date(event.date);
-          const now = new Date();
-          now.setHours(0, 0, 0, 0);
-          
-          return event.lat && 
-                 event.lng && 
-                 event.status === 'OPEN' &&
-                 eventDate >= now;
-        });
+        setLoading(true);
+        const response = await api.get('/admin/events');
+        console.log('Raw response:', response.data);
 
-        const eventMarkers = eventsWithCoordinates.map((event: any) => ({
-          id: event.id,
-          lat: parseFloat(event.lat),
-          lng: parseFloat(event.lng),
-          name: event.name || event.title,
-          type: 'event' as const,
-          details: {
-            ...event,
-            date: new Date(event.date).toLocaleDateString(),
-            // Handle image URL construction properly
-            image: event.image?.startsWith('http') 
-              ? event.image 
-              : `http://localhost:5175${event.image}`
-          }
+        const currentDate = new Date();
+        const futureEvents = response.data.filter((event: { date: string | number | Date; }) => {
+          const eventDate = new Date(event.date);
+          return eventDate >= currentDate;
+        }).map((event: { image: string; }) => ({
+          ...event,
+          image: event.image.startsWith('http') 
+            ? event.image 
+            : getImageUrl(event.image),
+          // ...rest of mapping...
         }));
 
-        setMarkers([OFFICE_MARKER, ...eventMarkers]);
-        setLoading(false);
+        setMarkers([OFFICE_MARKER, ...futureEvents]);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error('Failed to fetch events:', error);
+      } finally {
         setLoading(false);
       }
     };
