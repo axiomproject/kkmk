@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import api from '../config/axios'; // Replace axios import
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../styles/Auth.css';
 import { RegistrationResponse } from '../types/auth';
@@ -131,12 +131,9 @@ const Register: React.FC = () => {
     setError('');
     setSuccess('');
     
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
-      // Format the face data properly
       const registrationData = {
         name,
         username,
@@ -147,15 +144,7 @@ const Register: React.FC = () => {
         faceData: faceVerified ? faceData : null
       };
 
-      console.log('Sending registration data:', registrationData); // Debug log
-
-      const response = await axios.post<RegistrationResponse>(
-        'http://localhost:5175/api/register',
-        registrationData
-      );
-
-      console.log('Registration response:', response.data); // Debug log
-
+      const response = await api.post('/register', registrationData);
       setSuccess(response.data.message);
     } catch (err: any) {
       console.error('Registration error:', err);
