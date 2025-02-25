@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import '../../styles/admin/AdminPages.css';
 import * as XLSX from 'xlsx';
 import SponsorViewModal from '../../components/modals/SponsorViewModal';
@@ -45,10 +45,7 @@ const SponsorManagement = () => {
 
   const fetchSponsors = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5175/api/admin/sponsors', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/admin/sponsors');
       setSponsors(response.data);
       setLoading(false);
     } catch (err) {
@@ -79,8 +76,8 @@ const SponsorManagement = () => {
         role: 'sponsor'
       };
 
-      await axios.post(
-        'http://localhost:5175/api/admin/sponsors',
+      await api.post(
+        '/admin/sponsors',
         sponsorData,
         {
           headers: {
@@ -99,34 +96,16 @@ const SponsorManagement = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedItems.length === 0) return;
-    
-    if (window.confirm(`Are you sure you want to delete ${selectedItems.length} sponsor(s)?`)) {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) throw new Error('No auth token found');
+    if (!selectedItems.length || !window.confirm(`Delete ${selectedItems.length} sponsor(s)?`)) return;
 
-        const numericIds = selectedItems
-          .map(id => Number(id))
-          .filter(id => !isNaN(id));
-
-        await axios.post(
-          'http://localhost:5175/api/admin/sponsors/bulk-delete',
-          { ids: numericIds },
-          {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        await fetchSponsors();
-        setSelectedItems([]);
-      } catch (error: any) {
-        console.error('Error performing bulk delete:', error);
-        setError(error.response?.data?.error || 'Failed to delete sponsors');
-      }
+    try {
+      const numericIds = selectedItems.map(Number).filter(id => !isNaN(id));
+      await api.post('/admin/sponsors/bulk-delete', { ids: numericIds });
+      await fetchSponsors();
+      setSelectedItems([]);
+    } catch (error: any) {
+      console.error('Error performing bulk delete:', error);
+      setError(error.response?.data?.error || 'Failed to delete sponsors');
     }
   };
 
@@ -158,38 +137,22 @@ const SponsorManagement = () => {
 
   const handleAction = async (action: string, sponsor: any) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token found');
-
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
       switch (action) {
         case 'view':
-          const viewResponse = await axios.get(
-            `http://localhost:5175/api/admin/sponsors/${sponsor.id}`,
-            { headers }
-          );
-          if (viewResponse.data) {
-            setViewModalSponsor(viewResponse.data);
-          }
+          const viewResponse = await api.get(`/admin/sponsors/${sponsor.id}`);
+          setViewModalSponsor(viewResponse.data);
           break;
 
         case 'edit':
           setEditFormSponsor(sponsor);
           break;
 
-        case 'delete':
-          if (window.confirm('Are you sure you want to delete this sponsor?')) {
-            await axios.delete(
-              `http://localhost:5175/api/admin/sponsors/${sponsor.id}`,
-              { headers }
-            );
-            await fetchSponsors();
-          }
-          break;
+          case 'delete':
+            if (window.confirm('Are you sure you want to delete this sponsor?')) {
+              await api.delete(`/admin/sponsors/${sponsor.id}`);
+              await fetchSponsors();
+            }
+            break;
       }
       setActiveDropdown(null);
     } catch (error: any) {
@@ -203,9 +166,7 @@ const SponsorManagement = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No auth token found');
 
-      await axios.put(
-        `http://localhost:5175/api/admin/sponsors/${editFormSponsor.id}`,
-        formData,
+      await api.put(`/admin/sponsors/${editFormSponsor.id}`, formData,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

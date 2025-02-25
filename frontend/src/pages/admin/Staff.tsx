@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import '../../styles/admin/AdminPages.css';
 import * as XLSX from 'xlsx';
 import StaffViewModal from '../../components/modals/StaffViewModal';
@@ -44,10 +44,7 @@ const AdminStaff = () => {
 
   const fetchStaffMembers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5175/api/admin/staff', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/admin/staff');
       setStaffMembers(response.data);
       setLoading(false);
     } catch (err) {
@@ -187,46 +184,25 @@ const AdminStaff = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedItems.length === 0) return;
+    if (!selectedItems.length || !window.confirm(`Delete ${selectedItems.length} staff member(s)?`)) return;
     
-    if (window.confirm(`Are you sure you want to delete ${selectedItems.length} staff member(s)?`)) {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) throw new Error('No auth token found');
-
-        const response = await axios.delete('http://localhost:5175/api/admin/staff/bulk', {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          data: { ids: selectedItems }
-        });
-
-        await fetchStaffMembers();
-        setSelectedItems([]);
-      } catch (error: any) {
-        console.error('Error performing bulk delete:', error);
-        setError(error.response?.data?.error || 'Failed to delete staff members');
-      }
+    try {
+      await api.delete('/admin/staff/bulk', {
+        data: { ids: selectedItems }
+      });
+      await fetchStaffMembers();
+      setSelectedItems([]);
+    } catch (error: any) {
+      console.error('Error performing bulk delete:', error);
+      setError(error.response?.data?.error || 'Failed to delete staff members');
     }
   };
 
   const handleAction = async (action: string, staff: StaffMember) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token found');
-
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
       switch (action) {
         case 'view':
-          const viewResponse = await axios.get(
-            `http://localhost:5175/api/admin/staff/${staff.id}`,
-            { headers }
-          );
+          const viewResponse = await api.get(`/admin/staff/${staff.id}`);
           if (viewResponse.data) {
             setViewModalStaff(viewResponse.data);
           }
@@ -238,10 +214,7 @@ const AdminStaff = () => {
 
         case 'delete':
           if (window.confirm('Are you sure you want to delete this staff member?')) {
-            await axios.delete(
-              `http://localhost:5175/api/admin/staff/${staff.id}`,
-              { headers }
-            );
+            await api.delete(`/admin/staff/${staff.id}`);
             fetchStaffMembers();
           }
           break;
@@ -255,20 +228,7 @@ const AdminStaff = () => {
 
   const handleEditSubmit = async (formData: any) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token found');
-
-      await axios.put(
-        `http://localhost:5175/api/admin/staff/${editFormStaff?.id}`,
-        formData,
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-      
+      await api.put(`/admin/staff/${editFormStaff?.id}`, formData);
       setEditFormStaff(null);
       await fetchStaffMembers();
     } catch (error: any) {
@@ -279,20 +239,7 @@ const AdminStaff = () => {
 
   const handleCreateStaff = async (formData: any) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token found');
-
-      await axios.post(
-        'http://localhost:5175/api/admin/staff',
-        formData,
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-
+      await api.post('/admin/staff', formData);
       setShowNewForm(false);
       await fetchStaffMembers();
     } catch (error: any) {
