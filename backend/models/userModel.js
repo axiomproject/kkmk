@@ -46,55 +46,17 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
 };
 
 const findUserByEmailOrUsername = async (identifier) => {
-  try {
-    console.log('Finding user by email or username:', identifier);
-    
-    // Input validation
-    if (!identifier) {
-      console.log('No identifier provided');
-      return null;
-    }
-
-    // Add logging for SQL query
-    const query = `
-      SELECT id, email, name, username, profile_photo, cover_photo, intro, 
-             known_as, date_of_birth, phone, password, is_verified, role,
-             facebook_url, twitter_url, instagram_url, status
-      FROM users 
-      WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)`;
-
-    console.log('Executing query:', query);
-    console.log('Query parameters:', [identifier]);
-
-    const result = await db.query(query, [identifier]);
-
-    // Add debug logging for query result
-    console.log('Query result:', {
-      rowCount: result?.rowCount || 0,
-      hasRows: !!result?.rows?.length
-    });
-
-    // Safe access of result
-    if (!result?.rows?.length) {
-      console.log('No user found for identifier:', identifier);
-      return null;
-    }
-
-    // Log found user (excluding sensitive data)
-    const user = result.rows[0];
-    console.log('Found user:', {
-      id: user.id,
-      email: user.email,
-      username: user.username,
-      is_verified: user.is_verified,
-      role: user.role
-    });
-
-    return user;
-  } catch (error) {
-    console.error('Database error in findUserByEmailOrUsername:', error);
-    throw new Error(`Failed to find user: ${error.message}`);
-  }
+  console.log('Finding user by email or username:', identifier);
+  const result = await db.query(
+    `SELECT id, email, name, username, profile_photo, cover_photo, intro, 
+            known_as, date_of_birth, phone, password, is_verified, role,
+            facebook_url, twitter_url, instagram_url, status
+     FROM users 
+     WHERE email = $1 OR username = $1`,
+    [identifier]
+  );
+  console.log('User found in DB:', result.rows[0]);
+  return result.rows[0];
 };
 
 const updateUserPhotos = async (userId, profilePhoto, coverPhoto) => {
