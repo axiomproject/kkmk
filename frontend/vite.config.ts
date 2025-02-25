@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    build: {
+      outDir: '../backend/public', // Build to backend's public folder
+      emptyOutDir: true
+    },
     server: {
       port: 5173,
       host: true,
