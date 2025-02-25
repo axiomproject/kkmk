@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../styles/admin/AdminPages.css';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import { useNavigate } from 'react-router-dom';
 import VolunteerViewModal from '../../components/modals/VolunteerViewModal';
 import VolunteerEditForm from '../../components/forms/VolunteerEditForm';
@@ -70,11 +70,8 @@ const Volunteer = () => {
 
   const fetchVolunteers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5175/api/admin/volunteers', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
+      const response = await api.get('/admin/volunteers');
+      
       // Debug the exact structure
       console.log('Raw data from API:', JSON.stringify(response.data, null, 2));
 
@@ -256,30 +253,14 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
 
   const handleAction = async (action: string, volunteer: any) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No auth token found');
-      }
-  
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-  
       switch (action) {
         case 'view':
-          console.log('Fetching volunteer details with token:', token.substring(0, 10) + '...');
-          const viewResponse = await axios.get(
-            `http://localhost:5175/api/admin/volunteers/${volunteer.id}`,
-            { headers }
-          );
+          const viewResponse = await api.get(`/admin/volunteers/${volunteer.id}`);
           if (viewResponse.data) {
             setViewModalVolunteer(viewResponse.data);
-          } else {
-            throw new Error('No data received');
           }
           break;
-  
+
         case 'edit':
           // Format date for the edit form
           const formattedVolunteer = {
@@ -289,13 +270,10 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
           };
           setEditFormVolunteer(formattedVolunteer);
           break;
-  
+
         case 'delete':
           if (window.confirm('Are you sure you want to delete this volunteer?')) {
-            await axios.delete(
-              `http://localhost:5175/api/admin/volunteers/${volunteer.id}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await api.delete(`/admin/volunteers/${volunteer.id}`);
             fetchVolunteers();
           }
           break;
@@ -314,22 +292,11 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
 
   const handleEditSubmit = async (formData: any) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No auth token found');
-      }
-  
-      const response = await axios.put(
-        `http://localhost:5175/api/admin/volunteers/${editFormVolunteer.id}`,
+      const response = await api.put(
+        `/admin/volunteers/${editFormVolunteer.id}`,
         {
           ...formData,
           role: 'volunteer'  // Ensure role is included
-        },
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
         }
       );
       
@@ -346,21 +313,7 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
   const handleCreateVolunteer = async (formData: any) => {
     try {
       // Format the date for display before sending to server
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No auth token found');
-
-      // The date will remain in ISO format for the server
-      await axios.post(
-        'http://localhost:5175/api/admin/volunteers',
-        formData,
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-
+      await api.post('/admin/volunteers', formData);
       setShowNewForm(false);
       await fetchVolunteers();
     } catch (error: any) {
@@ -432,16 +385,9 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
     
     if (window.confirm(`Are you sure you want to delete ${selectedItems.length} volunteer(s)?`)) {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) throw new Error('No auth token found');
-
         console.log('Sending IDs for deletion:', selectedItems); // Debug log
 
-        const response = await axios.delete('http://localhost:5175/api/admin/volunteers/bulk', {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
+        const response = await api.delete('/admin/volunteers/bulk', {
           data: { ids: selectedItems }
         });
 
