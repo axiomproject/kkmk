@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FiUpload } from 'react-icons/fi';
 import { FaSearch, FaTimes } from 'react-icons/fa';
 import '../../../styles/Scholar.css';
+import api from '../../../config/axios'; // Replace axios import
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
 
@@ -129,14 +130,9 @@ const ScholarProfile: React.FC = () => {
   useEffect(() => {
     const fetchScholars = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/scholars`, {
-          credentials: 'include'
-        });
-        if (!response.ok) throw new Error('Failed to fetch scholars');
-        const data = await response.json();
-        
-        // Transform the data to match the Scholar interface
-        const transformedData = data.map((scholar: any) => ({
+        const response = await api.get('/scholars');
+        if (response.status !== 200) throw new Error('Failed to fetch scholars');
+        const transformedData = response.data.map((scholar: any) => ({
           ...scholar,
           assigned_user: scholar.assigned_user_id ? {
             id: scholar.assigned_user_id,
@@ -231,12 +227,9 @@ const ScholarProfile: React.FC = () => {
 
   const handleViewScholar = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}/api/scholars/${id}`, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch scholar details');
-      const data = await response.json();
-      setSelectedScholar(data);
+      const response = await api.get(`/scholars/${id}`);
+      if (response.status !== 200) throw new Error('Failed to fetch scholar details');
+      setSelectedScholar(response.data);
       setIsViewMode(true);
     } catch (error) {
       console.error('Error fetching scholar details:', error);
