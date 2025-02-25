@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../../styles/Inventory.css';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import * as XLSX from 'xlsx'; // Add this import
 
 interface BaseDonation {
@@ -243,8 +243,8 @@ const DistributeModal: React.FC<DistributeModalProps> = ({ isOpen, onClose, item
       try {
         const token = localStorage.getItem('token');
         console.log('Fetching users...');
-        const response = await axios.get(
-          'http://localhost:5175/api/admin/users', // Updated to fetch all users
+        const response = await api.get(
+          '/admin/users', // Updated to fetch all users
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -630,9 +630,9 @@ const AdminInventory: React.FC = () => {
   const fetchAll = async () => {
     try {
       const [regularRes, inkindRes, distributionsRes] = await Promise.all([
-        axios.get('http://localhost:5175/api/inventory/regular', getAuthHeaders()),
-        axios.get('http://localhost:5175/api/inventory/inkind', getAuthHeaders()),
-        axios.get('http://localhost:5175/api/inventory/distributions', getAuthHeaders())
+        api.get('/inventory/regular'),
+        api.get('/inventory/inkind'),
+        api.get('/inventory/distributions')
       ]);
       setRegularItems(regularRes.data);
       setInkindItems(inkindRes.data);
@@ -649,8 +649,8 @@ const AdminInventory: React.FC = () => {
   useEffect(() => {
     const fetchDistributions = async () => {
       try {
-        const response = await axios.get(
-          'http://localhost:5175/api/inventory/distributions',
+        const response = await api.get(
+          '/inventory/distributions',
           getAuthHeaders()
         );
         setDistributions(response.data);
@@ -666,11 +666,7 @@ const AdminInventory: React.FC = () => {
   const handleAddItem = async (newItem: Omit<DonationItem, 'id' | 'lastUpdated'>) => {
     try {
       const type = newItem.type === 'regular' ? 'regular' : 'inkind';
-      const response = await axios.post(
-        `http://localhost:5175/api/inventory/${type}`, 
-        newItem, 
-        getAuthHeaders()
-      );
+      const response = await api.post(`/inventory/${type}`, newItem);
       if (newItem.type === 'regular') {
         setRegularItems([...regularItems, response.data]);
       } else {
@@ -685,11 +681,7 @@ const AdminInventory: React.FC = () => {
     if (!editingItem) return;
     try {
       const type = editingItem.type === 'regular' ? 'regular' : 'inkind';
-      const response = await axios.put(
-        `http://localhost:5175/api/inventory/${type}/${editingItem.id}`, 
-        updatedItem,
-        getAuthHeaders()
-      );
+      const response = await api.put(`/inventory/${type}/${editingItem.id}`, updatedItem);
       if (editingItem.type === 'regular') {
         setRegularItems(regularItems.map(item => item.id === editingItem.id ? response.data : item));
       } else {
@@ -705,10 +697,7 @@ const AdminInventory: React.FC = () => {
       try {
         // Fix the delete endpoint URL to match the backend routes
         const endpoint = type === 'regular' ? 'regular' : 'inkind';
-        await axios.delete(
-          `http://localhost:5175/api/inventory/${endpoint}/${id}`,
-          getAuthHeaders()
-        );
+        await api.delete(`/inventory/${endpoint}/${id}`);
         
         // Update the correct state based on type
         if (type === 'regular') {
@@ -727,11 +716,11 @@ const AdminInventory: React.FC = () => {
   const handleDistribute = async (itemId: number, quantity: number, recipientId: number, recipientType: string) => {
     try {
       const type = distributeItem?.type === 'regular' ? 'regular' : 'inkind';
-      await axios.post(
-        `http://localhost:5175/api/inventory/${type}/${itemId}/distribute`,
-        { quantity, recipientId, recipientType },
-        getAuthHeaders()
-      );
+      await api.post(`/inventory/${type}/${itemId}/distribute`, {
+        quantity,
+        recipientId,
+        recipientType
+      });
       
       // Refresh all data after successful distribution
       await fetchAll();
@@ -745,8 +734,8 @@ const AdminInventory: React.FC = () => {
   const handleVerify = async (id: number, type: 'regular' | 'in-kind') => {
     try {
       const endpoint = type === 'regular' ? 'regular' : 'inkind';
-      const response = await axios.post(
-        `http://localhost:5175/api/inventory/${endpoint}/${id}/verify`,
+      const response = await api.post(
+        `/inventory/${endpoint}/${id}/verify`,
         {},
         getAuthHeaders()
       );
@@ -774,8 +763,8 @@ const AdminInventory: React.FC = () => {
     if (reason) {
       try {
         const endpoint = type === 'regular' ? 'regular' : 'inkind';
-        const response = await axios.post(
-          `http://localhost:5175/api/inventory/${endpoint}/${id}/reject`,
+        const response = await api.post(
+          `/inventory/${endpoint}/${id}/reject`,
           { reason },
           getAuthHeaders()
         );
