@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../config/axios'; // Replace axios import
 import ReactWordcloud from 'react-wordcloud';
 import { Line, Pie } from 'react-chartjs-2';
 import '../styles/EventFeedbackAnalytics.css';
@@ -38,10 +38,7 @@ const EventFeedbackAnalytics: React.FC = () => {
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
-        const { data } = await axios.get<FeedbackAnalytics>(
-          'http://localhost:5175/api/admin/feedback-analytics',
-          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-        );
+        const { data } = await api.get<FeedbackAnalytics>('/admin/feedback-analytics');
         setAnalytics(data);
       } catch (error) {
         console.error('Error fetching feedback analytics:', error);

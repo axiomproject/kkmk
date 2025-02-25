@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import api from '../../config/axios'; // Replace axios import
 import { Chart as ChartJS } from 'chart.js/auto';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { FaPoll, FaPrint, FaDownload, FaChartBar, FaChartPie } from 'react-icons/fa';
@@ -44,9 +45,8 @@ const ForumAnalytics: React.FC = () => {
 
   const fetchPollData = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/forum/polls/analytics`);
-      const data = await response.json();
-      setPollData(data);
+      const response = await api.get('/forum/polls/analytics');
+      setPollData(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching poll data:', error);
