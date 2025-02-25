@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import '../../styles/admin/AdminPages.css';
 import * as XLSX from 'xlsx';
 import ScholarViewModal from '../../components/modals/ScholarViewModal';
@@ -45,10 +45,7 @@ const ScholarManagement = () => {
 
   const fetchScholars = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5175/api/admin/scholars', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/admin/scholars');
       setScholars(response.data);
       setLoading(false);
     } catch (err) {
@@ -143,38 +140,17 @@ const ScholarManagement = () => {
   };
 
   const handleBulkDelete = async () => {
-    if (selectedItems.length === 0) return;
+    if (!selectedItems.length || !window.confirm(`Delete ${selectedItems.length} scholar(s)?`)) return;
     
-    if (window.confirm(`Are you sure you want to delete ${selectedItems.length} scholar(s)?`)) {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) throw new Error('No auth token found');
-
-        // Convert IDs to numbers and filter out any invalid values
-        const numericIds = selectedItems
-          .map(id => Number(id))
-          .filter(id => !isNaN(id));
-
-        console.log('Sending numeric IDs for deletion:', numericIds); // Debug log
-
-        await axios.post( // Using POST instead of DELETE
-          'http://localhost:5175/api/admin/scholars/bulk-delete',
-          { ids: numericIds },
-          {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
-        await fetchScholars();
-        setSelectedItems([]);
-      } catch (error: any) {
-        console.error('Error performing bulk delete:', error);
-        console.error('Error response:', error.response?.data);
-        setError(error.response?.data?.error || 'Failed to delete scholars');
-      }
+    try {
+      const numericIds = selectedItems.map(Number).filter(id => !isNaN(id));
+      await api.post('/admin/scholars/bulk-delete', { ids: numericIds });
+      await fetchScholars();
+      setSelectedItems([]);
+    } catch (error: any) {
+      console.error('Error performing bulk delete:', error);
+      console.error('Error response:', error.response?.data);
+      setError(error.response?.data?.error || 'Failed to delete scholars');
     }
   };
 
@@ -212,26 +188,11 @@ const ScholarManagement = () => {
 
   const handleAction = async (action: string, scholar: any) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No auth token found');
-      }
-
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      };
-
       switch (action) {
         case 'view':
-          const viewResponse = await axios.get(
-            `http://localhost:5175/api/admin/scholars/${scholar.id}`,
-            { headers }
-          );
+          const viewResponse = await api.get(`/admin/scholars/${scholar.id}`);
           if (viewResponse.data) {
             setViewModalScholar(viewResponse.data);
-          } else {
-            throw new Error('No data received');
           }
           break;
 
@@ -247,10 +208,7 @@ const ScholarManagement = () => {
         case 'delete':
           if (window.confirm('Are you sure you want to delete this scholar? This will also delete all associated data.')) {
             try {
-              await axios.delete(
-                `http://localhost:5175/api/admin/scholars/${scholar.id}`,
-                { headers }
-              );
+              await api.delete(`/admin/scholars/${scholar.id}`);
               await fetchScholars();
             } catch (error: any) {
               console.error('Delete error:', error.response?.data);
@@ -273,8 +231,8 @@ const ScholarManagement = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No auth token found');
 
-      await axios.put(
-        `http://localhost:5175/api/admin/scholars/${editFormScholar.id}`,
+      await api.put(
+        `/admin/scholars/${editFormScholar.id}`,
         formData,
         {
           headers: {
@@ -312,8 +270,8 @@ const ScholarManagement = () => {
 
       console.log('Sending scholar data:', scholarData);
 
-      await axios.post(
-        'http://localhost:5175/api/admin/scholars',
+      await api.post(
+        '/admin/scholars',
         scholarData,  // Send as object, not { data: [...] }
         {
           headers: {
