@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../config/axios'; // Replace axios import
 import { PATHS } from '../routes/paths';
 import { Typography } from "@mui/material";
 import "../../styles/Layout.css";
@@ -106,9 +106,9 @@ const FundraiserSection: React.FC = () => {
   useEffect(() => {
     const fetchStudents = async () => {
       try {
-        const response = await fetch('http://localhost:5175/api/scholars');
-        const data = await response.json();
-        setStudents(data);
+        // Update to use api instance
+        const response = await api.get('/scholars');
+        setStudents(response.data);
       } catch (error) {
         console.error('Error fetching students:', error);
       }
@@ -140,7 +140,7 @@ const FundraiserSection: React.FC = () => {
           {/* Main (large) card */}
           <div className="fundraiser-main-card" onClick={() => handleCardClick(mainCard.id)}>
             <img
-              src={`http://localhost:5175${mainCard.image_url}`}
+              src={`${import.meta.env.VITE_API_URL}${mainCard.image_url}`}
               alt={`${mainCard.first_name} ${mainCard.last_name}`}
               className="fundraiser-main-image"
             />
@@ -164,7 +164,7 @@ const FundraiserSection: React.FC = () => {
                 onClick={() => handleCardClick(student.id)}
               >
                 <img
-                  src={`http://localhost:5175${student.image_url}`}
+                  src={`${import.meta.env.VITE_API_URL}${student.image_url}`}
                   alt={`${student.first_name} ${student.last_name}`}
                   className="fundraiser-side-image"
                 />
@@ -322,7 +322,8 @@ const Home: React.FC = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await axios.get('/api/content/home');
+        // Update to use api instance
+        const response = await api.get('/content/home');
         if (response.data?.content) {
           const savedContent = response.data.content;
           setContent(prev => ({
@@ -364,7 +365,7 @@ const Home: React.FC = () => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     if (path.startsWith('/uploads')) {
-      return `http://localhost:5175${path}`;
+      return `${import.meta.env.VITE_API_URL}${path}`;
     }
     return path;
   };
