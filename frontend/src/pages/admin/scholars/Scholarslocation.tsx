@@ -44,7 +44,7 @@ const ScholarsLocation: React.FC = () => {
       // Fetch both pending and verified scholars
       const [pendingResponse, verifiedResponse] = await Promise.all([
         api.get('/scholars/pending-locations', { headers }),
-        api.get('/api/scholars/verified-locations', { headers })
+        api.get('/scholars/verified-locations', { headers })
       ]);
 
       setPendingScholars(pendingResponse.data);

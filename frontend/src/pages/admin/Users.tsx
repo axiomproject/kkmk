@@ -64,43 +64,62 @@ const Volunteer = () => {
     return () => document.removeEventListener('mousedown', handleGlobalClick);
   }, []);
 
+  // Add interceptor to api instance for this component
+  useEffect(() => {
+    // Add request interceptor
+    const requestInterceptor = api.interceptors.request.use(
+      (config) => {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Clean up interceptor on component unmount
+    return () => {
+      api.interceptors.request.eject(requestInterceptor);
+    };
+  }, []);
+
   useEffect(() => {
     fetchVolunteers();
   }, []);
 
   const fetchVolunteers = async () => {
     try {
-      const response = await api.get('/admin/volunteers');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await api.get('/admin/volunteers', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       
-      // Debug the exact structure
       console.log('Raw data from API:', JSON.stringify(response.data, null, 2));
 
-      const processedData = response.data.map((v: any) => {
-        // Log individual volunteer data
-        console.log('Individual volunteer raw data:', v);
-        
-        // Check all possible date field names
-        const possibleDateFields = {
-          created_at: v.created_at,
-          createdAt: v.createdAt,
-          createdat: v.createdat,
-          createdDate: v.createdDate,
-          created: v.created
-        };
-        console.log('Possible date fields:', possibleDateFields);
-
-        return {
-          ...v,
-          // Try all possible date field variations
-          created_at: v.created_at || v.createdAt || v.createdat || v.createdDate || v.created
-        };
-      });
+      const processedData = response.data.map((v: any) => ({
+        ...v,
+        created_at: v.created_at || v.createdAt || v.createdat || v.createdDate || v.created
+      }));
 
       console.log('Processed data:', processedData);
       setVolunteers(processedData);
       setLoading(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching volunteers:', err);
+      if (err.response?.status === 401) {
+        // Handle unauthorized access
+        navigate('/login');
+      }
       setError('Failed to fetch volunteers');
       setLoading(false);
     }
