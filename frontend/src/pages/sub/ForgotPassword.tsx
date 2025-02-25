@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import { PATHS } from '../../routes/paths';
 import '../../styles/Auth.css';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,7 +67,7 @@ const ForgotPassword: React.FC = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:5175/api/forgot-password', { email });
+      const response = await api.post('/forgot-password', { email });
       setMessage(response.data.message);
       setEmail(''); // Clear email field after successful submission
     } catch (err: any) {

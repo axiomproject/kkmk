@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../config/axios'; // Replace axios import
 import { FaCheck, FaTimes, FaEye } from 'react-icons/fa';
 import '../../styles/ScholarDonations.css';
 
@@ -42,12 +43,8 @@ const ScholarDonations: React.FC = () => {
 
   const fetchDonations = async () => {
     try {
-      const response = await fetch('http://localhost:5175/api/scholardonations/all', {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch donations');
-      const data = await response.json();
-      setDonations(data);
+      const response = await api.get('/scholardonations/all');
+      setDonations(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching donations:', error);
@@ -55,16 +52,10 @@ const ScholarDonations: React.FC = () => {
   };
 
   const handleVerify = async (id: number) => {
-    if (!window.confirm('Are you sure you want to verify this donation?')) return;
+    if (!window.confirm('Verify this donation?')) return;
     
     try {
-      const response = await fetch(`http://localhost:5175/api/scholardonations/verify/${id}`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (!response.ok) throw new Error('Failed to verify donation');
-      
+      await api.post(`/scholardonations/verify/${id}`);
       await fetchDonations();
     } catch (error) {
       console.error('Error verifying donation:', error);
@@ -77,15 +68,7 @@ const ScholarDonations: React.FC = () => {
     if (!reason) return;
 
     try {
-      const response = await fetch(`http://localhost:5175/api/scholardonations/reject/${id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ reason })
-      });
-
-      if (!response.ok) throw new Error('Failed to reject donation');
-      
+      await api.post(`/scholardonations/reject/${id}`, { reason });
       await fetchDonations();
     } catch (error) {
       console.error('Error rejecting donation:', error);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import '../../styles/ScholarReports.css';
 
 interface ReportCard {
@@ -31,10 +31,7 @@ const ScholarReports: React.FC = () => {
 
   const loadReports = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const { data } = await axios.get('http://localhost:5175/api/scholars/report-cards/all', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const { data } = await api.get('/scholars/report-cards/all');
       setReports(data);
     } catch (error) {
       console.error('Error loading report cards:', error);
@@ -43,10 +40,7 @@ const ScholarReports: React.FC = () => {
 
   const handleVerify = async (id: number) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5175/api/scholars/report-cards/${id}/verify`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put(`/scholars/report-cards/${id}/verify`);
       await loadReports();
       alert('Report card verified successfully!');
     } catch (error) {
@@ -59,11 +53,7 @@ const ScholarReports: React.FC = () => {
     const reason = window.prompt('Please enter reason for rejection:');
     if (reason) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.put(`http://localhost:5175/api/scholars/report-cards/${id}/reject`, 
-          { reason },
-          { headers: { Authorization: `Bearer ${token}` }}
-        );
+        await api.put(`/scholars/report-cards/${id}/reject`, { reason });
         await loadReports();
         alert('Report card rejected successfully');
       } catch (error) {
@@ -76,10 +66,7 @@ const ScholarReports: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this report card? This action cannot be undone.')) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5175/api/scholars/report-cards/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.delete(`/scholars/report-cards/${id}`);
         
         // Remove the deleted report from state
         setReports(prevReports => prevReports.filter(report => report.id !== id));
