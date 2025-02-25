@@ -1,0 +1,830 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #FEF6E4;
+    align-items: center;
+    min-height: calc(114vh - 162px);
+}
+
+.life-image {
+    width: 100%; 
+    height: auto; 
+    padding: 0px !important;
+    background-size: cover;
+    background-position: center;
+    border-radius: 15px;
+}
+
+.life-banner-container {
+    position: relative;
+    width: 100%;
+    height: auto;
+}
+
+.life-text-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;  
+    margin-top: 30rem;
+    padding: 20px;
+    color: white;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    background-color: rgba(0, 0, 0, 0.14);
+}
+
+.lifetext {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 1.2em;
+    line-height: 1.6;
+    font-family: "Poppins";
+    color: #000000;
+}
+
+.app-container {
+    max-width: max-content;
+}
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    margin: 0 5px;
+    border: none;
+    background-color: transparent;
+    color: #333;
+    font-size: 16px;
+    font-family: "Poppins";
+    cursor: pointer;
+    position: relative;
+    text-transform: uppercase;
+}
+
+.tab-button::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background-color: #EE3F24;
+    transition: width 0.3s ease;
+}
+
+.tab-button.active::after {
+    width: 100%;
+}
+
+.tab-button:hover {
+    color: #EE3F24;
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.image-wrapper {
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.gallery-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.gallery-image:hover {
+    transform: scale(1.05);
+}
+
+.image-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-wrapper:hover .image-info {
+  opacity: 1;
+}
+
+.image-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-family: "Poppins";
+}
+
+.image-info p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: "Poppins";
+}
+
+/* Responsive design */
+@media screen and (max-width: 1200px) {
+    .app-container {
+        width: 95%;
+        margin: 0 auto;
+    }
+
+    .image-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+
+    .life-text-overlay {
+        margin-top: 25rem;
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .image-grid {
+        grid-template-columns: repeat(2, 1fr);
+        padding: 1.5rem;
+    }
+
+    .life-text-overlay {
+        margin-top: 25rem;
+    }
+
+    .lifetext {
+        font-size: 1.1em;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .image-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.2rem;
+    }
+
+    .tabs {
+        padding: 0 15px;
+    }
+
+    .tab-button {
+        font-size: 14px;
+        padding: 8px 15px;
+    }
+
+    .life-text-overlay {
+        margin-top: 20rem;
+    }
+
+    .lifetext {
+        font-size: 1.1em;
+        max-width: 600px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .life-banner-container {
+        margin-bottom: 20px;
+    }
+
+    .life-text-overlay {
+        position: relative;
+        margin-top: 0;
+        padding: 20px 15px;
+        background-color: rgba(0, 0, 0, 0.14);
+        border-radius: 20px;
+    }
+    
+    .lifetext {
+        font-size: 1em;
+        padding: 10px;
+        max-width: 100%;
+        color: #000000;
+    }
+
+    .tabs {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 10px;
+    }
+
+    .tab-button {
+        font-size: 13px;
+        padding: 6px 12px;
+        margin: 3px;
+    }
+
+    .image-grid {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .image-wrapper {
+        border-radius: 8px;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .image-grid {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .lifetext {
+        font-size: 0.9em;
+    }
+
+    .tab-button {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .image-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 10px;
+    }
+
+    .life-text-overlay {
+        padding: 15px 10px;
+    }
+
+    .lifetext {
+        font-size: 0.9em;
+        line-height: 1.4;
+    }
+
+    .tabs {
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .tab-button {
+        width: 100%;
+        max-width: 280px;
+        text-align: center;
+        font-size: 12px;
+        padding: 8px;
+    }
+
+    .image-wrapper {
+        max-width: 100%;
+        margin: 0 auto;
+    }
+}
+
+@media screen and (max-width: 360px) {
+    .lifetext {
+        font-size: 0.85em;
+    }
+
+    .tab-button {
+        font-size: 11px;
+        padding: 6px;
+        max-width: 250px;
+    }
+
+    .image-grid {
+        padding: 5px;
+    }
+
+    .image-wrapper {
+        border-radius: 6px;
+    }
+}
+
+/* Enhanced Media Queries */
+@media screen and (min-width: 1400px) {
+    .image-grid {
+        max-width: 1400px;
+        gap: 2.5rem;
+    }
+}
+
+@media screen and (max-width: 1399px) and (min-width: 1200px) {
+    /* ...existing 1200px code... */
+}
+
+@media screen and (max-width: 1100px) {
+
+}
+
+@media screen and (max-width: 900px) {
+    .tabs {
+        flex-wrap: wrap;
+        justify-content: space-around;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .life-banner-container {
+        margin-bottom: 15px;
+    }
+
+    .home-container {
+        padding: 8px;
+    }
+
+    .tab-button {
+        font-size: 11px;
+        padding: 5px 10px;
+        margin: 2px;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    .lifetext {
+        font-size: 0.8em;
+        line-height: 1.3;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+    .life-banner-container {
+        max-height: 70vh;
+    }
+}
+
+/* Add iPad Air/Pro portrait mode support */
+@media screen and (width: 820px) and (height: 1180px) {
+    .life-banner-container {
+        height: 50vh;
+    }
+
+    .life-text-overlay {
+        margin-top: 15rem;
+        padding: 25px;
+        background-color: rgba(0, 0, 0, 0.14);
+        border-radius: 20px;
+    }
+
+    .lifetext {
+        font-size: 1.1em;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.8;
+        color: #000000;
+    }
+
+    .app-container {
+        width: 90%;
+    }
+
+    .tabs {
+        margin-top: 30px;
+        gap: 15px;
+    }
+
+    .tab-button {
+        font-size: 14px;
+        padding: 10px 18px;
+    }
+
+    .image-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        padding: 20px;
+    }
+}
+
+/* Add print media query */
+@media print {
+    .tabs, .tab-button {
+        display: none;
+    }
+
+    .image-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+}
+
+/* iPad Pro 12.9" (1024x1366) */
+@media screen and (width: 1024px) and (height: 1366px) {
+    .life-banner-container {
+        height: 45vh;
+    }
+
+    .life-text-overlay {
+        margin-top: 18rem;
+        padding: 25px;
+        background-color: rgba(0, 0, 0, 0.14);
+        border-radius: 20px;
+    }
+
+    .lifetext {
+        font-size: 1.2em;
+        max-width: 800px;
+        line-height: 1.8;
+        color: #000000;
+    }
+}
+
+/* Surface Pro 7 (912x1368) */
+@media screen and (width: 912px) and (height: 1368px) {
+    .life-banner-container {
+        height: 40vh;
+    }
+
+    .life-text-overlay {
+        margin-top: 15rem;
+        background-color: rgba(0, 0, 0, 0.14);
+        border-radius: 20px;
+    }
+
+    .lifetext {
+        font-size: 1.15em;
+        max-width: 750px;
+        color: #000000;
+    }
+}
+
+/* Surface Pro X (853x1280) */
+@media screen and (width: 853px) and (height: 1280px) {
+    .life-banner-container {
+        height: 42vh;
+    }
+
+    .life-text-overlay {
+        margin-top: 14rem;
+        background-color: rgba(0, 0, 0, 0.14);
+        border-radius: 20px;
+    }
+
+    .lifetext {
+        font-size: 1.1em;
+        max-width: 700px;
+        color: #000000;
+    }
+}
+
+/* Landscape Tablets (1024x600) */
+@media screen and (width: 1024px) and (height: 600px) {
+    .life-banner-container {
+        height: 80vh;
+    }
+
+    .life-text-overlay {
+        margin-top: 16rem;
+        background-color: rgba(0, 0, 0, 0.14);
+        border-radius: 20px;
+    }
+
+    .lifetext {
+        font-size: 1em;
+        max-width: 600px;
+        color: #000000;
+    }
+}
+
+/* Large Landscape Display (1280x800) */
+@media screen and (width: 1280px) and (height: 800px) {
+    .life-banner-container {
+        height: 75vh;
+    }
+
+    .life-text-overlay {
+        margin-top: 19rem;
+        background-color: rgba(0, 0, 0, 0.14);
+        border-radius: 20px;
+    }
+
+    .lifetext {
+        font-size: 1.2em;
+        max-width: 850px;
+        color: #000000;
+    }
+}
+
+/* Shared styles for all tablet/desktop resolutions */
+@media screen and (min-width: 768px) {
+    .life-text-overlay {
+        transition: all 0.3s ease;
+    }
+
+    .lifetext {
+        transition: font-size 0.3s ease;
+    }
+}
+
+/* Additional Media Queries for 769-1500 range */
+@media screen and (min-width: 769px) and (max-width: 900px) {
+    .life-text-overlay {
+        margin-top: 22rem;
+        padding: 22px;
+    }
+
+    .lifetext {
+        font-size: 1.15em;
+        max-width: 650px;
+    }
+}
+
+@media screen and (min-width: 901px) and (max-width: 1100px) {
+    .life-text-overlay {
+        margin-top: 24rem;
+        padding: 24px;
+    }
+
+    .lifetext {
+        font-size: 1.18em;
+        max-width: 700px;
+    }
+}
+
+@media screen and (min-width: 1101px) and (max-width: 1300px) {
+    .life-text-overlay {
+        margin-top: 26rem;
+        padding: 26px;
+    }
+
+    .lifetext {
+        font-size: 1.2em;
+        max-width: 750px;
+    }
+}
+
+@media screen and (min-width: 1301px) and (max-width: 1500px) {
+    .life-text-overlay {
+        margin-top: 28rem;
+        padding: 28px;
+    }
+
+    .lifetext {
+        font-size: 1.22em;
+        max-width: 800px;
+    }
+
+    .image-grid {
+        max-width: 1300px;
+        gap: 2.2rem;
+    }
+}
+
+/* New Media Queries for 770-1700 range */
+@media screen and (min-width: 770px) and (max-width: 900px) {
+    .life-text-overlay {
+        transition: all 0.3s ease;
+        background-color: rgba(0, 0, 0, 0.14);
+        padding: 30px 40px;  /* Added more generous padding */
+        margin-top: 13rem;
+        font-size: 10px;
+    }
+
+    .lifetext {
+        font-size: 1.15em;
+        max-width: 650px;
+    }
+}
+
+@media screen and (min-width: 901px) and (max-width: 1100px) {
+    .life-text-overlay {
+        margin-top: 14rem;
+        padding: 24px;
+        font-size: small;
+    }
+
+    .lifetext {
+        font-size: 1.18em;
+        max-width: 700px;
+    }
+}
+
+@media screen and (min-width: 1101px) and (max-width: 1300px) {
+    .life-text-overlay {
+        margin-top: 16rem;
+        padding: 24px;
+    }
+
+    .lifetext {
+        font-size: 1.2em;
+        max-width: 750px;
+    }
+}
+
+@media screen and (min-width: 1301px) and (max-width: 1500px) {
+    .life-text-overlay {
+        margin-top: 20rem;
+        padding: 28px;
+    }
+
+    .lifetext {
+        font-size: 1.22em;
+        max-width: 800px;
+    }
+}
+
+@media screen and (min-width: 1501px) and (max-width: 1700px) {
+    .life-text-overlay {
+        margin-top: 23rem;
+        padding: 30px;
+    }
+
+    .lifetext {
+        font-size: 1.24em;
+        max-width: 850px;
+    }
+
+    .image-grid {
+        max-width: 1500px;
+        gap: 2.5rem;
+    }
+
+    .app-container {
+        width: 92%;
+    }
+}
+
+/* Add these shared styles for larger screens */
+@media screen and (min-width: 770px) {
+    .life-text-overlay {
+        transition: all 0.3s ease;
+        background-color: rgba(0, 0, 0, 0.14);
+        padding: 30px 40px;  /* Added more generous padding */
+          
+    }
+
+    .lifetext {
+        transition: all 0.3s ease;
+        color: #000000;
+        padding: 0 25px;     /* Added text padding */
+    }
+
+    .image-wrapper {
+        transition: transform 0.3s ease;
+        padding: 10px;       /* Added wrapper padding */
+    }
+
+    .app-container {
+        padding: 20px;       /* Added container padding */
+    }
+
+    .tabs {
+        padding: 15px 0;     /* Added vertical padding to tabs */
+    }
+
+    .image-grid {
+        padding: 30px;       /* Added grid padding */
+    }
+}
+
+/* Large Screen Media Queries */
+@media screen and (min-width: 2500px) {
+    .life-text-overlay {
+        margin-top: 35rem;
+        padding: 35px;
+        max-width: 2000px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .lifetext {
+        font-size: 1.4em;
+        max-width: 1200px;
+        line-height: 1.8;
+    }
+
+    .image-grid {
+        max-width: 2000px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 3rem;
+        padding: 3rem;
+    }
+
+    .app-container {
+        width: 95%;
+        max-width: 2400px;
+    }
+
+    .tabs {
+        margin-bottom: 40px;
+    }
+
+    .tab-button {
+        font-size: 20px;
+        padding: 15px 30px;
+    }
+}
+
+@media screen and (min-width: 3000px) {
+    .life-text-overlay {
+        margin-top: 40rem;
+        padding: 40px;
+        max-width: 2400px;
+    }
+
+    .lifetext {
+        font-size: 1.5em;
+        max-width: 1400px;
+    }
+
+    .image-grid {
+        max-width: 2400px;
+        gap: 4rem;
+        padding: 4rem;
+    }
+
+    .app-container {
+        max-width: 2800px;
+    }
+
+    .tab-button {
+        font-size: 22px;
+        padding: 18px 35px;
+    }
+}
+
+@media screen and (min-width: 3840px) {
+    .life-text-overlay {
+        margin-top: 45rem;
+        padding: 45px;
+        max-width: 3000px;
+    }
+
+    .lifetext {
+        font-size: 1.6em;
+        max-width: 1800px;
+    }
+
+    .image-grid {
+        max-width: 3000px;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5rem;
+        padding: 5rem;
+    }
+
+    .app-container {
+        max-width: 3400px;
+    }
+
+    .tab-button {
+        font-size: 24px;
+        padding: 20px 40px;
+    }
+}
+
+/* 4K and above */
+@media screen and (min-width: 4096px) {
+    .life-text-overlay {
+        margin-top: 50rem;
+        padding: 50px;
+        max-width: 3400px;
+    }
+
+    .lifetext {
+        font-size: 1.8em;
+        max-width: 2000px;
+    }
+
+    .image-grid {
+        max-width: 3400px;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6rem;
+        padding: 6rem;
+    }
+
+    .app-container {
+        max-width: 3800px;
+    }
+
+    .tab-button {
+        font-size: 28px;
+        padding: 25px 45px;
+    }
+}

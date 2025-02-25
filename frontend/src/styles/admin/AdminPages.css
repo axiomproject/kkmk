@@ -1,0 +1,1050 @@
+.admin-page {
+  padding: 2rem;
+  background-color: white;
+}
+
+.admin-page h1 {
+  margin-bottom: 2rem;
+  color: #242424;
+  font-family: "Poppins";
+  font-size: 1.875rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* Programs styles */
+.programs-header{
+  font-family: "Poppins";
+  color: #242424;
+}
+
+.programs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.program-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  transition: all 0.3s ease;
+  font-family: "Poppins";
+}
+
+.program-card:hover {
+  border-color: #EE3F24;
+  transform: translateY(-5px);
+}
+
+.program-card h3 {
+  color: #242424;
+}
+
+/* Staff styles */
+
+.staff-header{
+  color: #242424;
+  font-family: "Poppins";
+  display: flex;
+  justify-content: space-between;
+}
+.staff-header h2{
+  font-weight: 500;
+}
+.staff-table {
+  width: 100%;
+  font-family: "Poppins";
+  margin-top: 2rem;
+  background: #f9571d;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.staff-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.staff-table th,
+.staff-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+/* Settings styles */
+.settings-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.settings-section h2 {
+  color: #242424;
+  font-family: "Poppins";
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+
+
+.settings-form label {
+  display: block;
+  color: #666;
+}
+
+.settings-form input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.form-actions {
+  margin-top: 2rem;
+}
+
+button {
+  padding: 0.75rem 1.5rem;
+  background-color: #EE3F24;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+
+
+/* Donations Page Styles */
+.donations-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.status-filter {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.export-btn {
+  background-color: #f8f9fa;
+  color: #242424;
+  border: 2px solid #000000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+   
+}
+
+.export-btn:hover {
+  background-color: #EE3F24;
+  color: white;
+  border-color: #EE3F24;
+}
+
+.table-container {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  background-color: #f8f9fa;
+  font-family: "Poppins";
+  font-weight: 600;
+  color: #242424;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 2px solid #eee;
+}
+
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  font-family: "Poppins";
+}
+
+.status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: "Poppins";
+  display: inline-block;
+}
+
+.status-success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-warning {
+  background-color: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.action-button {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: "Poppins";
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.view-btn {
+  background-color: #f8f9fa;
+  color: #242424;
+  border: 1px solid #eee;
+}
+
+.view-btn:hover {
+  background-color: #EE3F24;
+  color: white;
+  border-color: #EE3F24;
+}
+
+.receipt-btn {
+  background-color: #757575;
+}
+
+.filters-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.filter-input {
+  padding: 0.5rem 1rem;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  font-family: "Poppins";
+  background-color: white;
+}
+
+.filter-input:focus {
+  border-color: #EE3F24;
+  outline: none;
+}
+
+/* Analytics Page Styles */
+.analytics-page {
+  padding: 2rem;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.metric-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #eee;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.metric-card h3 {
+  color: #666;
+  font-size: 0.875rem;
+  font-family: "Poppins";
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.metric-value {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.metric-value .number {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #242424;
+  font-family: "Poltawski Nowy";
+}
+
+.metric-value .label {
+  color: #666;
+  font-size: 0.875rem;
+  font-family: "Poppins";
+}
+
+.metric-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.metric-details .label {
+  display: block;
+  color: #666;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+  font-family: "Poppins";
+}
+
+.metric-details .value {
+  font-weight: 600;
+  color: #242424;
+  font-family: "Poppins";
+}
+
+.time-filter {
+  padding: 0.5rem 1rem;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  font-family: "Poppins";
+  margin-right: 1rem;
+}
+
+.export-btn {
+  padding: 0.5rem 1rem;
+  background-color: #f8f9fa;
+  color: #242424;
+  border: 1.2px solid #242424;
+  border-radius: 6px;
+  font-family: "Poppins";
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.export-btn:hover {
+  background-color: #EE3F24;
+  color: white;
+  border-color: #EE3F24;
+}
+
+/* UserManagement.css */
+.user-management-container {
+  font-family: Arial, sans-serif;
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  background: none;
+}
+.header h1{
+  font-family: "Poppins";
+  color: #242424;
+  font-weight: 300;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.search-input {
+  width: 80%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+ 
+}
+
+.filter {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.export-btn,
+.new-user-btn {
+  padding: 8px 15px;
+
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+}
+
+.export-btn {
+  background-color: #fafafa;
+  border: 1px solid rgba(0,0,0,0.10);
+  color: rgb(0, 0, 0);
+}
+
+/* Enhanced New User Button Animation */
+.new-user-btn {
+  background-color: #EE3F24;
+  color: white;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.new-user-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.new-user-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(238, 63, 36, 0.3);
+}
+
+.new-user-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.new-user-btn:active {
+  transform: translateY(1px);
+}
+
+/* Add a wrapper for the table */
+.table-wrapper {
+  border: 1px solid #ddd;
+  padding-right: 10px;
+  padding-left: 10px;
+  padding-top: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.user-table th,
+.user-table td {
+  padding: 20px;
+  text-align: left;
+  color: #242424;
+  font-family: "Poppins";
+
+}
+
+.user-table th{
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Center checkbox column */
+.user-table th:first-child,
+.user-table td:first-child {
+  text-align: center;
+  width: 50px; /* Fixed width for checkbox column */
+  padding: 10px 0;
+}
+
+/* Center permissions column */
+.user-table th:nth-child(6),
+.user-table td:nth-child(6) {
+  text-align: center;
+}
+
+/* Center actions column */
+.user-table th:last-child,
+.user-table td:last-child {
+  text-align: center;
+  width: 100px; /* Fixed width for actions column */
+}
+
+.user-table .styled-checkbox {
+  margin: 0 auto;
+  display: block;
+}
+
+.permission-badge {
+  display: inline-block;
+  padding: 5px 15px;
+  background-color: #ffc107;
+  color: white;
+  border-radius: 4px;
+  min-width: 80px;
+  text-align: center;
+}
+
+
+select{
+  font-family: 'Poppins';
+}
+
+/* Add these styles at the end of the file */
+.action-dots {
+  cursor: pointer;
+  font-weight: bold;
+  color: #666;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.action-dots:hover {
+  background-color: #f1f1f1;
+}
+
+.calendar-icon {
+  margin-left: 6px;
+}
+
+/* Add these styles before the end of the file */
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  font-family: "Poppins";
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.view-action {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.view-action:hover {
+  background-color: #1976d2;
+  color: white;
+}
+
+.edit-action {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.edit-action:hover {
+  background-color: #2e7d32;
+  color: white;
+}
+
+.delete-action {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.delete-action:hover {
+  background-color: #c62828;
+  color: white;
+}
+
+/* Add these styles at the end of the file */
+.action-menu {
+  position: relative;
+  display: inline-block;
+}
+
+/* Enhanced Dots Button Animation */
+.dots-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.3s ease;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: 'Material Icons';
+}
+
+.dots-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(238, 63, 36, 0.1);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.3s ease;
+}
+
+.dots-button:hover {
+  color: #EE3F24;
+  transform: rotate(90deg);
+}
+
+.dots-button:hover::before {
+  transform: scale(1);
+}
+
+.dots-button:hover {
+  color: #EE3F24;
+}
+
+.dots-button::after {
+  content: 'more_vert';
+  font-size: 24px;
+}
+
+.dots-button span {
+  display: none;
+}
+
+/* Styled Checkbox */
+.styled-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #7D7D7D;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  background-color: transparent;
+  transition: all 0.2s ease;
+}
+
+.styled-checkbox:checked {
+  background-color: #EE3F24;
+  border-color: #EE3F24;
+}
+
+.styled-checkbox:checked::before {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.styled-checkbox:hover {
+  border-color: #b1301c;
+}
+
+.styled-checkbox:checked:hover {
+  background-color: #b1301c;
+  border-color: #b1301c;
+}
+
+/* Custom Dropdown Styles */
+
+.dropdowns {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.dropdowns-content {
+  position: absolute;
+  right: 100%;
+  background: white;
+  min-width: 160px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  padding: 8px 0;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(50%) translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.dropdowns-content.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(50%) translateY(0);
+}
+
+.dropdowns-item-admin {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  width: 100%;
+  border: none;
+  background: none;
+  color: #242424;
+  font-family: "Poppins";
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  gap: 8px; /* Add gap between icon and text */
+}
+
+.dropdowns-item-admin:hover {
+  background-color: #f8f9fa;
+  color: #EE3F24;
+}
+
+.dropdowns-item-admin.view:hover {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.dropdowns-item-admin.edit:hover {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.dropdowns-item-admin.delete:hover {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+/* Optional: Add icons to dropdown items */
+.dropdowns-item-admin::before {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.dropdowns-item-admin.view::before {
+  content: 'visibility';
+  font-family: 'Material Icons';
+  font-size: 20px;
+}
+
+.dropdowns-item-admin.edit::before {
+  content: 'edit';
+  font-family: 'Material Icons';
+  font-size: 20px;
+}
+
+.dropdowns-item-admin.delete::before {
+  content: 'delete';
+  font-family: 'Material Icons';
+  font-size: 20px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+  margin-top: 1rem;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.page-number,
+.page-nav {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid #eee;
+  background: white;
+  color: #242424;
+  border-radius: 4px;
+  font-family: "Poppins";
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-number.active {
+  background-color: #EE3F24;
+  color: white;
+  border-color: #EE3F24;
+}
+
+.page-number:hover:not(.active):not(.dots),
+.page-nav:hover:not(:disabled) {
+  background-color: #f5f5f5;
+  border-color: #ddd;
+}
+
+.page-number.dots {
+  border: none;
+  cursor: default;
+  padding: 0 4px;
+}
+
+.page-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.rows-per-page select {
+  padding: 6px 12px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  font-family: "Poppins";
+  font-size: 14px;
+  color: #242424;
+  cursor: pointer;
+  background-color: white;
+}
+
+.rows-per-page select:focus {
+  outline: none;
+  border-color: #EE3F24;
+}
+
+.page-nav {
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: #f5f5f5;
+  color: #666;
+  border-radius: 50%;
+  font-family: "Poppins";
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-nav:hover:not(:disabled) {
+  background-color: #e0e0e0;
+  color: #242424;
+}
+
+.page-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  background-color: #f5f5f5;
+}
+
+.page-number {
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #242424;
+  border-radius: 50%;
+  font-family: "Poppins";
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-number:hover:not(.active):not(.dots) {
+  background-color: #f5f5f5;
+}
+
+.page-number.active {
+  background-color: #EE3F24;
+  color: white;
+}
+
+.page-number.dots {
+  cursor: default;
+  padding: 0 4px;
+}
+
+/* Add these styles at the end of the file */
+.bulk-delete-btn {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 8px 15px;
+  border: 1px solid #c62828;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bulk-delete-btn::before {
+  content: 'delete';
+  font-family: 'Material Icons';
+  font-size: 20px;
+}
+
+.bulk-delete-btn:hover {
+  background-color: #c62828;
+  color: white;
+}
+
+/* ...existing code... */
+
+.action-icons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-icon {
+  font-family: 'Material Icons';
+  font-size: 20px;
+  cursor: pointer;
+  color: #64748b;
+  transition: all 0.2s ease;
+  padding: 8px;
+  border-radius: 50%;
+}
+
+.action-icon:hover {
+  background-color: #f1f5f9;
+  color: #EE3F24;
+}
+
+.action-icon.delete:hover {
+  color: #DC2626;
+}
+
+.action-icon.edit:hover {
+  color: #2e7d32;
+}
+
+.action-icon.view:hover {
+  color: #1976d2;
+}
+
+.volunteer-title-admin{
+  color: #1a1a1a;
+  font-size: 1.875rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Add these styles for sortable headers */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 25px !important;
+  transition: background-color 0.2s;
+}
+
+.sortable-header:hover {
+  background-color: #f1f5f9;
+}
+
+.sortable-header::after {
+  content: attr(data-icon);
+  position: absolute;
+  right: 8px;
+  opacity: 0.5;
+}
+
+.sortable-header:hover::after {
+  opacity: 1;
+}
+
+/* Add these styles at the end of the file */
+.sort-icon {
+  font-size: 18px;
+  vertical-align: middle;
+  margin-left: 4px;
+  opacity: 0.5;
+}
+
+.sortable-header:hover .sort-icon {
+  opacity: 1;
+}
+
+
+
+
+.admin-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+
+}
+
+.admin-profile {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 20px;
+  transition: background-color 0.2s;
+}
+

@@ -1,0 +1,369 @@
+.main-button {
+    min-width: 550px;
+    max-width: 500px;
+    height: 20rem;
+  }
+  
+  .main-button h3 {
+    font-size: 2.5em;
+    justify-content: top;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    font-family: "Poltawski Nowy";
+    font-weight: 500;
+    color: #242424;
+  }
+  
+  .main-button p {
+    font-size: 1.3em;
+    text-align: center;
+    color: #242424;
+    margin-top: 30px;
+    font-family: "Poppins";
+  }
+  
+  /* Update donatebutton1 base styles */
+  .donatebutton1 {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+    font-family: "Poppins";
+    margin: 2rem auto;
+    width: 100%;
+    max-width: 500px;
+    padding: 0 1rem;
+  }
+  
+  .donatenow {
+    border-color: transparent;
+    background-color: #242424;
+    border-radius: 50px;
+    align-content: center;
+    text-decoration: none;
+    width: 12rem;
+    color: #ffff;
+    font-family: "Poppins";
+    height: 3.5rem;
+    transition: background-color 0.4s ease;
+  }
+  
+  .donatenow:hover {
+    background-color: #cd5729;
+  }
+  
+  .watchvideo {
+    color: var(--color-snow);
+    background: var(--color-dark);
+    background-color: #D4D4D4;
+    border-radius: 50px;
+    width: 12rem;
+    text-align: center;
+    text-decoration: none;
+    align-content: center;
+    color: #000;
+    box-shadow: 2px 3px 5px rgba(0, 0, 0, 0.5);
+    height: 3.5rem;
+    transition: background-color 0.4s, color 0.4s ease;
+  }
+  
+  .watchvideo:hover {
+    background-color: #bfbebe;
+    color: #2c2727;
+  }
+  
+  .donatebutton1 .watchvideo {
+    font-weight: 500;
+  }
+  
+  /* Responsive Design */
+  @media screen and (max-width: 768px) {
+    .main-button {
+      min-width: 300px;
+      max-width: 400px;
+    }
+  
+    .main-button h3 {
+      font-size: 2em;
+    }
+  
+    .main-button p {
+      font-size: 1.1em;
+    }
+  
+    .donatebutton1 {
+      flex-direction: column;
+      gap: 10px;
+      max-width: 300px;
+    }
+  }
+  
+  @media screen and (max-width: 576px) {
+    .main-button {
+      min-width: 250px;
+    }
+  
+    .main-button h3 {
+      font-size: 1.8em;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 10rem;
+      height: 3rem;
+    }
+  }
+  
+  @media screen and (min-width: 1280px) {
+    .main-button {
+      min-width: 600px;
+      max-width: 550px;
+    }
+  
+    .main-button h3 {
+      font-size: 2.8em;
+    }
+  
+    .main-button p {
+      font-size: 1.4em;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 14rem;
+      height: 4rem;
+    }
+  }
+  
+  /* Enhanced Responsive Design */
+  @media screen and (min-width: 1400px) {
+    .main-button {
+      min-width: 650px;
+      max-width: 600px;
+      height: 22rem;
+    }
+  
+    .main-button h3 {
+      font-size: 3em;
+      margin-top: 25px;
+    }
+  
+    .main-button p {
+      font-size: 1.5em;
+      margin-top: 35px;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 15rem;
+      height: 4.2rem;
+      font-size: 1.1rem;
+    }
+  }
+  
+  @media screen and (min-width: 1280px) and (max-width: 1399px) {
+    .main-button {
+      min-width: 600px;
+      max-width: 550px;
+      height: 21rem;
+    }
+  
+    .main-button h3 {
+      font-size: 2.8em;
+    }
+  
+    .main-button p {
+      font-size: 1.4em;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 14rem;
+      height: 4rem;
+      font-size: 1rem;
+    }
+  }
+  
+  @media screen and (min-width: 1201px) and (max-width: 1279px) {
+    .main-button {
+      min-width: 575px;
+      max-width: 525px;
+      height: 20.5rem;
+    }
+  
+    .main-button h3 {
+      font-size: 2.6em;
+    }
+  
+    .main-button p {
+      font-size: 1.35em;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 13rem;
+      height: 3.8rem;
+    }
+  }
+  
+  @media screen and (min-width: 992px) and (max-width: 1200px) {
+    .main-button {
+      min-width: 525px;
+      max-width: 475px;
+      height: 19rem;
+    }
+  
+    .main-button h3 {
+      font-size: 2.4em;
+    }
+  
+    .main-button p {
+      font-size: 1.25em;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 12.5rem;
+      height: 3.6rem;
+    }
+  
+    .donatebutton1 {
+      max-width: 450px;
+    }
+  }
+  
+  @media screen and (min-width: 769px) and (max-width: 991px) {
+    .main-button {
+      min-width: 450px;
+      max-width: 425px;
+      height: 18rem;
+    }
+  
+    .main-button h3 {
+      font-size: 2.2em;
+    }
+  
+    .main-button p {
+      font-size: 1.2em;
+    }
+  
+    .donatebutton1 {
+      gap: 12px;
+      max-width: 400px;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 11rem;
+      height: 3.4rem;
+    }
+  }
+  
+  @media screen and (min-width: 577px) and (max-width: 768px) {
+    .main-button {
+      min-width: 350px;
+      max-width: 400px;
+      height: 17rem;
+    }
+  
+    .main-button h3 {
+      font-size: 2em;
+      margin-top: 15px;
+    }
+  
+    .main-button p {
+      font-size: 1.1em;
+      margin-top: 25px;
+    }
+  
+    .donatebutton1 {
+      flex-direction: column;
+      gap: 10px;
+    }
+  }
+  
+  @media screen and (max-width: 576px) {
+    .main-button {
+      min-width: 280px;
+      max-width: 350px;
+      height: 16rem;
+    }
+  
+    .main-button h3 {
+      font-size: 1.8em;
+      margin-top: 12px;
+    }
+  
+    .main-button p {
+      font-size: 1em;
+      margin-top: 20px;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 10rem;
+      height: 3rem;
+      font-size: 0.9rem;
+    }
+  }
+  
+  @media screen and (max-width: 375px) {
+    .main-button {
+      min-width: 250px;
+      max-width: 300px;
+      height: 15rem;
+    }
+  
+    .main-button h3 {
+      font-size: 1.6em;
+      margin-top: 10px;
+    }
+  
+    .main-button p {
+      font-size: 0.9em;
+      margin-top: 15px;
+    }
+  
+    .donatenow,
+    .watchvideo {
+      width: 9rem;
+      height: 2.8rem;
+      font-size: 0.85rem;
+    }
+  
+    .donatebutton1 {
+      max-width: 250px;
+      padding: 0 0.5rem;
+    }
+  }
+  
+  /* Portrait and Landscape Orientations */
+  @media screen and (orientation: portrait) {
+    .donatebutton1 {
+      margin: 1.5rem auto;
+      padding: 0 0.5rem;
+    }
+  }
+  
+  @media screen and (orientation: landscape) and (max-height: 768px) {
+    .main-button {
+      height: auto;
+      min-height: 15rem;
+      padding: 1.5rem 0;
+    }
+  
+    .donatebutton1 {
+      margin: 1rem auto;
+      padding: 0 1rem;
+    }
+  }
+  
+  /* High DPI Screens */
+  @media screen and (-webkit-min-device-pixel-ratio: 2), 
+         screen and (min-resolution: 192dpi) {
+    .donatenow,
+    .watchvideo {
+      box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.4);
+    }
+  }
+  

@@ -1,0 +1,1291 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, 
+body,
+#root {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative;
+}
+
+.home-container,
+.page-container,
+.app-container {
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.home-container {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.banner-image {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.content-section {
+  width: 100%;
+  padding: 20px;
+}
+
+/* Make sure containers take full width */
+.container, 
+.row, 
+.col {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.layout-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.editing-container {
+  width: 100%;
+}
+
+.edit-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.save-button, .cancel-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-weight: 500;
+}
+
+.save-button {
+  background-color: #EE3F24;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.save-button:hover {
+  background-color: #d63a21;
+}
+
+.cancel-button {
+  background-color: #e0e0e0;
+  color: #242424;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-button:hover {
+  background-color: #cccccc;
+}
+
+.input-expansion {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: "Poppins";
+  resize: vertical;
+}
+
+.social-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.social-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.social-input img {
+  width: 24px;
+  height: 24px;
+}
+
+.social-input input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: "Poppins";
+  background: none;
+}
+
+.socials {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+
+.edit-button {
+
+  cursor: pointer;
+}
+
+.edit-button img {
+  width: 10px;
+  height: 10px;
+  transition: transform 0.3s ease;
+}
+
+.edit-button:hover img {
+  transform: scale(1.1);
+}
+
+@media screen and (max-width: 100%) {
+  .container,
+  .row,
+  .col {
+    max-width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+}
+
+.donation-form-container {
+  width: 100%;
+  padding: 2.5rem;
+
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.donation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-main-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.form-dynamic-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.form-message-field {
+  width: 100%;
+}
+
+.form-message-field .form-groupss {
+  width: 100%;
+}
+
+.form-message-field textarea {
+  width: 100%;
+}
+
+@media screen and (max-width: 768px) {
+  .form-main-fields,
+  .form-dynamic-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-groupss:has(select[required]),
+.form-groupss:has(input[type="number"]) {
+  width: 100%;
+}
+
+/* Adjust spacing for conditional fields */
+.form-groupss + .form-groupss {
+  margin-top: 0;
+}
+
+.donation-form-container h2 {
+  font-family: "Poppins";
+  color: #242424;
+}
+
+.form-groupss {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 16px;
+}
+
+/* Make certain fields full width */
+.form-groupss:nth-child(5),
+.form-groupss:nth-child(6) {
+  grid-column: 1 / -1;
+}
+
+.form-groupss label {
+  font-weight: 600;
+  color: #242424;
+  font-size: 1.2em;
+  font-family: "Poppins";
+}
+
+.form-groupss input,
+.form-groupss select,
+.form-groupss textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  background: transparent;
+}
+
+.form-groupss textarea {
+  min-height: 100px;
+  resize: vertical;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: "Poppins";
+  background: transparent;
+}
+
+.form-groupss option {
+  background: #FEF6E4;
+}
+
+.form-groupss input::placeholder,
+.form-groupss textarea::placeholder,
+.form-groupss select {
+  font-family: "Poppins", sans-serif;
+  color: #757575;
+}
+
+/* For Firefox */
+.form-groupss input::-moz-placeholder,
+.form-groupss textarea::-moz-placeholder {
+  font-family: "Poppins", sans-serif;
+  color: #757575;
+}
+
+/* For Chrome/Safari/Opera */
+.form-groupss input::-webkit-input-placeholder,
+.form-groupss textarea::-webkit-input-placeholder {
+  font-family: "Poppins", sans-serif;
+  color: #757575;
+}
+
+/* For Microsoft Edge */
+.form-groupss input::-ms-input-placeholder,
+.form-groupss textarea::-ms-input-placeholder {
+  font-family: "Poppins", sans-serif;
+  color: #757575;
+}
+
+/* Make message field always full width */
+.form-groupss:last-of-type,
+.form-groupss:has(textarea) {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+}
+
+/* Ensure proper grid layout for conditional fields */
+.form-groupss.frequency-field,
+.form-groupss.quantity-field {
+  grid-column: 1 / -1;
+  margin-bottom: 1rem;
+}
+
+/* Regular donation specific quantity field */
+.form-groupss:has(input[name="amount"]) {
+  grid-column: 1 / -1;
+}
+
+.submit-button {
+  grid-column: 1 / -1;
+  background-color: #f9d93a;
+  color: #242424;
+  padding: 1rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%;
+  margin-top: 1rem;
+  font-family: "Poppins";
+}
+
+.submit-button:hover {
+  background-color: #e6c832;
+}
+
+.donation-note {
+  grid-column: 1 / -1;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #e7d9c54b;
+  border-left: 4px solid #f9d93a;
+  font-family: "Poppins";
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 768px) {
+  .donation-form-container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  .donation-form {
+    grid-template-columns: 1fr;
+  }
+
+  .form-group {
+    grid-column: 1 / -1;
+  }
+}
+
+.file-input-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+.selected-file {
+  display: inline-block;
+  color: #666;
+  font-size: 0.9em;
+  font-family: "Poppins";
+}
+
+
+.selected-file {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #333;
+}
+
+.selected-file span {
+  display: inline-block;
+  word-break: break-all;
+  font-family: "Poppins";
+}
+
+/* Custom file input styling */
+.file-input-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.file-input-container input[type="file"] {
+  opacity: 0;
+  width: 100%;
+  height: 45px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.file-input-container::after {
+  content: 'Choose File';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  color: #666;
+  padding: 10px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  font-family: 'Poppins';
+  font-size: 14px;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.file-input-container:hover::after {
+  background: #d0ab26;
+  color: #ffffff;
+  border-color: #ffaf03;
+}
+
+/* Style for when file is selected */
+.file-input-container.has-file::after {
+  content: attr(data-file-name);
+  color: #333;
+  background: #e8f0fe;
+}
+
+/* Add icon to the input */
+.file-input-container::before {
+  content: '📎';
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Event Page */
+
+/* Carousel Container */
+.carousel {
+  max-width: 100%;
+  height: 500px;
+  overflow: hidden;
+}
+
+/* Carousel Images */
+.carousel .carousel-item img {
+  width: 100%;
+  height: 500px; 
+  object-fit: cover;
+}
+
+.hero .volunteer-btn:hover {
+  background-color: grey;
+}
+
+/* Featured Events */
+.featured-events {
+  padding: 20px;
+  background-color: #fef6e4;
+}
+
+.featured-events-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 20px;
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.event-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+}
+
+.event-card h4 {
+  font-size: 16px; 
+  font-weight: bold;
+  font-family: "Poppins"; 
+  margin-top: 12px;
+}
+
+.event-card p {
+  font-family: "Poppins"; 
+  font-size: 14px; 
+  margin: 4px 0;
+  text-align: center;
+}
+
+.event-image {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+}
+
+.event-progress {
+  margin-top: 20px;
+}
+
+.event-content p {
+  font-size: 0.9rem;
+  margin: 5px 0;
+  color: #555;
+}
+
+.event-content {
+  padding: 10px;
+  text-align: center;
+}
+
+.event-content .event-date,
+.event-content .event-time,
+.event-content .event-location {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.85rem;
+}
+
+.event-content .event-date {
+  color: #2b5f97;
+}
+
+.progress-bar-container {
+  width: 70%;
+  height: 25px;
+  background-color: #e0e0e0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #28a745;
+}
+
+.progress-percentage {
+  font-size: 12px; 
+  color: #fff; 
+  padding: 0 4px; 
+}
+
+.volunteer-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  padding: 1.5rem;
+  background-color: #fef6e4;
+}
+
+.volunteer-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 15px 30px;
+  font-size: 1.2em;
+  width: 30%;
+  font-weight: bold;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+}
+
+.volunteer-button.time {
+  background-color: #ff4500; 
+}
+
+.volunteer-button.treasure {
+  background-color: #6d4c41;
+}
+
+.volunteer-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: skewX(-45deg);
+  transition: left 0.5s ease;
+  z-index: 0;
+}
+
+.volunteer-button:hover::before {
+  left: 100%;
+}
+
+.volunteer-button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+}
+
+.volunteer-button span {
+  position: relative;
+  z-index: 1;
+  font-family: "Poppins";
+  font-weight: 500;
+}
+
+.volunteer-button:active {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* EventDetails */
+.event-details-container {
+  width: 80%;
+  margin: 0 auto;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f7f1e3;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  border-radius: 8px;
+}
+
+.event-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+  color: #242424;
+  font-family: "Poppins";
+}
+
+.organization-logo {
+  width: 300px;
+  height: 50px;
+}
+
+.event-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.event-image-container {
+  flex: 3;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+.event-image2 {
+  width: 100%;
+  height: 500px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.event-date-type {
+  text-align: center;
+  font-family: "Poppins";
+}
+
+.event-details-card {
+  flex: 1;
+  padding: 20px;
+  border: 1px solid #ddd;;
+  background-color: #f7f1e3;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+.event-details-card p {
+  font-family: "Poppins";
+}
+
+.event-details-card-details{
+  flex: 1;
+  padding: 20px;
+  border: 1px solid #ddd;;
+  background-color: #f7f1e3;
+  border-radius: 12px;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+  font-family: "Poppins";
+  
+}
+.event-details-info-side {
+  font-family: "Poppins";
+  text-align: left;
+}
+
+
+
+.goal-progress-container {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 10px; 
+}
+
+.progress-bar-container {
+  background: #06ff00;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 20px;
+  width: 150px; 
+  margin: 5px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #28a745;
+  text-align: center;
+  color: white;
+  font-size: 0.8rem;
+  line-height: 20px;
+  transition: width 0.3s ease;
+}
+
+.volunteer-button2 {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background-color: #ff4500;
+  color: white;
+  font-family: "Poppins";
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  margin-top: 10px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.volunteer-button2:hover {
+  background-color: #ff6347;
+}
+
+.event-description {
+  margin-top: 20px;
+  width: 71%;
+  padding: 20px;
+  border: 1px solid #ddd;;
+  background-color: #f7f1e3;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+}
+.event-description h3 {
+  font-family: "Poppins";
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+.event-description p {
+  font-family: "Poppins";
+  font-weight: 400;
+  line-height: 2rem;
+  text-align: justify;
+  text-justify: inter-word;
+
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+
+  width: 100%;
+  grid-column: 1 / -1; /* Make row span full width */
+}
+
+.half-width {
+  flex: 1;
+  min-width: 0; /* This helps prevent overflow */
+}
+
+.form-groupss.half-width input,
+.form-groupss.half-width select {
+  width: 100%;
+}
+
+.form-groupss.half-width {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.form-groupss.half-width input[type="number"] {
+  font-size: 1rem;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  font-family: "Poppins";
+}
+
+
+
+.form-groupss.half-width small {
+  display: block;
+  color: #666;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-family: "Poppins";
+}
+
+/* Style for amount input when in focus */
+.form-groupss.half-width input[type="number"]:focus {
+  outline: none;
+  border-color: #ff4015;
+  box-shadow: 0 0 0 2px rgba(255, 64, 21, 0.1);
+}
+
+
+
+/* Form input standardization */
+.form-groupss input,
+.form-groupss select,
+.form-groupss .file-input-container {
+  height: 45px;  /* Standardize height */
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-family: "Poppins";
+  box-sizing: border-box;
+}
+
+/* Specific adjustments for file input container */
+.file-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* Make sure number inputs match others */
+.form-groupss input[type="number"] {
+  height: 45px;
+  -moz-appearance: textfield; /* Firefox */
+}
+
+/* Remove number input arrows */
+.form-groupss input[type="number"]::-webkit-outer-spin-button,
+.form-groupss input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.report-card-section {
+  margin: 10px 0;
+  text-align: center;
+  width: 100%;
+  padding: 10px;
+  background-color: #f7f1e3;
+  border-radius: 8px;
+}
+
+.report-card-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+  width: 100%;
+  max-width: 300px;
+  font-family: "Poppins";
+}
+
+.report-card-button:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.report-card-popup {
+  max-width: 800px;
+  width: 90%;
+}
+
+.report-card-upload-container {
+  display: flex;
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.report-card-side {
+  flex: 1;
+  text-align: center;
+}
+
+.report-card-side h3 {
+  margin-bottom: 10px;
+  font-family: "Poppins";
+  color: #242424;
+}
+
+.report-card-upload-box {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  background-color: #f5f5f5;
+}
+
+.report-card-upload-box:hover {
+  background-color: #e8e8e8;
+}
+
+.report-card-preview {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.report-card-preview img {
+  max-width: 100%;
+  max-height: 150px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.report-card-preview button {
+  padding: 6px 12px;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  transition: background-color 0.3s;
+}
+
+.report-card-preview button:hover {
+  background-color: #cc0000;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #666;
+}
+
+.upload-placeholder p {
+  margin: 0;
+  font-family: "Poppins";
+}
+
+.view-progress-button {
+  background-color: #2196F3;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.3s;
+  width: 100%;
+  max-width: 300px;
+  font-family: "Poppins";
+}
+
+.view-progress-button:hover {
+  background-color: #1976D2;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* ...existing styles... */
+
+.remarks-section {
+  margin-top: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.remarks-section h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2em;
+  color: #2d3748;
+  margin-bottom: 15px;
+}
+
+.remark-card {
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 6px;
+  border-left: 4px solid #4299e1;
+}
+
+.remark-text {
+  font-size: 1.1em;
+  color: #2d3748;
+  margin-bottom: 12px;
+}
+
+.scheduled-visit {
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+
+.remark-timestamp {
+  font-size: 0.9em;
+  color: #718096;
+  margin-bottom: 8px;
+}
+
+.verification-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.verification-status.verified {
+  background-color: #48bb78;
+  color: white;
+}
+
+.verification-status.pending {
+  background-color: #ed8936;
+  color: white;
+}
+
+/* ...rest of existing styles... */
+
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 1000;
+  padding: 20px;
+
+  pointer-events: all;
+}
+
+.popup {
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  margin: auto;
+  margin-top: calc(var(--scroll-y, 0px) + 100px);
+  pointer-events: all;
+}
+
+/* Event Feedback Modal Styles */
+.feedback-popup {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 500px;
+  width: 90%;
+  margin: 20px auto;
+  position: absolute; /* Add this */
+}
+
+.feedback-popup h2 {
+  color: #242424;
+  font-family: "Poppins";
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.feedback-popup p {
+  color: #666;
+  font-family: "Poppins";
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.rating-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.star-icon {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.star-icon:hover {
+  transform: scale(1.2);
+}
+
+.feedback-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: "Poppins";
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+}
+
+.feedback-textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.feedback-submit-button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-family: "Poppins";
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.feedback-submit-button:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.feedback-submit-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.popup-overlay.feedback {
+  background-color: rgba(0, 0, 0, 0.7);
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  z-index: 1000;
+  padding: 20px;
+  overflow-y: scroll;
+}
+
+.feedback-popup {
+  background: white;
+  padding: 35px;
+  border-radius: 8px;
+  position: relative;
+  margin: auto;
+  margin-top: calc(var(--scroll-y, 0px) + 100px);
+  width: 90%;
+  max-width: 500px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 24px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: #666;
+  transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+  color: #242424;
+}
+
+.feedback-close {
+  position: absolute;
+  top: 10px;           /* Adjust these values */
+  right: 10px;         /* to position the button */
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.3s ease;
+  z-index: 1;          /* Add this */
+  width: 30px;         /* Add fixed width */
+  height: 30px;        /* Add fixed height */
+  display: flex;       /* Center the × symbol */
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;  /* Make it circular */
+}
+
+.feedback-close:hover {
+  color: #242424;
+  background-color: rgba(0, 0, 0, 0.05); /* Add subtle background on hover */
+}
+
+/* Animation for stars */
+@keyframes starPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.star-icon.selected {
+  animation: starPop 0.3s ease;
+  color: #ffc107;
+}

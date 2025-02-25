@@ -1,0 +1,299 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #FEF6E4;
+    align-items: center;
+    min-height: calc(114vh - 162px);
+}
+
+.banner-image {
+    width: 100%; 
+    height: auto; 
+    padding: 0px !important;
+    background-size: cover;
+    background-position: center;
+}
+
+.introduction {
+    padding: 5rem;
+    text-align: left;
+    margin-top: 50px;
+    max-width: 1400px;
+    margin: 50px auto;
+    width: 100%;
+}
+
+.Testimonial {
+    font-family: "Poltawski Nowy";
+    font-weight: 600;
+    font-size: 3rem;
+}
+
+.h4-testimonial {
+    font-family: "Poppins";
+    font-weight: 400;
+    margin-top: 25px;
+    color: #242424;
+}
+
+/* Community grid styles */
+.image-grid2 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    padding: 20px;
+    margin: 0 auto;
+    max-width: 1400px;
+    width: 100%;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.image-wrapper2 {
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 20px;
+    transition: transform 0.3s ease;
+    box-shadow: #2424241c 5px 5px;
+}
+
+.gallery-image2 {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+    border-radius: 20px;
+ 
+}
+
+.gallery-image2:hover {
+    transform: scale(1.05);
+}
+
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: scroll;
+    pointer-events: all;
+}
+
+.modal-box {
+    background: #FEF6E4;
+    width: 60%;
+    max-width: 800px;
+    padding: 35px;
+    border-radius: 8px;
+    position: relative;
+    margin: auto;
+    margin-top: calc(var(--scroll-y, 0px) + 100px);
+    pointer-events: all;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.modal-content-testimonials {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.modal-image2 {
+    width: 40%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.modal-text {
+    text-align: center;
+    max-width: min(600px, 85vw);
+    margin: 0 auto;
+}
+
+.modal-title {
+    font-size: 24px;
+    color: #242424;
+    margin-bottom: 10px;
+}
+
+.modal-subtitle {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.modal-description {
+    font-family: "Poppins";
+    color: #242424;
+    line-height: 1.6;
+    max-width: min(700px, 90vw);
+    margin: 0 auto;
+}
+
+.modal-description p {
+    margin-bottom: 1rem;
+}
+
+/* Enhanced Responsive Design for grid */
+@media screen and (min-width: 1501px) {
+    .image-grid2 {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 30px;
+        padding: 30px;
+        max-width: 1800px;
+        width: 95%;
+        margin: 0 auto;
+    }
+}
+
+@media screen and (max-width: 1500px) {
+    .image-grid2 {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 25px;
+        max-width: 1400px;
+        width: 95%;
+    }
+}
+
+@media screen and (max-width: 1200px) {
+    .image-grid2 {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding: 20px;
+        max-width: 1100px;
+        width: 90%;
+    }
+    
+    .modal-box {
+        width: 70%;
+    }
+
+    .introduction {
+        max-width: 1000px;
+        width: 90%;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .image-grid2 {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        padding: 15px;
+        max-width: 900px;
+        width: 85%;
+    }
+    
+    .modal-box {
+        width: 80%;
+        padding: 25px;
+        max-width: 700px;
+    }
+    
+    .modal-image2 {
+        width: 50%;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .introduction {
+        padding: 3rem;
+        max-width: 600px;
+        width: 90%;
+    }
+    
+    .Testimonial {
+        font-size: 2.5rem;
+    }
+    
+    .image-grid2 {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        padding: 12px;
+        margin-left: 10px;
+        max-width: 700px;
+        width: 90%;
+    }
+    
+    .modal-box {
+        width: 90%;
+        padding: 20px;
+    }
+    
+    .modal-image2 {
+        width: 60%;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .introduction {
+        padding: 2rem;
+        max-width: 450px;
+        width: 95%;
+    }
+    
+    .Testimonial {
+        font-size: 2rem;
+    }
+    
+    .image-grid2 {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 10px;
+        max-width: 500px;
+        width: 95%;
+    }
+    
+    .modal-box {
+        width: 95%;
+        padding: 15px;
+    }
+    
+    .modal-image2 {
+        width: 80%;
+    }
+    
+    .image-wrapper2 {
+        max-width: 100%;
+        border-radius: 15px; /* Slightly smaller radius for mobile */
+    }
+    
+    .gallery-image2 {
+        border-radius: 15px;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    .image-grid2 {
+        gap: 10px;
+        padding: 8px;
+        max-width: 350px;
+        width: 98%;
+    }
+
+    .introduction {
+        width: 98%;
+    }
+
+    .image-wrapper2 {
+        border-radius: 12px; /* Even smaller radius for very small screens */
+    }
+    
+    .gallery-image2 {
+        border-radius: 12px;
+    }
+}

@@ -1,0 +1,330 @@
+.home-container {
+    display: flex;
+    flex-direction: column;
+    background-color: #FEF6E4;
+    align-items: center;
+    min-height: calc(114vh - 162px);
+}
+
+.banner-image {
+    width: 100%; 
+    height: auto; 
+    padding: 0px !important;
+    background-size: cover;
+    background-position: center;
+}
+
+.introduction {
+    padding: 5rem;
+    text-align: left;
+    margin-top: 50px;
+}
+
+.Testimonial {
+    font-family: "Poltawski Nowy";
+    font-weight: 600;
+    font-size: 3rem;
+}
+
+.h4-testimonial {
+    font-family: "Poppins";
+    font-weight: 400;
+    margin-top: 25px;
+    color: #242424;
+}
+
+.image-grid1 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 15px;
+    margin-left: 20px;
+    margin-bottom: 5%;
+}
+
+.image-wrapper1 {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.gallery-image1 {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+    margin-right: 72px;
+    border-radius: 20px;
+    box-shadow: #2424241c 5px 5px;
+}
+
+.gallery-image1:hover {
+    transform: scale(1.05);
+}
+
+/* Modal styles */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: scroll;
+    pointer-events: all;
+}
+
+.modal-box {
+    background: #FEF6E4;
+    width: 60%;
+    max-width: 800px;
+    padding: 35px;
+    border-radius: 8px;
+    position: relative;
+    margin: auto;
+    margin-top: calc(var(--scroll-y, 0px) + 100px);
+    pointer-events: all;
+}
+
+.modal-content-testimonials {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-image {
+    width: 60%;
+    max-width: 700px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    border-radius: 10px;
+}
+
+.modal-title {
+    font-size: 28px;
+    font-weight: 200;
+    font-family: "Poltawski Nowy";
+    color: #242424;
+}
+
+.modal-description {
+    margin-top: 10px;
+    font-size: 16px;
+    line-height: 1.5;
+    text-align: justify;
+    font-family: "Poppins";
+}
+
+/* Responsive Design */
+@media screen and (max-width: 1200px) {
+    .image-grid1 {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        padding: 0 20px;
+    }
+
+    .introduction {
+        padding: 4rem;
+    }
+
+    .modal-box {
+        width: 75%;
+        padding: 30px;
+    }
+
+    .modal-image {
+        width: 50%;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .image-grid1 {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .Testimonial {
+        font-size: 2.5rem;
+    }
+
+    .modal-box {
+        width: 85%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-image {
+        width: 70%;
+    }
+
+    .modal-title {
+        font-size: 24px;
+    }
+
+    .introduction {
+        padding: 3rem 2rem;
+    }
+
+    .h4-testimonial {
+        font-size: 1rem;
+        margin-top: 15px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .introduction {
+        padding: 3rem;
+        text-align: center;
+    }
+
+    .h4-testimonial {
+        font-size: 0.9rem;
+    }
+
+    .modal-image {
+        width: 80%;
+    }
+
+    .modal-description {
+        font-size: 14px;
+    }
+
+    .home-container {
+        padding: 10px;
+    }
+
+    .image-grid1 {
+        margin: 10px;
+        gap: 10px;
+    }
+
+    .introduction {
+        padding: 2rem 1.5rem;
+        text-align: center;
+    }
+
+    .Testimonial {
+        font-size: 2.2rem;
+    }
+
+    .h4-testimonial {
+        font-size: 0.9rem;
+        padding: 0 10px;
+    }
+
+    .modal-box {
+        width: 90%;
+        padding: 20px;
+    }
+
+    .modal-content-testimonials {
+        gap: 15px;
+    }
+
+    .modal-image {
+        width: 85%;
+    }
+
+    .modal-description {
+        font-size: 14px;
+        padding: 0 10px;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .image-grid1 {
+        grid-template-columns: 1fr;
+        margin: 10px;
+    }
+
+    .introduction {
+        padding: 2rem;
+    }
+
+    .Testimonial {
+        font-size: 2rem;
+    }
+
+    .modal-box {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .image-grid1 {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    .introduction {
+        padding: 1.5rem 1rem;
+    }
+
+    .Testimonial {
+        font-size: 2rem;
+    }
+
+    .modal-box {
+        width: 95%;
+        padding: 15px;
+        margin: 10px;
+    }
+
+    .modal-image {
+        width: 100%;
+    }
+
+    .modal-title {
+        font-size: 20px;
+        text-align: center;
+    }
+
+    .modal-description {
+        font-size: 13px;
+        line-height: 1.4;
+    }
+}
+
+@media screen and (max-width: 360px) {
+    .introduction {
+        padding: 1rem;
+    }
+
+    .Testimonial {
+        font-size: 1.8rem;
+    }
+
+    .h4-testimonial {
+        font-size: 0.85rem;
+    }
+
+    .image-grid1 {
+        gap: 8px;
+    }
+
+    .modal-box {
+        padding: 10px;
+    }
+
+    .modal-title {
+        font-size: 18px;
+    }
+
+    .modal-description {
+        font-size: 12px;
+    }
+}
+
+/* Animation for modal */
+@keyframes modalOpen {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

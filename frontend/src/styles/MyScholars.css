@@ -1,0 +1,67 @@
+.my-scholars-container {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background-color: #fdf4e3;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .back-button,
+  .add-scholar-button {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  
+  .add-scholar-button {
+    background-color: #ff5c5c;
+    color: #ffffff;
+    border: none;
+  }
+  
+  .scholar-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .scholar-table th,
+  .scholar-table td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+  }
+  
+  .scholar-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+  }
+  
+  .actions {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+  }
+  
+  .action-button {
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .donate-button {
+    background-color: #ff5c5c;
+    color: #ffffff;
+    border: none;
+    padding: 5px 15px;
+    cursor: pointer;
+  }
+  

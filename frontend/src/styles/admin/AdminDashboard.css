@@ -1,0 +1,187 @@
+/* Main Layout */
+.container-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+  padding: 20px;
+}
+
+/* Card Base Style */
+.earning-admin,
+.spend-admin,
+.donations-admin,
+.balance-admin,
+.task-admin,
+.total-admin {
+  flex: 1;
+  min-width: 180px;
+  max-width: 200px;
+  height: 90px;
+  padding: 15px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Icon Styles */
+.pic-earning,
+.pic-spend,
+.pic-donation,
+.icon-wrapper,
+.taskicon-wrapper,
+.total-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(238, 63, 36, 0.1);
+}
+
+/* Text Content */
+.earnings-text,
+.spend-text-p,
+.donations-admin-text,
+.balance-admin-text,
+.task-content,
+.total-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Labels */
+.earnings-text p,
+.spend-text,
+.donations-admin-p,
+.balance-admin-p,
+.task-admin-p,
+.total-admin-p {
+  font-size: 0.875rem;
+  color: #718096;
+  margin: 0;
+}
+
+/* Values */
+.earnings-total,
+.spend-total,
+.donations-total,
+.balance-amount,
+.task-total,
+.total-total {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2D3748;
+  margin: 0;
+}
+
+/* Charts Container */
+.charts-container {
+  display: flex;
+  gap: 20px;
+  margin: 20px;
+}
+
+.chart-bar-container {
+  flex: 2;
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.chart-donut-container {
+  flex: 1;
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Chart Headers */
+.chart-header,
+.donut-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+/* Bottom Section */
+.rating-donors-donation-container {
+  display: flex;
+  gap: 20px;
+  margin: 20px;
+}
+
+.your-rating-container,
+.generous-donors-container,
+.donations-chart-line-container {
+  flex: 1;
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Donors List */
+.generos-donor-img1,
+.generos-donor-img2,
+.generos-donor-img3,
+.generos-donor-img4 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* View Report Buttons */
+.view-report-button,
+.donut-view-report-button,
+.donations-view-report-button {
+  padding: 8px 16px;
+  border: 1px solid #EE3F24;
+  border-radius: 6px;
+  background: transparent;
+  color: #EE3F24;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-report-button:hover,
+.donut-view-report-button:hover,
+.donations-view-report-button:hover {
+  background: #EE3F24;
+  color: white;
+}

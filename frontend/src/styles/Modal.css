@@ -1,0 +1,103 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  position: relative;
+}
+
+.modal-body {
+  max-height: calc(90vh - 140px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 20px;
+}
+
+/* Webkit scrollbar styles (Chrome, Safari, Edge, Brave) */
+.modal-body::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 7px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.4);
+  -webkit-box-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+/* Firefox scrollbar styles */
+.modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.1);
+}
+
+/* Terms content styles */
+.terms-content {
+  padding: 0 10px;
+}
+
+.terms-content h3 {
+  color: #333;
+  margin: 20px 0 10px 0;
+  font-size: 1.2em;
+}
+
+.terms-content h4 {
+  color: #444;
+  margin: 15px 0 8px 0;
+  font-size: 1.1em;
+}
+
+.terms-content p {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
+.terms-content ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.terms-content li {
+  margin: 5px 0;
+  line-height: 1.4;
+}
+
+.terms-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terms-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.terms-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.terms-content::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}

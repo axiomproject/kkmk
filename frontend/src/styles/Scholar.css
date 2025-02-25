@@ -1,0 +1,1000 @@
+.scholar-profile-container {
+  padding: 50px 20px;
+}
+
+.scholar-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.scholar-profile-header h1 {
+  color: #333;
+  font-size: 1.875rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+.scholar-profile-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.scholar-search-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 250px;
+}
+
+.scholar-filter-select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.scholar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.scholar-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.scholar-card:hover {
+  transform: translateY(-5px);
+}
+
+.scholar-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.scholar-info {
+  padding: 15px;
+}
+
+.scholar-info h3 {
+  margin: 0 0 10px;
+  color: #333;
+  font-family: 'Poppins', sans-serif;
+}
+
+.scholar-info p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.scholar-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.view-btn, .edit-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+
+.view-btn {
+  background: #007bff;
+  color: white;
+}
+
+.edit-btn {
+  background: #28a745;
+  color: white;
+}
+
+.add-scholar-btn {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.add-scholar-btn:hover {
+  background-color: #218838;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  padding: 30px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.scholar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #333;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.form-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+}
+
+.form-actions button[type="button"] {
+  background-color: #6c757d;
+  color: white;
+}
+
+.form-actions button[type="submit"] {
+  background-color: #28a745;
+  color: white;
+}
+
+.form-actions button:hover {
+  opacity: 0.9;
+}
+
+/* Admin Scholar Profile Styles */
+.admin-scholar-container {
+  padding: 20px;
+}
+
+/* Update header styles */
+.admin-scholar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding: 1rem 0;
+}
+
+.admin-scholar-header h1 {
+  color: #333;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.875rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.admin-scholar-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  height: 42px; /* Set fixed height for all action items */
+}
+
+.admin-scholar-search {
+  height: 42px; /* Match container height */
+  padding: 0 1rem;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  width: 300px;
+  color: #2B3674;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+.admin-scholar-search:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 2px rgba(238, 63, 36, 0.1);
+}
+
+.admin-scholar-filter {
+  height: 42px; /* Match container height */
+  padding: 0 1rem;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  color: #2B3674;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+}
+
+.admin-scholar-filter:focus {
+  outline: none;
+  border-color: #EE3F24;
+}
+
+.admin-scholar-add-btn {
+  height: 42px; /* Match container height */
+  padding: 0 1.5rem;
+  background-color: #EE3F24;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.admin-scholar-add-btn:hover {
+  background-color: #df3812;
+  transform: translateY(-1px);
+}
+
+.admin-scholar-search {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 250px;
+}
+
+.admin-scholar-filter {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Grid and Card Styles */
+.admin-scholar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.admin-scholar-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+  transition: transform 0.2s;
+  width: 100%;
+  height: fit-content;
+}
+
+.admin-scholar-image {
+  width: 100%;
+  height: 400px; /* Reduced from 200px */
+  object-fit: cover;
+  object-position: center;
+}
+
+.admin-scholar-info {
+  /* ...existing styles... */
+  padding: 15px;
+}
+
+.admin-scholar-info h3 {
+  font-size: 16px; /* Added specific font size */
+  margin: 0 0 10px;
+  color: #333;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+}
+
+.admin-scholar-info p {
+  font-size: 14px; /* Added specific font size */
+  margin: 5px 0;
+  color: #666;
+}
+
+.admin-scholar-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.admin-scholar-view-btn,
+.admin-scholar-edit-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: opacity 0.2s;
+}
+
+.admin-scholar-view-btn {
+  background: #007bff;
+  color: white;
+}
+
+.admin-scholar-edit-btn {
+  background: #28a745;
+  color: white;
+}
+
+.admin-scholar-view-btn:hover,
+.admin-scholar-edit-btn:hover {
+  opacity: 0.9;
+}
+
+/* Modal Styles */
+.admin-scholar-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.admin-scholar-modal {
+  background-color: #ffffff;
+  padding: 40px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.admin-scholar-modal h2 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+.admin-scholar-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.admin-scholar-form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.admin-scholar-form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-scholar-form-group label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #444;
+}
+
+.admin-scholar-form-group input,
+.admin-scholar-form-group select,
+.admin-scholar-form-group textarea {
+  padding: 0px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+  background-color: white;
+}
+
+.search-input .input[type="text"]{
+  padding: 0px !important;
+}
+
+.admin-scholar-form-group input:focus,
+.admin-scholar-form-group select:focus,
+.admin-scholar-form-group textarea:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.1);
+}
+
+.admin-scholar-form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.admin-scholar-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.admin-scholar-cancel-btn,
+.admin-scholar-save-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.admin-scholar-cancel-btn {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.admin-scholar-save-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.admin-scholar-cancel-btn:hover {
+  background-color: #dde1e4;
+}
+
+.admin-scholar-save-btn:hover {
+  background-color: #218838;
+}
+
+/* Scrollbar Styling */
+.admin-scholar-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-scholar-modal::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.admin-scholar-modal::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.admin-scholar-modal::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Required Field Indicator */
+.admin-scholar-form-group label::after {
+  content: "*";
+  color: #dc3545;
+  margin-left: 4px;
+  display: inline-block;
+}
+
+.admin-scholar-form-group label:not([required])::after {
+  display: none;
+}
+
+/* ...remaining modal and form styles with admin-scholar prefix... */
+
+/* Image Upload Styles */
+.admin-scholar-image-upload {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.admin-scholar-image-label {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.admin-scholar-image-label:hover {
+  border-color: #28a745;
+}
+
+.admin-scholar-image-placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  gap: 8px;
+}
+
+.admin-scholar-image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Add responsive styles */
+@media (max-width: 768px) {
+  .admin-scholar-image-label {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+/* ...existing styles... */
+
+.admin-scholar-detail-image {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.admin-scholar-info-details {
+  text-align: center;
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.admin-scholar-info-details p {
+  margin: 12px 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.admin-scholar-info-details strong {
+  font-weight: 600;
+  color: #333;
+  min-width: 40px;
+  display: inline-block;
+}
+
+.admin-scholar-other-details {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #dee2e6;
+}
+
+.status-active {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.status-inactive {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.admin-scholar-detail-image {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin: 0 auto 20px;
+  display: block;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* ...existing styles... */
+
+.graduated-section-title {
+  margin-top: 2rem;
+  padding: 1rem 0;
+  border-top: 2px solid #eee;
+  color: #666;
+}
+
+.admin-scholar-card.graduated {
+  position: relative;
+  filter: grayscale(100%);
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.admin-scholar-card.graduated:hover {
+  filter: grayscale(50%);
+  opacity: 0.9;
+}
+
+.admin-scholar-card.graduated::after {
+  content: 'GRADUATED';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #666;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.admin-scholar-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.assigned-user-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.assigned-user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 10px 0;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.assigned-user-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.assigned-user-avatar-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.assigned-user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 0.9em;
+  margin-top: 8px;
+}
+
+.assigned-user-details {
+  flex: 1;
+}
+
+.assigned-user-details p {
+  margin: 5px 0;
+}
+
+/* ...existing styles... */
+
+.current-assignment {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+}
+
+.current-assignment h4 {
+  margin-bottom: 10px;
+  color: #666;
+}
+
+.divider {
+  height: 1px;
+  background-color: #eee;
+  margin: 15px 0;
+}
+
+/* ...existing styles... */
+
+/* Update the input selector to be more specific for search inputs only */
+.admin-scholar-form-group input.search-input[type="text"],
+.search-input-wrapper input[type="text"] {
+  padding: 0%;
+}
+
+/* Keep other form inputs with their original padding */
+.admin-scholar-form-group input:not(.search-input),
+.admin-scholar-form-group select,
+.admin-scholar-form-group textarea {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+  background-color: white;
+}
+
+/* Override padding for search inputs specifically */
+.admin-scholar-form-group input.search-input[type="text"],
+.search-input-wrapper input[type="text"] {
+
+  padding-left: 2rem !important;
+  padding-right: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* Keep other form inputs with their original padding */
+.admin-scholar-form-group input:not(.search-input),
+.admin-scholar-form-group select,
+.admin-scholar-form-group textarea {
+  padding: 12px;
+}
+
+/* ...existing styles... */
+
+/* Quick Add Search Styles from Events */
+.quick-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.quick-add-input {
+  width: 100%;
+  padding: 8px 32px 8px 36px !important;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.suggestion-item {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+  background-color: #f5f5f5;
+}
+
+.suggestion-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.suggestion-info {
+  flex: 1;
+}
+
+.suggestion-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.suggestion-email {
+  font-size: 12px;
+  color: #666;
+}
+
+.search-input-wrapper {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 16px;
+}
+
+.clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.clear-search:hover {
+  color: #333;
+}
+
+.volunteer-search-container {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+/* ...existing styles... */
+
+/* New button styles */
+.remove-assignment-btn {
+  background: none;
+  border: none;
+  color: #dc3545;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.remove-assignment-btn:hover {
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* ...existing styles... */
+
+/* Add these new styles */
+.scholar-progress-container {
+  margin: 10px 0;
+  width: 100%;
+}
+
+.scholar-progress-bar {
+  height: 15px;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.scholar-progress-fill {
+  height: 100%;
+  background-color: #4CAF50;
+  transition: width 0.3s ease;
+}
+
+.scholar-progress-text {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85em;
+  color: #666;
+}
+
+/* Optional: Add hover effect */
+.scholar-progress-bar:hover .scholar-progress-fill {
+  background-color: #45a049;
+}
+
+/* Scholar Card Status Styles */
+.admin-scholar-card.graduated,
+.admin-scholar-card.inactive {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.admin-scholar-card.graduated {
+  filter: grayscale(100%);
+  opacity: 0.8;
+}
+
+.admin-scholar-card.graduated:hover {
+  filter: grayscale(50%);
+  opacity: 0.9;
+}
+
+.admin-scholar-card.inactive {
+  filter: grayscale(50%);
+  opacity: 0.9;
+}
+
+.admin-scholar-card.inactive:hover {
+  filter: grayscale(20%);
+  opacity: 0.95;
+}
+
+.admin-scholar-card.graduated::after,
+.admin-scholar-card.inactive::after {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: white;
+}
+
+.admin-scholar-card.graduated::after {
+  content: 'GRADUATED';
+  background: #666;
+}
+
+.admin-scholar-card.inactive::after {
+  content: 'INACTIVE';
+  background: #dc3545;
+}
+
+/* ...rest of existing styles... */
+
+/* Add these new styles */
+.admin-scholar-delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.admin-scholar-delete-btn:hover {
+  background-color: #c82333;
+}
+
+/* ...existing styles... */

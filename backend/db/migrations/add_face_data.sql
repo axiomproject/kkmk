@@ -1,0 +1,3 @@
+ALTER TABLE users
+ADD COLUMN face_data TEXT,
+ADD COLUMN has_face_verification BOOLEAN DEFAULT FALSE;

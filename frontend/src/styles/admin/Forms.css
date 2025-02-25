@@ -1,0 +1,310 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-contents {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+  font-family: 'Poppins', sans-serif;
+  color: #242424;
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.4s;
+}
+
+.close-btn:hover {
+  color: #ffffff;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  color: #424242;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 2px rgba(238, 63, 36, 0.1);
+}
+
+.form-group.checkboxes {
+  margin: 20px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+  align-items: center;
+}
+
+.form-group.checkboxes input[type="checkbox"] {
+  display: flex;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px !important;
+  height: 20px;
+  border: 2px solid #EE3F24;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  margin-top: 2px;
+  background-color: transparent;
+  transition: all 0.2s ease;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.form-group.checkboxes input[type="checkbox"]:checked {
+  background-color: #EE3F24;
+  border-color: #EE3F24;
+}
+
+.form-group.checkboxes input[type="checkbox"]:checked::before {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.form-group.checkboxes input[type="checkbox"]:hover {
+  border-color: #b1301c;
+}
+
+.form-group.checkboxes input[type="checkbox"]:checked:hover {
+  background-color: #b1301c;
+  border-color: #b1301c;
+}
+
+.form-group.checkboxes label {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #242424;
+  font-family: "Poppins";
+  font-weight: 400;
+  flex: 1;
+  pointer-events: none;
+  justify-items: center;
+}
+
+.form-group.checkboxes.error input[type="checkbox"] {
+  border-color: #ff4d4f;
+}
+
+.form-group.checkboxes .error-text {
+  position: absolute;
+  left: 0;
+  bottom: -20px;
+}
+
+.form-group.checkboxes input {
+  width: 1.125rem;
+  height: 1.125rem;
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.submit-btn,
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-btn {
+  background-color: #EE3F24;
+  color: white;
+  border: none;
+}
+
+.submit-btn:hover {
+  background-color: #d63a21;
+  color: #ffe3e3;
+  transform: translateY(-1px);
+}
+
+.cancel-btn {
+  background-color: #f5f5f5;
+  color: #666;
+  border: 1px solid #e0e0e0;
+}
+
+.cancel-btn:hover {
+  background-color: #b4b2b2;
+  color: #f1f1f1;
+}
+
+/* Error states */
+.form-group.error input,
+.form-group.error select {
+  border-color: #dc3545;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .modal-content {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .submit-btn,
+  .cancel-btn {
+    width: 100%;
+  }
+}
+
+.form-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  font-family: "Poppins";
+}
+
+.staff-form-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-form-actions {
+
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  position: sticky;
+  bottom: 0;
+  background: white;
+}
+
+.staff-form-content .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.staff-form-content h2 {
+  margin-bottom: 2rem;
+  font-family: 'Poppins', sans-serif;
+  color: #242424;
+  font-size: 2rem;
+  justify-content: center;
+  font-weight: 500;
+  text-align: center;
+}
+
+.staff-form-content .submit-btn,
+.staff-form-content .cancel-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+}
+
+.staff-form-content .submit-btn {
+  background: #EE3F24;
+  color: white;
+  transition: all 0.2s ease;
+}
+.staff-form-content .submit-btn:hover {
+  background: #d63a21;
+}
+
+.staff-form-content .cancel-btn {
+  background: #6c757d;
+  color: white;
+  transition: all 0.2s ease;
+}
+.staff-form-content .cancel-btn:hover {
+  background: #5a6268;
+}

@@ -1,0 +1,994 @@
+/* Import Poppins font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+.inventory-container {
+  background-color: white;
+  min-height: 100vh;
+  padding: 2rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.inventory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.inventory-title {
+  color: #1a1a1a;
+  font-size: 1.875rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Add these new styles for tabs */
+.inventory-tab-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.inventory-tab-button {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif;
+  border: none;
+  background: #f8f9fa;
+  color: #64748b;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.inventory-tab-button.active {
+  background: #EE3F24;
+  color: white;
+}
+
+.inventory-tab-button:hover:not(.active) {
+  background: #e9ecef;
+}
+
+/* Update the inventory-tables-container */
+.inventory-tables-container {
+  display: block; /* Change from grid to block */
+  margin-top: 2rem;
+}
+
+.inventory-section {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0; /* Remove bottom margin since we're using tabs */
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.export-btn {
+  padding: 0.5rem 1rem;
+  background-color: #f8f9fa;
+  color: #242424;
+  border: 1.2px solid #242424;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.export-btn:hover {
+  background-color: #EE3F24;
+  color: white;
+  border-color: #EE3F24;
+}
+
+.export-btn:disabled {
+  background-color: #e9ecef;
+  color: #adb5bd;
+  border-color: #dee2e6;
+  cursor: not-allowed;
+}
+
+.table-title {
+  color: #1a1a1a;
+  font-size: 1.25rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Add these styles for the search input */
+.header-actions .search-input {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  min-width: 250px;
+  margin-right: 1rem;
+  transition: all 0.3s ease; /* Add transition for smooth effect */
+}
+
+.header-actions .search-input:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 2px rgba(238, 63, 36, 0.1); /* Add subtle shadow with orange color */
+}
+
+@media (max-width: 1024px) {
+  .inventory-tables-container {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-section {
+    margin-bottom: 2rem;
+  }
+}
+
+.inventory-table {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  overflow: hidden;
+  overflow-x: auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+.inventory-table table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.inventory-table th,
+.inventory-table td {
+  padding: 1.25rem 1.5rem;
+  text-align: left;
+  vertical-align: middle;
+  font-family: 'Poppins', sans-serif;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none; /* Remove all borders */
+}
+
+.inventory-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  border-bottom: 1px solid #e2e8f0; /* Only keep bottom border for headers */
+}
+
+.inventory-table td {
+  color: #334155;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #e2e8f0; /* Only keep bottom border for cells */
+  font-weight: 400;
+}
+
+.inventory-table tr:last-child td {
+  border-bottom: none; /* Remove bottom border for last row */
+}
+
+.inventory-table tr:hover td {
+  background: #f8fafc;
+}
+
+.add-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.add-button {
+  color: #ffffff;
+  font-weight: 500;
+  background: #ff4015;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+  padding: 0.75rem 1.5rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.add-button:hover {
+  background: #df3812;
+}
+
+@media (max-width: 768px) {
+  .add-buttons {
+    flex-direction: column;
+  }
+}
+
+.edit-button {
+  color: #ffffff;
+  font-weight: 500;
+  background: #ff4015;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.edit-button:hover {
+  background: #df3812;
+}
+
+.delete-button {
+  color: #ffffff;
+  font-weight: 500;
+  background: #ff4015;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.delete-button:hover {
+  background: #df3812;
+}
+
+.distribute-button {
+  color: #ffffff;
+  font-weight: 500;
+  background: #2563eb;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.distribute-button:hover {
+  background: #1d4ed8;
+}
+
+.distribute-button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+}
+.modal-content-inventory{
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    position: relative;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+  color: #1a1a1a;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.modal-content p {
+  margin-bottom: 0.5rem;
+  color: #334155;
+  font-size: 0.875rem;
+}
+
+.modal-content form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-content input,
+.modal-content select {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-content input[type="number"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  margin-top: 1rem;
+}
+
+.modal-content button {
+  padding: 0.75rem;
+  border: none;
+  border-radius: 100%;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-content button[type="submit"] {
+  background-color: #ff4015;
+  color: white;
+}
+
+.modal-content button[type="submit"]:hover {
+  background-color: #df3812;
+}
+
+.modal-content button:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.modal-content button[type="button"] {
+  background-color: #e2e8f0;
+  color: #64748b;
+}
+
+.modal-content button[type="button"]:hover {
+  background-color: #cbd5e1;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.modal-buttons button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-buttons button[type="submit"] {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.modal-buttons button[type="button"] {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Update action buttons styling */
+.action-buttons {
+
+  min-width: 100px; /* Set minimum width */
+  display: flex ;
+      gap: 8px;
+      flex-wrap: nowrap;
+      align-content: center;
+      flex-direction: column;
+      align-items: flex-end;
+}
+
+
+.action-buttons button {
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 32px; /* Fixed height for all buttons */
+}
+
+.inventory-table td:last-child {
+  min-width: 280px; /* Adjust width to accommodate horizontal buttons */
+  padding: 0.75rem;
+}
+
+.edit-button,
+.delete-button,
+.distribute-button {
+  width: 100%;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Distribute Modal Styles */
+.distribute-modal {
+  max-width: 1000px;
+  width: 90%;
+}
+
+.distribute-modal-grid {
+  display: flex;
+  gap: 2rem;
+}
+
+.scholar-selection {
+  flex: 2;
+  border-right: 1px solid #e2e8f0;
+  padding-right: 2rem;
+}
+
+.distribution-details {
+  flex: 1;
+  padding-left: 1rem;
+}
+
+.scholar-search-header {
+  margin-bottom: 1rem;
+}
+
+.scholar-controls {
+  display: flex;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.scholar-search {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.scholar-search:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 2px rgba(238, 63, 36, 0.1);
+}
+
+.scholars-grid {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 1rem;
+}
+
+.scholar-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 15px; /* Increase padding to accommodate role */
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scholar-card:hover {
+  background-color: #f8fafc;
+}
+
+.scholar-card.selected {
+  background-color: #f1f5f9;
+  border-color: #EE3F24;
+}
+
+.scholar-info {
+  flex: 1;
+  gap: 4px; /* Add gap between elements */
+}
+
+.scholar-name {
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.scholar-email {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.selected-count {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.select-all-button {
+  padding: 0.5rem 1rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-all-button:hover {
+  background-color: #f1f5f9;
+}
+
+.item-details {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 0.5rem;
+}
+
+.form-group {
+  margin: 1rem 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #64748b;
+}
+
+.search-filter-container {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 70%;
+}
+
+.user-type-filter {
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  min-width: 120px;
+  transition: all 0.3s ease;
+}
+
+.user-type-filter:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 2px rgba(238, 63, 36, 0.1);
+}
+
+.user-role {
+  font-size: 0.8em;
+  color: #666;
+  text-transform: capitalize;
+}
+
+.inventory-action-edit {
+  color: #ffffff;
+  font-weight: 500;
+  background: #ff4015;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  font-family: 'Poppins', sans-serif;
+  width: 80px;
+  text-align: center;
+  margin: 0 4px;
+}
+
+.inventory-action-edit:hover {
+  background: #df3812;
+}
+
+.inventory-action-delete {
+  color: #ffffff;
+  font-weight: 500;
+  background: #dc2626;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  font-family: 'Poppins', sans-serif;
+  width: 80px;
+  text-align: center;
+  margin: 0 4px;
+}
+
+.inventory-action-delete:hover {
+  background: #b91c1c;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+}
+
+.inventory-table td:last-child {
+  min-width: 280px;
+  padding: 0.75rem;
+}
+
+/* ...existing code... */
+.modal-content-inventory form select{
+  margin-top: 10px;
+}
+
+.modal-content-inventory form select,
+.modal-content-inventory form input[type="number"] {
+  width: 100%;
+  padding: 8px 12px;
+  margin-bottom: 15px;
+  border: 2px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  background-color: white;
+  height: 40px; /* Match the height of other inputs */
+}
+
+.modal-content-inventory form select:focus,
+.modal-content-inventory form input[type="number"]:focus {
+  outline: none;
+  border-color: #e59601;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.modal-content-inventory form select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+/* ...existing code... */
+
+/* Add sortable header styles */
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 24px; /* Make room for the sort icon */
+}
+
+.sortable-header:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.sort-icon {
+  font-size: 18px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5;
+}
+
+.sortable-header:hover .sort-icon {
+  opacity: 1;
+}
+
+/* Add these new styles for the inventory modals */
+.inventory-modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.inventory-modal-title {
+  margin-bottom: 1.5rem;
+  color: #1a1a1a;
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+.inventory-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.inventory-form-input {
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: 'Poppins', sans-serif;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.inventory-form-input:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 2px rgba(238, 63, 36, 0.1);
+}
+
+.inventory-form-select {
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: 'Poppins', sans-serif;
+  width: 100%;
+  background-color: white;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
+.inventory-form-select:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 2px rgba(238, 63, 36, 0.1);
+}
+
+.inventory-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.inventory-modal-submit {
+  padding: 0.75rem 1.5rem;
+  background-color: #EE3F24;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.inventory-modal-submit:hover {
+  background-color: #df3812;
+}
+
+.inventory-modal-cancel {
+  padding: 0.75rem 1.5rem;
+  background-color: #e2e8f0;
+  color: #64748b;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.inventory-modal-cancel:hover {
+  background-color: #cbd5e1;
+}
+
+/* Add the styled checkbox classes */
+.styled-checkbox-inventory {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+}
+
+.styled-checkbox-inventory input[type="checkbox"] {
+  opacity: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.styled-checkbox-inventory .checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  background-color: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.styled-checkbox-inventory input[type="checkbox"]:checked + .checkmark {
+  background-color: #EE3F24;
+  border-color: #EE3F24;
+}
+
+.styled-checkbox-inventory .checkmark:after {
+  content: '';
+  position: absolute;
+  display: none;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.styled-checkbox-inventory input[type="checkbox"]:checked + .checkmark:after {
+  display: block;
+}
+
+/* Add this new style for the distribute modal button */
+.distribute-modal .distribute-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #22c55e; /* Green color */
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.distribute-modal .distribute-button:hover:not(:disabled) {
+  background-color: #16a34a; /* Darker green on hover */
+}
+
+.distribute-modal .distribute-button:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Ensure the cancel button has proper styling */
+.distribute-modal .cancel-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #e2e8f0;
+  color: #64748b;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.distribute-modal .cancel-button:hover {
+  background-color: #cbd5e1;
+}
+
+/* Update the distribute modal button styles */
+.distribute-modal .distribute-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #22c55e; /* Green color by default */
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.distribute-modal .distribute-button:not(:disabled) {
+  background-color: #22c55e; /* Keep green when enabled */
+}
+
+.distribute-modal .distribute-button:hover:not(:disabled) {
+  background-color: #16a34a; /* Darker green on hover */
+}
+
+.distribute-modal .distribute-button:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Add these styles for quantity validation */
+.quantity-summary {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.quantity-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Add these styles for the view button and modal */
+.viewsss-button {
+  color: #ffffff;
+  font-weight: 500;
+  background: #3b82f6;
+  border-radius: 0.375rem;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  font-family: 'Poppins', sans-serif;
+  width: 80px;
+  text-align: center;
+  margin: 0 4px;
+}
+
+.viewsss-button:hover {
+  background: #2563eb;
+}
+
+.view-details {
+  background: #f8fafc;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.view-details p {
+  margin: 0.75rem 0;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.view-details strong {
+  color: #1a1a1a;
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+/* ...existing code... */

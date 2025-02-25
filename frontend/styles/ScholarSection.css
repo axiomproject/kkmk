@@ -1,0 +1,181 @@
+/* Fundraiser Section Styling */
+.fundraiser-section {
+    margin-top: 5rem;
+    padding: 2rem;
+    max-width: 1200px;
+    justify-self: center;
+  }
+  
+  .fundraiser-title {
+    text-align: left;
+    margin-bottom: 2rem;
+    font-weight: 600;
+    font-family: "Poppins", sans-serif;
+    font-size: 1.5rem;
+    color: #333;
+  }
+  
+  .fundraiser-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+  
+  .fundraiser-main-card {
+    grid-column: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .fundraiser-main-image {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+  }
+  
+  .fundraiser-side-cards {
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .fundraiser-side-card {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .fundraiser-side-image {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+  }
+  
+  .fundraiser-info,
+  .side-card-info {
+    padding: 1rem;
+  }
+  
+  .fundraiser-heading,
+  .side-card-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    text-align: left;
+    color: #242424;
+    font-family: "Poppins", sans-serif;
+  }
+  
+  .scholar-progress-container {
+    width: 100%;
+    margin: 0.8rem 0;
+  }
+  
+ 
+  
+  .scholar-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #45a049);
+    border-radius: 10px;
+    transition: width 0.3s ease;
+  }
+  
+  .scholar-progress-text {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    color: #242424;
+    font-family: "Poppins", sans-serif;
+    font-weight: 500;
+  }
+  
+  .amount-raised {
+    margin: 0.5rem 0 0;
+    color: #242424;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-align: left;
+    font-family: "Poppins", sans-serif;
+  }
+  
+  .amount-raised.side {
+    font-size: 0.85rem;
+  }
+  
+  .fundraiser-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  .fundraiser-arrow-button {
+    background: transparent;
+    border: 2px solid #666;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+  }
+  
+  .fundraiser-arrow-button:hover {
+    border-color: #333;
+    color: #333;
+    transform: translateX(5px);
+  }
+  
+  .fundraiser-arrow-button .material-icons {
+    font-size: 24px;
+  }
+  
+  .fundraiser-arrow-button svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+    transform: rotate(-45deg);
+  }
+  
+  .student-details {
+    display: none;
+  }
+  
+  .fundraiser-main-card:hover,
+  .fundraiser-side-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .fundraiser-container {
+      grid-template-columns: 1fr;
+    }
+  
+    .fundraiser-main-card,
+    .fundraiser-side-cards {
+      grid-column: 1;
+    }
+  
+    .fundraiser-side-cards {
+      margin-top: 2rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .fundraiser-side-cards {
+      grid-template-columns: 1fr;
+    }
+  }
