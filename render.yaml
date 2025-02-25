@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: kkmk
+    env: node
+    buildCommand: npm run install-all && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_USER
+        fromDatabase:
+          name: kkmk
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: kkmk
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: kkmk
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: kkmk
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: kkmk
+          property: database
+
+databases:
+  - name: kkmk
+    databaseName: kkmk
+    user: kkmk_db
