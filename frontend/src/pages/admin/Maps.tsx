@@ -8,7 +8,7 @@ import {
   useMap,
   useMapEvents  // Add this import
 } from 'react-leaflet';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import L from 'leaflet';
 import { Icon, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -624,12 +624,12 @@ const AdminMap: React.FC = () => {
     const fetchLocations = async () => {
       try {
         const [churchesRes, eventsRes] = await Promise.all([
-          fetch('http://localhost:5175/api/churches'),
-          fetch('http://localhost:5175/api/events/locations')
+          api.get('/churches'),
+          api.get('/events/locations')
         ]);
 
-        const churches = await churchesRes.json();
-        const events = await eventsRes.json();
+        const churches = churchesRes.data;
+        const events = eventsRes.data;
 
         // Filter out events that don't have coordinates
         const validEvents = events.filter((e: any) => e.lat && e.lng);
@@ -670,7 +670,7 @@ const AdminMap: React.FC = () => {
   useEffect(() => {
     const fetchScholars = async () => {
       try {
-        const response = await axios.get('http://localhost:5175/api/scholars');
+        const response = await api.get('/scholars');
         const scholarsWithLocation = response.data.filter(
           (scholar: Scholar) => scholar.latitude && scholar.longitude
         );
@@ -703,7 +703,7 @@ const AdminMap: React.FC = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get('http://localhost:5175/api/events');
+        const response = await api.get('http://localhost:5175/api/events');
         
         const eventsWithCoordinates = response.data.filter((event: DBEvent) => {
           // Filter out events that don't have coordinates or are past due
@@ -792,10 +792,7 @@ const AdminMap: React.FC = () => {
   useEffect(() => {
     const fetchVerifiedScholars = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5175/api/scholars/verified-locations', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get('/scholars/verified-locations');
         
         console.log('Received scholar data:', response.data); // Debug log
 
@@ -834,8 +831,8 @@ const AdminMap: React.FC = () => {
     const fetchScholarDistributions = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(
-          'http://localhost:5175/api/inventory/distributions-with-location',
+        const response = await api.get(
+          '/inventory/distributions-with-location',
           { headers: { Authorization: `Bearer ${token}` }}
         );
 
