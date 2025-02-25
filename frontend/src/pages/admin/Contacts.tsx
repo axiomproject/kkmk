@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import '../../styles/Bank.css'; // Reuse Bank styles
 
 interface Contact {
@@ -21,7 +21,7 @@ const Contacts: React.FC = () => {
   useEffect(() => {
     const fetchContacts = async () => {
       try {
-        const response = await axios.get('http://localhost:5175/api/contacts');
+        const response = await api.get('/contacts');
         setContacts(response.data);
       } catch (error) {
         console.error('Error fetching contacts:', error);
@@ -36,7 +36,7 @@ const Contacts: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this contact?')) {
       try {
-        await axios.delete(`http://localhost:5175/api/contacts/${id}`);
+        await api.delete(`/contacts/${id}`);
         setContacts(contacts.filter(contact => contact.id !== id));
         alert('Contact deleted successfully');
       } catch (error) {
