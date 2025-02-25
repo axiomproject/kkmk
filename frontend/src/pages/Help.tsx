@@ -10,7 +10,7 @@ import KMKK from '../img/KKMK.svg';
 import KMKK2 from '../img/KKMK2.svg';
 import yellowkid from '../img/yellowkid.png'
 import DonationService from '../services/donationService';
-import axios from 'axios';
+import api from '../config/axios'; // Replace axios import
 
 const Help: React.FC = () => {
 
@@ -57,7 +57,7 @@ const Help: React.FC = () => {
           formData.append('proofOfPayment', file);
         }
 
-        const response = await axios.post('http://localhost:5175/api/donations', formData, {
+        const response = await api.post('/donations', formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -70,7 +70,7 @@ const Help: React.FC = () => {
         }
       } else if (donationType === 'regular') {
         // Handle regular donation
-        const response = await axios.post('http://localhost:5175/api/inventory/regular', {
+        const response = await api.post('/inventory/regular', {
           donatorName: form.fullName.value,
           email: form.email.value,
           contactNumber: form.contactNumber.value,
@@ -87,7 +87,7 @@ const Help: React.FC = () => {
         }
       } else if (donationType === 'in-kind') {
         // Handle in-kind donation
-        const response = await axios.post('http://localhost:5175/api/inventory/inkind', {
+        const response = await api.post('/inventory/inkind', {
           donatorName: form.fullName.value,
           email: form.email.value,
           contactNumber: form.contactNumber.value,
