@@ -41,12 +41,14 @@ db.connect()
     console.error('Error connecting to PostgreSQL:', error);
   });
 
-// Update CORS configuration to allow credentials
+// Update CORS configuration to allow all origins in production
 app.use(cors({
-  origin: 'http://localhost:5173', // Frontend URL
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://kkmkpayatas.onrender.com', 'http://localhost:5173']
+    : 'http://localhost:5173',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
 }));
 
 app.use(bodyParser.json({ limit: '50mb' }));
