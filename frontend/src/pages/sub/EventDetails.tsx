@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";  // Add useNavigate
+import { useParams, useNavigate } from "react-router-dom";
 import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
-import axios from 'axios';
+import api from '../../config/axios'; // Replace axios import
 import { motion } from "framer-motion";
 import "../../styles/EventDetails.css";
 import { useAuth } from '../../hooks/useAuth';  // Add this import
 import  kmlogo1 from '../../img/kmlogo1.png'; 
-
-
-// Add axios configuration
-axios.defaults.baseURL = 'http://localhost:5175';
 
 interface Event {
   id: number;
@@ -41,20 +37,23 @@ const EventDetails: React.FC = () => {
   const [hasJoined, setHasJoined] = useState(false);
   const [participantStatus, setParticipantStatus] = useState<string>('');
 
-  // Update fetchEventDetails to also get current volunteer count
+  const getImageUrl = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('data:') || path.startsWith('http')) return path;
+    return `${import.meta.env.VITE_API_URL}${path}`;
+  };
+
   const fetchEventDetails = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await axios.get(`/api/admin/events/${eventId}`);
+      const response = await api.get(`/admin/events/${eventId}`);
       
-      // Transform the data and calculate volunteer counts
       const eventData = {
         ...response.data,
-        // Add baseURL to image path if it's a relative path
         image: response.data.image.startsWith('http') 
           ? response.data.image 
-          : `${axios.defaults.baseURL}${response.data.image}`,
+          : getImageUrl(response.data.image),
         totalVolunteers: parseInt(response.data.total_volunteers) || 0,
         currentVolunteers: parseInt(response.data.current_volunteers) || 0,
         contact: {
@@ -77,11 +76,7 @@ const EventDetails: React.FC = () => {
   const checkParticipation = async () => {
     if (!user) return;
     try {
-      const response = await axios.get(`/api/events/${eventId}/check-participation`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await api.get(`/events/${eventId}/check-participation`);
       setHasJoined(response.data.hasJoined);
       setParticipantStatus(response.data.status || ''); // Add this line
     } catch (error) {
@@ -155,7 +150,6 @@ const EventDetails: React.FC = () => {
     return diffDays > 0 ? diffDays : 0;
   };
 
-  // Update handleVolunteerSignUp
   const handleVolunteerSignUp = async () => {
     if (!user) {
       navigate('/register', { 
@@ -171,23 +165,7 @@ const EventDetails: React.FC = () => {
       setIsJoining(true);
       setJoinError(null);
       
-      const token = localStorage.getItem('token');
-      console.log('Request details:', {
-        url: `/api/events/${eventId}/join`,
-        token: `Bearer ${token}`,
-        eventId,
-        userId: user.id
-      });
-
-      const response = await axios.post(
-        `/api/events/${eventId}/join`, 
-        {}, // Empty body since user ID comes from token
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      const response = await api.post(`/events/${eventId}/join`);
 
       // Update local event data with new volunteer count
       if (event) {
@@ -211,22 +189,12 @@ const EventDetails: React.FC = () => {
     }
   };
 
-  // Update handleUnjoinEvent
   const handleUnjoinEvent = async () => {
     try {
       setIsJoining(true);
       setJoinError(null);
       
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `/api/events/${eventId}/unjoin`,
-        {}, // Empty body since user ID comes from token
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      const response = await api.post(`/events/${eventId}/unjoin`);
 
       // Update local event data with new volunteer count
       if (event) {
@@ -334,7 +302,7 @@ const EventDetails: React.FC = () => {
       <div className="event-main">
         <div className="event-image-container">
           <img 
-            src={event.image} 
+            src={getImageUrl(event.image)} 
             alt={event.title} 
             className="event-image2"
             onError={(e) => {
