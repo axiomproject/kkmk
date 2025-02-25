@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import React from 'react'
 import "../../styles/Contact.css";
-import axios from 'axios';
+import api from '../../config/axios';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -60,12 +60,8 @@ const Contact: React.FC = () => {
           message: message
         };
   
-        // Update the endpoint URL to match the backend route
-        const response = await axios.post('http://localhost:5175/api/contacts', formData, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
+        // Update the axios call to use the api instance
+        const response = await api.post('/contacts', formData);
         
         if (response.status === 201) {
           alert('Thank you for your message! We will get back to you soon.');
@@ -112,7 +108,8 @@ const Contact: React.FC = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await axios.get('/api/content/contact');
+        // Update the axios call to use the api instance
+        const response = await api.get('/content/contact');
         if (response.data?.content) {
           setContent(response.data.content);
         }

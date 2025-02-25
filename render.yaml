@@ -30,6 +30,8 @@ services:
         fromDatabase:
           name: kkmk
           property: database
+      - key: CORS_ORIGIN
+        value: https://kkmkpayatas.onrender.com
 
 databases:
   - name: kkmk
