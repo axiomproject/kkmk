@@ -46,17 +46,41 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
 };
 
 const findUserByEmailOrUsername = async (identifier) => {
-  console.log('Finding user by email or username:', identifier);
-  const result = await db.query(
-    `SELECT id, email, name, username, profile_photo, cover_photo, intro, 
-            known_as, date_of_birth, phone, password, is_verified, role,
-            facebook_url, twitter_url, instagram_url, status
-     FROM users 
-     WHERE email = $1 OR username = $1`,
-    [identifier]
-  );
-  console.log('User found in DB:', result.rows[0]);
-  return result.rows[0];
+  try {
+    console.log('Finding user by email or username:', identifier);
+    
+    // First check if the identifier exists
+    if (!identifier) {
+      throw new Error('Email or username is required');
+    }
+
+    // Modify the query to handle both email and username cases
+    const result = await db.query(
+      `SELECT id, email, name, username, profile_photo, cover_photo, intro, 
+              known_as, date_of_birth, phone, password, is_verified, role,
+              facebook_url, twitter_url, instagram_url, status
+       FROM users 
+       WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)`,
+      [identifier]
+    );
+
+    // Add debug logging
+    console.log('Database query result:', {
+      rowCount: result.rowCount,
+      firstRow: result.rows[0] ? 'Found' : 'Not found'
+    });
+
+    // Handle case where no user is found
+    if (!result.rows[0]) {
+      console.log('No user found with identifier:', identifier);
+      return null;
+    }
+
+    return result.rows[0];
+  } catch (error) {
+    console.error('Error in findUserByEmailOrUsername:', error);
+    throw error;
+  }
 };
 
 const updateUserPhotos = async (userId, profilePhoto, coverPhoto) => {
