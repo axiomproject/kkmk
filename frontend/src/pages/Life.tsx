@@ -54,7 +54,7 @@ const Life: React.FC = () => {
   useEffect(() => {
     const loadContent = async () => {
       try {
-        const response = await api.get('/api/content/life');
+        const response = await api.get('/content/life');
         if (response.data?.content) {
           const savedContent = response.data.content;
           setContent(prev => ({
