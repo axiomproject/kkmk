@@ -31,23 +31,22 @@ if (!fs.existsSync(forumUploadsDir)) {
   fs.mkdirSync(forumUploadsDir, { recursive: true });
 }
 
-// Replace the connection test with a simple query
-db.query('SELECT NOW()')
-  .then(() => {
-    console.log('Connected to PostgreSQL successfully');
+// Remove the Pool connection code and replace with db test
+db.connect()
+  .then(obj => {
+    console.log('Connected to PostgreSQL');
+    obj.done();
   })
   .catch(error => {
     console.error('Error connecting to PostgreSQL:', error);
   });
 
-// Update CORS configuration to allow all origins in production
+// Update CORS configuration to allow credentials
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://kkmkpayatas.onrender.com', 'http://localhost:5173']
-    : 'http://localhost:5173',
+  origin: 'http://localhost:5173', // Frontend URL
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -121,14 +120,6 @@ app.use('/uploads', (req, res, next) => {
 // Make sure this comes before your routes
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/donations', donationRoutes);
-
-
-
-// Handle SPA routing - serve index.html for all non-API routes
-app.get('*', (req, res, next) => {
-  if (req.url.startsWith('/api')) return next();
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
 
 // Update middleware to only log errors
 app.use((req, res, next) => {

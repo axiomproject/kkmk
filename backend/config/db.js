@@ -1,37 +1,29 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+const dotenv = require('dotenv');
 
-// Get database configuration from environment variables
-const isProduction = process.env.NODE_ENV === 'production';
+// Load environment variables
+dotenv.config();
 
-// Create connection configuration with proper SSL handling for production
-const connectionConfig = {
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'test',
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'kkmk',
-  ssl: isProduction ? { rejectUnauthorized: false } : false,
-  connectionTimeoutMillis: 10000, // 10 seconds
-  idleTimeoutMillis: 30000, // 30 seconds
+// Create connection pool using environment variables
+const pool = new Pool({
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Test connection on startup
+pool.connect()
+  .then(() => {
+    console.log('Successfully connected to PostgreSQL database');
+  })
+  .catch(err => {
+    console.error('Database connection error:', err);
+  });
+
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+  connect: () => pool.connect()
 };
-
-// Log configuration (without sensitive data)
-console.log('Database connection config:', {
-  host: connectionConfig.host,
-  port: connectionConfig.port,
-  database: connectionConfig.database,
-  ssl: !!connectionConfig.ssl,
-  environment: process.env.NODE_ENV || 'development'
-});
-
-// Create pool
-const pool = new Pool(connectionConfig);
-
-// Add error handling for the pool
-pool.on('error', (err) => {
-  console.error('Unexpected database error:', err);
-});
-
-// Export the pool directly
-module.exports = pool;
