@@ -1,15 +1,6 @@
-const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../config/db');
-
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'kkmk',
-  password: 'test',
-  port: 5432,
-});
 
 const createUser = async (name, username, email, password, dateOfBirth, role = 'volunteer', faceData = null) => {
   try {
@@ -21,15 +12,13 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
 
     if (faceData) {
       const parsedData = JSON.parse(faceData);
-      // Convert descriptors to proper PostgreSQL array format
       face_descriptors = parsedData.descriptors.map(desc => 
         Array.isArray(desc) ? desc : Array.from(desc)
       );
-      // Keep landmarks as JSON
       face_landmarks = JSON.stringify(parsedData.landmarks);
     }
 
-    const result = await pool.query(
+    const result = await db.query(
       `INSERT INTO users (
         name, username, email, password, date_of_birth, 
         verification_token, is_verified, role, created_at,
@@ -58,13 +47,11 @@ const findUserByEmailOrUsername = async (identifier) => {
   try {
     console.log('Finding user by email or username:', identifier);
     
-    // Input validation
     if (!identifier) {
       console.log('No identifier provided');
       return null;
     }
 
-    // Add logging for SQL query
     const query = `
       SELECT id, email, name, username, profile_photo, cover_photo, intro, 
              known_as, date_of_birth, phone, password, is_verified, role,
@@ -72,41 +59,33 @@ const findUserByEmailOrUsername = async (identifier) => {
       FROM users 
       WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)`;
 
-    console.log('Executing query with params:', [identifier]);
-    
-    try {
-      const result = await db.query(query, [identifier]);
-      
-      // Add debug logging for query result
-      console.log('Query result:', {
-        rowCount: result?.rowCount || 0,
-        hasRows: !!result?.rows?.length
-      });
+    console.log('Executing query with parameters:', [identifier]);
 
-      // Safe access of result
-      if (!result?.rows?.length) {
-        console.log('No user found for identifier:', identifier);
-        return null;
-      }
+    const result = await db.query(query, [identifier]);
 
-      // Log found user (excluding sensitive data)
-      const user = result.rows[0];
-      console.log('Found user:', {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        is_verified: user.is_verified,
-        role: user.role
-      });
+    console.log('Query result:', {
+      rowCount: result?.rowCount || 0,
+      hasRows: !!result?.rows?.length
+    });
 
-      return user;
-    } catch (dbError) {
-      console.error('Database query error:', dbError);
-      throw new Error(`Database query failed: ${dbError.message}`);
+    if (!result?.rows?.length) {
+      console.log('No user found for identifier:', identifier);
+      return null;
     }
+
+    const user = result.rows[0];
+    console.log('Found user:', {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      is_verified: user.is_verified,
+      role: user.role
+    });
+
+    return user;
   } catch (error) {
-    console.error('Error in findUserByEmailOrUsername:', error);
-    throw error;
+    console.error('Database error in findUserByEmailOrUsername:', error);
+    throw new Error(`Failed to find user: ${error.message}`);
   }
 };
 
@@ -119,7 +98,7 @@ const updateUserPhotos = async (userId, profilePhoto, coverPhoto) => {
     WHERE id = $3 
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
-  const result = await pool.query(query, [profilePhoto, coverPhoto, userId]);
+  const result = await db.query(query, [profilePhoto, coverPhoto, userId]);
   console.log('Updated user:', result.rows[0]);
   return result.rows[0];
 };
@@ -133,7 +112,7 @@ const updateUserInfo = async (userId, intro, knownAs) => {
     WHERE id = $3 
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
-  const result = await pool.query(query, [intro, knownAs, userId]);
+  const result = await db.query(query, [intro, knownAs, userId]);
   console.log('Updated user info:', result.rows[0]);
   return result.rows[0];
 };
@@ -152,14 +131,13 @@ const updateUserDetails = async (userId, name, email, username, dateOfBirth, pho
     WHERE id = $8 
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
-  const result = await pool.query(query, [name, email, username, dateOfBirth, phone, intro, knownAs, userId]);
+  const result = await db.query(query, [name, email, username, dateOfBirth, phone, intro, knownAs, userId]);
   console.log('Updated user details:', result.rows[0]);
   return result.rows[0];
 };
 
 const updateUserPassword = async (userId, oldPassword, newPassword) => {
-  // First verify the old password
-  const user = await pool.query('SELECT password FROM users WHERE id = $1', [userId]);
+  const user = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
   if (!user.rows[0]) {
     throw new Error('User not found');
   }
@@ -169,9 +147,8 @@ const updateUserPassword = async (userId, oldPassword, newPassword) => {
     throw new Error('Current password is incorrect');
   }
 
-  // Hash and update the new password
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  const result = await pool.query(
+  const result = await db.query(
     'UPDATE users SET password = $1 WHERE id = $2 RETURNING id',
     [hashedPassword, userId]
   );
@@ -183,12 +160,11 @@ const verifyEmail = async (token) => {
   console.log('Starting verification process for token:', token);
   
   try {
-    const client = await pool.connect();
+    const client = await db.connect();
     
     try {
       await client.query('BEGIN');
       
-      // First check if user is already verified
       const alreadyVerifiedQuery = `
         SELECT id, email, is_verified 
         FROM users 
@@ -204,7 +180,6 @@ const verifyEmail = async (token) => {
         return { ...verifiedCheck.rows[0], alreadyVerified: true };
       }
       
-      // If not already verified, check for valid token
       const verifyQuery = `
         UPDATE users 
         SET is_verified = TRUE,
@@ -238,9 +213,9 @@ const verifyEmail = async (token) => {
 
 const createPasswordResetToken = async (email) => {
   const resetToken = crypto.randomBytes(32).toString('hex');
-  const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+  const resetTokenExpiry = new Date(Date.now() + 3600000);
 
-  const result = await pool.query(
+  const result = await db.query(
     'UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE email = $3 RETURNING email',
     [resetToken, resetTokenExpiry, email]
   );
@@ -249,7 +224,7 @@ const createPasswordResetToken = async (email) => {
 };
 
 const verifyResetToken = async (token) => {
-  const result = await pool.query(
+  const result = await db.query(
     'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expiry > NOW()',
     [token]
   );
@@ -258,7 +233,7 @@ const verifyResetToken = async (token) => {
 
 const resetPassword = async (token, newPassword) => {
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  const result = await pool.query(
+  const result = await db.query(
     'UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE reset_token = $2 AND reset_token_expiry > NOW() RETURNING id',
     [hashedPassword, token]
   );
@@ -276,7 +251,7 @@ const updateUserSocials = async (userId, facebookUrl, twitterUrl, instagramUrl) 
               known_as, date_of_birth, phone, facebook_url, twitter_url, 
               instagram_url, role, is_verified`;
 
-  const result = await pool.query(query, [facebookUrl, twitterUrl, instagramUrl, userId]);
+  const result = await db.query(query, [facebookUrl, twitterUrl, instagramUrl, userId]);
   return result.rows[0];
 };
 
@@ -287,7 +262,7 @@ const updateLastLogin = async (userId) => {
     WHERE id = $1 
     RETURNING last_login`;
 
-  const result = await pool.query(query, [userId]);
+  const result = await db.query(query, [userId]);
   return result.rows[0];
 };
 
@@ -299,7 +274,7 @@ const updateFaceData = async (userId, faceData) => {
     WHERE id = $2 
     RETURNING id`;
 
-  const result = await pool.query(query, [faceData, userId]);
+  const result = await db.query(query, [faceData, userId]);
   return result.rows[0];
 };
 
@@ -307,7 +282,6 @@ const normalizeAndPrepareFaceData = (faceData) => {
   try {
     const parsedData = typeof faceData === 'string' ? JSON.parse(faceData) : faceData;
     
-    // Calculate global center and scale for all points
     const allPoints = [
       ...(parsedData.leftEye || []),
       ...(parsedData.rightEye || []),
@@ -320,18 +294,15 @@ const normalizeAndPrepareFaceData = (faceData) => {
       throw new Error('Invalid face data structure');
     }
 
-    // Calculate center
     const center = {
       x: allPoints.reduce((sum, p) => sum + p.x, 0) / allPoints.length,
       y: allPoints.reduce((sum, p) => sum + p.y, 0) / allPoints.length
     };
 
-    // Calculate scale (max distance from center)
     const scale = Math.max(...allPoints.map(p => 
       Math.sqrt(Math.pow(p.x - center.x, 2) + Math.pow(p.y - center.y, 2))
     ));
 
-    // Normalize all features relative to the same center and scale
     const normalizedData = {};
     for (const [feature, points] of Object.entries(parsedData)) {
       if (Array.isArray(points)) {
@@ -366,7 +337,6 @@ const calculateFeatureSimilarity = (points1, points2) => {
         Math.pow(p1.y - p2.y, 2)
       );
 
-      // Convert distance to similarity score (0-1)
       const similarity = 1 / (1 + distance);
       totalSimilarity += similarity;
       pointCount++;
@@ -385,7 +355,7 @@ const calculateFaceSimilarity = (stored, incoming) => {
     const incomingData = typeof incoming === 'string' ? JSON.parse(incoming) : incoming;
 
     const weights = {
-      leftEye: 0.25,    // Key features with higher weights
+      leftEye: 0.25,
       rightEye: 0.25,
       nose: 0.2,
       mouth: 0.15,
@@ -394,7 +364,7 @@ const calculateFaceSimilarity = (stored, incoming) => {
 
     let totalScore = 0;
     let totalWeight = 0;
-    let featureScores = {};  // Track individual feature scores
+    let featureScores = {};
 
     for (const [feature, weight] of Object.entries(weights)) {
       if (storedData[feature] && incomingData[feature]) {
@@ -402,7 +372,7 @@ const calculateFaceSimilarity = (stored, incoming) => {
           storedData[feature],
           incomingData[feature]
         );
-        featureScores[feature] = score;  // Store individual score
+        featureScores[feature] = score;
         totalScore += score * weight;
         totalWeight += weight;
       }
@@ -410,7 +380,6 @@ const calculateFaceSimilarity = (stored, incoming) => {
 
     const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0;
 
-    // Log detailed scoring
     console.log('Feature scores:', featureScores);
     console.log('Final weighted score:', finalScore);
 
@@ -430,13 +399,11 @@ const compareFeaturePoints = (points1, points2) => {
       const p1 = points1[i];
       const p2 = points2[i];
 
-      // Calculate direct point similarity
       const distance = Math.sqrt(
         Math.pow(p1.x - p2.x, 2) + 
         Math.pow(p1.y - p2.y, 2)
       );
 
-      // Convert distance to similarity score (0-1)
       const pointSimilarity = 1 / (1 + distance * 2);
       totalSimilarity += pointSimilarity;
     }
@@ -454,13 +421,11 @@ const validateFaceData = (faceData) => {
   try {
     const data = typeof faceData === 'string' ? JSON.parse(faceData) : faceData;
     
-    // Check required facial features
     const requiredFeatures = ['leftEye', 'rightEye', 'nose', 'mouth'];
     const hasAllFeatures = requiredFeatures.every(feature => 
       Array.isArray(data[feature]) && data[feature].length > 0
     );
     
-    // Validate point coordinates
     const hasValidPoints = Object.values(data).every(points =>
       Array.isArray(points) && points.every(point =>
         typeof point.x === 'number' && 
@@ -480,7 +445,7 @@ const validateFaceData = (faceData) => {
 const findUserByFaceData = async (faceData) => {
   try {
     const { descriptor } = JSON.parse(faceData);
-    const users = await pool.query(
+    const users = await db.query(
       'SELECT * FROM users WHERE face_descriptors IS NOT NULL'
     );
     
@@ -490,7 +455,6 @@ const findUserByFaceData = async (faceData) => {
     for (const user of users.rows) {
       if (!user.face_descriptors || !user.face_descriptors.length) continue;
 
-      // Ensure descriptors are in the correct format
       for (const storedDescriptor of user.face_descriptors) {
         if (!Array.isArray(storedDescriptor)) continue;
         
@@ -544,7 +508,7 @@ const euclideanDistance = (a, b) => {
 
 const updateUserLocation = async (userId, latitude, longitude) => {
   try {
-    const result = await pool.query(
+    const result = await db.query(
       `UPDATE users 
        SET 
         latitude = $1,
@@ -572,7 +536,7 @@ const updateUserLocation = async (userId, latitude, longitude) => {
 
 const archiveUser = async (userId) => {
   try {
-    const result = await pool.query(
+    const result = await db.query(
       `UPDATE users 
        SET status = 'inactive'
        WHERE id = $1
@@ -587,18 +551,15 @@ const archiveUser = async (userId) => {
 };
 
 const deleteUser = async (userId) => {
-  const client = await pool.connect();
+  const client = await db.connect();
   try {
     await client.query('BEGIN');
 
-    // Delete all related data in order of dependencies
     await client.query('DELETE FROM report_cards WHERE user_id = $1', [userId]);
     await client.query('DELETE FROM user_locations WHERE user_id = $1', [userId]);
     await client.query('DELETE FROM user_verifications WHERE user_id = $1', [userId]);
     await client.query('DELETE FROM user_preferences WHERE user_id = $1', [userId]);
-    // Add any other related tables here
     
-    // Finally delete the user
     const result = await client.query(
       'DELETE FROM users WHERE id = $1 RETURNING id',
       [userId]
