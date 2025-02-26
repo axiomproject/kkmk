@@ -443,7 +443,7 @@ const Bank: React.FC = () => {
 
       {activeView === 'verified' ? (
         <>
-          <div className="stats-grid"></div>
+          <div className="stats-grid">
             <div className="stat-card total">
               <h3 className="stat-title">Total Verified Donations</h3>
               <p className="stat-value">₱{calculateVerifiedTotal()}</p>
@@ -456,7 +456,7 @@ const Bank: React.FC = () => {
               <h3 className="stat-title">Pending Verification</h3>
               <p className="stat-value">₱{calculatePendingTotal()}</p>
             </div>
-         
+            </div>
 
           <div className="bank-table">
             <table>

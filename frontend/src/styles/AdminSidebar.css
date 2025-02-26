@@ -409,7 +409,7 @@
 }
 
 .expanded .sidebar-subitems {
-  max-height: 250px;
+  max-height: max-content;
 }
 
 .subitem-link {
