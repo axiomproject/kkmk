@@ -12,7 +12,13 @@ interface LocationMarker {
   lng: number;
   name: string;
   type: 'event' | 'office';
-  details: any;
+  details: {
+    image?: string;  // Add optional property marker
+    address?: string;
+    description?: string;
+    date?: string;
+    [key: string]: any;  // Allow other properties
+  };
 }
 
 interface LocationFilter {
@@ -80,20 +86,41 @@ const InteractiveMap: React.FC = () => {
         console.log('Raw response:', response.data);
 
         const currentDate = new Date();
-        const futureEvents = response.data.filter((event: { date: string }) => {
-          const eventDate = new Date(event.date);
-          return eventDate >= currentDate;
-        }).map((event: { image: string }) => ({
-          ...event,
-          image: event.image.startsWith('http') 
-            ? event.image 
-            : getImageUrl(event.image),
-          // ...rest of mapping...
-        }));
+        const futureEvents = response.data
+          .filter((event: { date: string }) => {
+            const eventDate = new Date(event.date);
+            return eventDate >= currentDate;
+          })
+          .map((event: any) => {
+            // Safely handle the event.image property
+            const imageUrl = event.image 
+              ? (event.image.startsWith('http') 
+                ? event.image 
+                : getImageUrl(event.image))
+              : '/images/default-event.jpg';  // Fallback image
+                
+            // Create proper marker object
+            return {
+              id: event.id,
+              lat: parseFloat(event.latitude) || 0,
+              lng: parseFloat(event.longitude) || 0,
+              name: event.title || 'Unnamed Event',
+              type: 'event',
+              details: {
+                image: imageUrl,
+                address: event.location || 'Unknown Location',
+                description: event.description || 'No description available',
+                date: event.date || 'Date not specified'
+              }
+            };
+          });
 
+        console.log('Processed events:', futureEvents);
         setMarkers([OFFICE_MARKER, ...futureEvents]);
       } catch (error) {
         console.error('Failed to fetch events:', error);
+        // Still keep the office marker if there's an error
+        setMarkers([OFFICE_MARKER]);
       } finally {
         setLoading(false);
       }
@@ -108,6 +135,21 @@ const InteractiveMap: React.FC = () => {
       if (activeFilter === 'EVENTS') return marker.type === 'event';
       if (activeFilter === 'OFFICE') return marker.type === 'office';
       return false;
+    });
+  };
+
+  const getMarkerIcon = (marker: LocationMarker) => {
+    if (marker.type === 'office') {
+      return officeIcon;
+    }
+    
+    // Create event icon with proper error handling
+    return new Icon({
+      iconUrl: marker.details.image || '/images/default-event.jpg', // Fallback
+      iconSize: [45, 45],
+      iconAnchor: [22, 22],
+      popupAnchor: [0, -22],
+      className: 'custom-event-marker'
     });
   };
 
@@ -126,7 +168,7 @@ const InteractiveMap: React.FC = () => {
       <div className="marker-popup event">
         <div className="marker-image-container">
           <img
-            src={marker.details.image}
+            src={marker.details.image || '/images/default-event.jpg'}
             alt={marker.name}
             className="marker-event-image"
             onError={(e) => {
@@ -136,15 +178,17 @@ const InteractiveMap: React.FC = () => {
           />
         </div>
         <h3>{marker.name}</h3>
-        <p><strong>Date:</strong> {marker.details.date}</p>
-        <p><strong>Location:</strong> {marker.details.address}</p>
-        <p><strong>Description:</strong> {marker.details.description}</p>
-        <button 
-          className="view-details-btn"
-          onClick={() => navigate(`/event/${marker.id}`)}
-        >
-          View Event Details
-        </button>
+        <p><strong>Date:</strong> {marker.details.date || 'Not specified'}</p>
+        <p><strong>Location:</strong> {marker.details.address || 'Not specified'}</p>
+        <p><strong>Description:</strong> {marker.details.description || 'No description available'}</p>
+        {marker.id > 0 && (
+          <button 
+            className="view-details-btn"
+            onClick={() => navigate(`/event/${marker.id}`)}
+          >
+            View Event Details
+          </button>
+        )}
       </div>
     );
   };
@@ -184,15 +228,7 @@ const InteractiveMap: React.FC = () => {
             <Marker
               key={`${marker.type}-${marker.id}`}
               position={[marker.lat, marker.lng]}
-              icon={marker.type === 'office' ? officeIcon : 
-                new Icon({
-                  iconUrl: marker.details.image,
-                  iconSize: [45, 45],
-                  iconAnchor: [22, 22],
-                  popupAnchor: [0, -22],
-                  className: 'custom-event-marker'
-                })
-              }
+              icon={getMarkerIcon(marker)}
             >
               <Popup>
                 {renderPopupContent(marker)}
