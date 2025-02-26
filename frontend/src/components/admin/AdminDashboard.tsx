@@ -127,67 +127,67 @@ const Analytics: React.FC = () => {
     const fetchData = async () => {
       try {
         // Fetch scholar count
-        const scholarResponse = await fetch('http://localhost:5175/api/admin/scholar-count');
+        const scholarResponse = await fetch('/admin/scholar-count');
         if (!scholarResponse.ok) throw new Error('Failed to fetch scholar count');
         const scholarData = await scholarResponse.json();
         setScholarCount(scholarData.count);
 
         // Fetch items distributed
-        const itemsResponse = await fetch('http://localhost:5175/api/admin/items-distributed');
+        const itemsResponse = await fetch('/admin/items-distributed');
         if (!itemsResponse.ok) throw new Error('Failed to fetch items distributed');
         const itemsData = await itemsResponse.json();
         setItemsDistributed(itemsData.count);
 
         // Fetch new users count
-        const newUsersResponse = await fetch('http://localhost:5175/api/admin/new-users-count');
+        const newUsersResponse = await fetch('/admin/new-users-count');
         if (!newUsersResponse.ok) throw new Error('Failed to fetch new users count');
         const newUsersData = await newUsersResponse.json();
         setNewUsersCount(newUsersData.count);
 
         // Fetch events count
-        const eventsResponse = await fetch('http://localhost:5175/api/admin/events-count');
+        const eventsResponse = await fetch('/admin/events-count');
         if (!eventsResponse.ok) throw new Error('Failed to fetch events count');
         const eventsData = await eventsResponse.json();
         setEventsCount(eventsData.count);
 
         // Fetch generous donors
-        const donorsResponse = await fetch('http://localhost:5175/api/admin/generous-donors');
+        const donorsResponse = await fetch('/admin/generous-donors');
         if (!donorsResponse.ok) throw new Error('Failed to fetch generous donors');
         const donorsData = await donorsResponse.json();
         setGenerousDonors(donorsData);
 
         // Fetch donations summary
-        const donationsResponse = await fetch('http://localhost:5175/api/admin/donations-summary');
+        const donationsResponse = await fetch('/admin/donations-summary');
         if (!donationsResponse.ok) throw new Error('Failed to fetch donations summary');
         const donationsData = await donationsResponse.json();
         setDonationSummary(donationsData);
 
         // Fetch donation time statistics
-        const timeResponse = await fetch('http://localhost:5175/api/admin/donation-time-stats');
+        const timeResponse = await fetch('/admin/donation-time-stats');
         if (!timeResponse.ok) throw new Error('Failed to fetch donation time stats');
         const timeData = await timeResponse.json();
         setTimeStats(timeData);
 
         // Fetch donation trends
-        const trendsResponse = await fetch('http://localhost:5175/api/admin/donation-trends');
+        const trendsResponse = await fetch('/admin/donation-trends');
         if (!trendsResponse.ok) throw new Error('Failed to fetch donation trends');
         const trendsData = await trendsResponse.json();
         setTrendStats(trendsData);
 
         // Fetch daily traffic
-        const trafficResponse = await fetch('http://localhost:5175/api/admin/daily-traffic');
+        const trafficResponse = await fetch('/admin/daily-traffic');
         if (!trafficResponse.ok) throw new Error('Failed to fetch daily traffic');
         const trafficData = await trafficResponse.json();
         setDailyTraffic(trafficData);
 
         // Fetch scholar reports
-        const scholarReportsResponse = await fetch('http://localhost:5175/api/admin/scholar-reports');
+        const scholarReportsResponse = await fetch('/admin/scholar-reports');
         if (!scholarReportsResponse.ok) throw new Error('Failed to fetch scholar reports');
         const scholarReportsData = await scholarReportsResponse.json();
         setScholarReportStatus(scholarReportsData);
 
         // Add new fetch for items distributed stats
-        const itemsStatsResponse = await fetch('http://localhost:5175/api/admin/items-distributed-stats');
+        const itemsStatsResponse = await fetch('/admin/items-distributed-stats');
         if (!itemsStatsResponse.ok) throw new Error('Failed to fetch items distributed stats');
         const itemsStatsData = await itemsStatsResponse.json();
         setItemsStats(itemsStatsData);
@@ -547,7 +547,7 @@ const trafficChartOptions = {
   const handleStatusChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newStep = parseInt(event.target.value);
     try {
-      const response = await fetch(`http://localhost:5175/api/admin/scholar-reports/status`, {
+      const response = await fetch(`/admin/scholar-reports/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
