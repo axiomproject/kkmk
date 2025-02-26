@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: kkmk
+    env: node
+    buildCommand: |
+      npm run install-all
+      cd frontend && cp tsconfig.prod.json tsconfig.json && cd ..
+      npm run build
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_USER
+        fromDatabase:
+          name: kkmk
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: kkmk
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: kkmk
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: kkmk
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: kkmk
+          property: database
+      - key: CORS_ORIGIN
+        value: https://kkmkpayatas.onrender.com
+
+databases:
+  - name: kkmk
+    databaseName: kkmk
+    user: kkmk_db
