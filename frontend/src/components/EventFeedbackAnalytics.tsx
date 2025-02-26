@@ -1,9 +1,81 @@
-import React, { useEffect, useState } from 'react';
-import api from '../config/axios'; // Replace axios import
-import ReactWordcloud from 'react-wordcloud';
+import React, { useEffect, useState, memo, Suspense, lazy } from 'react';
+import api from '../config/axios';
 import { Line, Pie } from 'react-chartjs-2';
 import '../styles/EventFeedbackAnalytics.css';
 
+// Create a component to suppress console warnings specifically for react-wordcloud
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode, fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode, fallback?: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  // Save original console.error
+  componentDidMount() {
+    // Suppress only the specific defaultProps warning
+    this.originalConsoleError = console.error;
+    console.error = (...args) => {
+      // Filter out the specific warning about defaultProps
+      if (args[0]?.includes?.('Support for defaultProps will be removed')) {
+        return;
+      }
+      this.originalConsoleError.apply(console, args);
+    };
+  }
+
+  componentWillUnmount() {
+    // Restore original console.error when unmounting
+    if (this.originalConsoleError) {
+      console.error = this.originalConsoleError;
+    }
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || <div>Something went wrong with the word cloud.</div>;
+    }
+    return this.props.children;
+  }
+
+  private originalConsoleError: typeof console.error = console.error;
+}
+
+// Lazy load ReactWordcloud to further isolate it
+const LazyWordCloud = lazy(() => import('react-wordcloud').then(module => ({
+  default: ({ words, options }: { words: any[], options: any }) => (
+    <div style={{ width: '100%', height: '300px' }}>
+      <module.default words={words} options={options} />
+    </div>
+  )
+})));
+
+// Create a wrapper component with error boundary and suspense
+const WordCloudWithErrorHandling = ({ words, options }: { words: any[], options: any }) => {
+  return (
+    <ErrorBoundary fallback={
+      <div style={{ width: '100%', height: '300px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        Unable to load word cloud
+      </div>
+    }>
+      <Suspense fallback={
+        <div style={{ width: '100%', height: '300px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          Loading word cloud...
+        </div>
+      }>
+        <LazyWordCloud words={words} options={options} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+};
+
+// Rest of the component remains the same
 interface FeedbackAnalytics {
   overallStats: {
     average_rating: number;
@@ -34,14 +106,28 @@ const EventFeedbackAnalytics: React.FC = () => {
   const [analytics, setAnalytics] = useState<FeedbackAnalytics | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const [filterRating, setFilterRating] = useState<number | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      setLoading(true);
+      setError(null);
       try {
+        // Try the correct API endpoint - check if it might be a different path
         const { data } = await api.get<FeedbackAnalytics>('/admin/feedback-analytics');
         setAnalytics(data);
       } catch (error) {
         console.error('Error fetching feedback analytics:', error);
+        setError('Failed to load analytics data. Please try again later.');
+        
+        // For development/testing - use mock data if API fails
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Using mock data for development');
+          setAnalytics(getMockAnalyticsData());
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -51,7 +137,9 @@ const EventFeedbackAnalytics: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  if (!analytics) return <div>Loading analytics...</div>;
+  if (loading) return <div className="loading-container">Loading analytics data...</div>;
+  if (error && !analytics) return <div className="error-container">{error}</div>;
+  if (!analytics) return <div className="error-container">No analytics data available</div>;
 
   // Add type safety check for average_rating
   const averageRating = typeof analytics.overallStats.average_rating === 'number' 
@@ -109,6 +197,8 @@ const EventFeedbackAnalytics: React.FC = () => {
 
   return (
     <div className="feedback-analytics-container">
+      {error && <div className="error-banner">{error}</div>}
+      
       <div className="feedback-header">
         <p>Event Feedback</p>
       </div>
@@ -153,7 +243,7 @@ const EventFeedbackAnalytics: React.FC = () => {
 
         <div className="word-cloud-container">
           <h2>Common Feedback Themes</h2>
-          <ReactWordcloud 
+          <WordCloudWithErrorHandling
             words={selectedEvent || filterRating ? getFilteredWordCloudData() : wordCloudData}
             options={{
               colors: ['#FF3D00', '#FF6E40', '#FF9E80'],
@@ -161,7 +251,12 @@ const EventFeedbackAnalytics: React.FC = () => {
               fontSizes: [20, 60],
               rotations: 0,
               rotationAngles: [0, 0],
-              deterministic: true, // Add this to make layout consistent
+              deterministic: true,
+              enableTooltip: true,
+              padding: 3,
+              fontStyle: 'normal',
+              fontWeight: 'normal',
+              transitionDuration: 300
             }}
           />
         </div>
@@ -226,6 +321,71 @@ const EventFeedbackAnalytics: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// Mock data function for development/testing purposes
+const getMockAnalyticsData = (): FeedbackAnalytics => {
+  return {
+    overallStats: {
+      average_rating: 4.2,
+      total_feedback: 125,
+      events_with_feedback: 8
+    },
+    wordFrequency: [
+      { word: "excellent", frequency: 32 },
+      { word: "informative", frequency: 28 },
+      { word: "engaging", frequency: 25 },
+      { word: "helpful", frequency: 20 },
+      { word: "interesting", frequency: 18 }
+    ],
+    eventStats: [
+      {
+        id: 1,
+        title: "Tech Conference 2023",
+        average_rating: 4.5,
+        feedback_count: 45,
+        feedback_details: [
+          {
+            rating: 5,
+            comment: "Excellent event with great speakers",
+            created_at: "2023-06-15T10:30:00Z",
+            user_name: "John Doe"
+          },
+          {
+            rating: 4,
+            comment: "Very informative sessions",
+            created_at: "2023-06-15T11:45:00Z",
+            user_name: "Jane Smith"
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "Product Launch",
+        average_rating: 3.8,
+        feedback_count: 32,
+        feedback_details: [
+          {
+            rating: 4,
+            comment: "Great product demonstration",
+            created_at: "2023-07-05T14:20:00Z",
+            user_name: "Mike Johnson"
+          },
+          {
+            rating: 3,
+            comment: "Good event but could use better organization",
+            created_at: "2023-07-05T15:10:00Z",
+            user_name: "Sarah Wilson"
+          }
+        ]
+      }
+    ],
+    sentimentStats: {
+      positive_feedback: 87,
+      neutral_feedback: 25,
+      negative_feedback: 13
+    }
+  };
 };
 
 export default EventFeedbackAnalytics;

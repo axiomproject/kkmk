@@ -2764,5 +2764,8 @@
   animation: staModalSlideIn 0.3s ease-out;
 }
 
+.sta-feedback-analytics-section{
+  margin-top: 10rem;
+}
 /* ...rest of existing code... */
 
