@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
+
+
 import {
   Chart as ChartJS,
+  CategoryScale,
   LinearScale,
   BarElement,
   LineElement,
@@ -13,7 +16,7 @@ import {
 } from "chart.js";
 
 // Register the necessary Chart.js components
-ChartJS.register( LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, ArcElement);
+import { Chart, registerables } from 'chart.js'; Chart.register(...registerables);
 import "../../styles/admin/AdminAnalytics.css";
 import { 
   FaMoneyBillWave, // for earnings
@@ -245,7 +248,7 @@ const Analytics: React.FC = () => {
     },
     barThickness: 12,
     // Add this to ensure bars are evenly spaced
-
+    categoryPercentage: 0.8,
     barPercentage: 0.9
   } as const;
 
@@ -420,6 +423,7 @@ const Analytics: React.FC = () => {
       }
     },
     barThickness: 12,
+    categoryPercentage: 0.8,
     barPercentage: 0.9
   } as const;
 
