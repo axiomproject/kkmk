@@ -136,32 +136,9 @@ const verifyEmailHandler = async (req, res) => {
 };
 
 const login = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    const { email, password } = req.body;
-    console.log('Login attempt for:', email);
-
-    if (!email || !password) {
-      return res.status(400).json({ 
-        error: 'Email/username and password are required' 
-      });
-    }
-
-    let user;
-    try {
-      user = await findUserByEmailOrUsername(email);
-    } catch (dbError) {
-      console.error('Database error during login:', dbError);
-      return res.status(500).json({ 
-        error: 'Database connection error. Please try again later.' 
-      });
-    }
-
-    if (!user) {
-      return res.status(401).json({ 
-        error: 'No account found with this email/username' 
-      });
-    }
-
+    const user = await findUserByEmailOrUsername(email);
     console.log('Found user:', user); // Add this debug log
     
     // First check if user exists
@@ -228,9 +205,7 @@ const login = async (req, res) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
-      error: 'An unexpected error occurred during login. Please try again.' 
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 

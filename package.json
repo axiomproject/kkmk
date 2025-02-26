@@ -1,15 +1,13 @@
 {
-  "name": "kkmk",
+  "name": "kkmktest",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "cd frontend && npm run build-only", 
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "install-all": "npm install --legacy-peer-deps && cd frontend && npm install --legacy-peer-deps && cd ../backend && npm install",
-    "start": "cd backend && node server.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@arcgis/core": "^4.31.6",
