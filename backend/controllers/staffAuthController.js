@@ -7,13 +7,14 @@ const staffLogin = async (req, res) => {
   console.log('Attempting staff login for:', email);
 
   try {
-    // Explicitly select profile_photo
+    // Replace db.oneOrNone with db.query - explicitly select profile_photo
     const query = `
       SELECT id, name, email, password, role, profile_photo, status, department 
       FROM staff_users 
       WHERE email = $1
     `;
-    const staff = await db.oneOrNone(query, [email]);
+    const staffResult = await db.query(query, [email]);
+    const staff = staffResult.rows[0];
 
     if (!staff) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -51,8 +52,8 @@ const staffLogin = async (req, res) => {
       { expiresIn: '8h' }
     );
 
-    // Update last login
-    await db.none('UPDATE staff_users SET last_login = NOW() WHERE id = $1', [staff.id]);
+    // Update last login - replace db.none with db.query
+    await db.query('UPDATE staff_users SET last_login = NOW() WHERE id = $1', [staff.id]);
 
     // Log the response data for debugging
     const userData = {

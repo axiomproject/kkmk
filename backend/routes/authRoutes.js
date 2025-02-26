@@ -6,16 +6,16 @@ const {
   getUserByEmail,
   updateUserPhotoHandler,
   updateUserInfoHandler,
-  updateUserDetailsHandler,  // Make sure this is imported
-  updatePasswordHandler,  // Add this line
-  verifyEmailHandler,  // Add this line
-  forgotPasswordHandler,  // Add this line
-  resetPasswordHandler,  // Add this line
-  updateUserSocialsHandler,  // Add this import
-  loginWithFace  // Add this import
+  updateUserDetailsHandler,
+  updatePasswordHandler,
+  verifyEmailHandler,
+  forgotPasswordHandler,
+  resetPasswordHandler,
+  updateUserSocialsHandler,
+  loginWithFace
 } = require('../controllers/authController');
 const eventController = require('../controllers/eventController');
-const authMiddleware = require('../middleware/authMiddleware'); // Add this import
+const authMiddleware = require('../middleware/authMiddleware');
 const db = require('../config/db');
 
 const router = express.Router();
@@ -93,13 +93,17 @@ router.post('/events/:eventId/dismiss-feedback', authMiddleware, async (req, res
     const userId = req.user.id;
 
     // First check if already dismissed
-    const existing = await db.oneOrNone(
+    // Replace db.oneOrNone with db.query
+    const existingResult = await db.query(
       'SELECT id FROM dismissed_feedback WHERE user_id = $1 AND event_id = $2',
       [userId, eventId]
     );
+    
+    const existing = existingResult.rows[0];
 
     if (!existing) {
-      await db.none(
+      // Replace db.none with db.query
+      await db.query(
         `INSERT INTO dismissed_feedback (user_id, event_id, dismissed_at) 
          VALUES ($1, $2, CURRENT_TIMESTAMP)`,
         [userId, eventId]
@@ -117,23 +121,24 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/logout', logout);
 router.get('/user', getUserByEmail);
-router.put('/user/photos', updateUserPhotoHandler); // Make sure this matches frontend URL
+router.put('/user/photos', updateUserPhotoHandler);
 router.put('/user/info', updateUserInfoHandler);
-router.put('/user/details', updateUserDetailsHandler);  // Make sure this is registered
-router.put('/user/password', updatePasswordHandler);  // Add this line
-router.post('/forgot-password', forgotPasswordHandler);  // Add this line
-router.post('/reset-password', resetPasswordHandler);  // Add this line
-router.put('/user/socials', updateUserSocialsHandler);  // Add this new route
+router.put('/user/details', updateUserDetailsHandler);
+router.put('/user/password', updatePasswordHandler);
+router.post('/forgot-password', forgotPasswordHandler);
+router.post('/reset-password', resetPasswordHandler);
+router.put('/user/socials', updateUserSocialsHandler);
 
 // Add route to get users by role
 router.get('/users/role/:role', async (req, res) => {
   try {
     const { role } = req.params;
-    const users = await db.any(
+    // Replace db.any with db.query
+    const result = await db.query(
       'SELECT id, name, email, profile_photo, role FROM users WHERE role = $1',
       [role]
     );
-    res.json(users);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching users by role:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -144,7 +149,7 @@ router.get('/users/role/:role', async (req, res) => {
 router.post('/test-face-save', async (req, res) => {
   const { faceData } = req.body;
   try {
-    const result = await pool.query(
+    const result = await db.query(
       'INSERT INTO users (face_data, has_face_verification) VALUES ($1, $2) RETURNING id',
       [faceData, true]
     );

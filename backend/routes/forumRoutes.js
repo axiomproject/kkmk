@@ -302,7 +302,10 @@ router.get('/event-posts/:eventId', async (req, res) => {
     }
     
     // First check if event exists
-    const eventExists = await db.oneOrNone('SELECT id FROM events WHERE id = $1', [eventIdInt]);
+    // Replace db.oneOrNone with db.query
+    const eventResult = await db.query('SELECT id FROM events WHERE id = $1', [eventIdInt]);
+    const eventExists = eventResult.rows.length > 0;
+    
     if (!eventExists) {
       console.log('Event not found:', eventId);
       return res.status(404).json({ error: 'Event not found' });
@@ -323,7 +326,8 @@ router.get('/event-posts/:eventId', async (req, res) => {
 // Update the polls analytics endpoint to include event-related polls
 router.get('/polls/analytics', async (req, res) => {
   try {
-    const polls = await db.any(`
+    // Replace db.any with db.query
+    const result = await db.query(`
       SELECT 
         fp.id,
         fp.title,
@@ -360,7 +364,7 @@ router.get('/polls/analytics', async (req, res) => {
       ORDER BY fp.created_at DESC
     `);
 
-    res.json(polls);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching poll analytics:', error);
     res.status(500).json({ error: 'Failed to fetch poll analytics' });
@@ -370,7 +374,8 @@ router.get('/polls/analytics', async (req, res) => {
 // Add a debug endpoint to check profile photos
 router.get('/debug-profile-photos', async (req, res) => {
   try {
-    const profiles = await db.any(`
+    // Replace db.any with db.query
+    const result = await db.query(`
       SELECT 'user' as type, id, name, role, profile_photo FROM users LIMIT 5
       UNION ALL
       SELECT 'admin' as type, id, name, 'admin' as role, profile_photo FROM admin_users LIMIT 5
@@ -379,7 +384,7 @@ router.get('/debug-profile-photos', async (req, res) => {
     `);
     
     res.json({
-      profiles,
+      profiles: result.rows,
       apiUrl: process.env.API_URL || 'http://localhost:5175'
     });
   } catch (error) {

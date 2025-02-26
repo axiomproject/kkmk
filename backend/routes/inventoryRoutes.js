@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-const { authenticateToken } = require('../middleware/auth'); // Update this line
+const { authenticateToken } = require('../middleware/auth');
 
 // Get all inventory items
 router.get('/', async (req, res) => {
   try {
-    const items = await db.any('SELECT * FROM inventory ORDER BY created_at DESC');
-    res.json(items);
+    const result = await db.query('SELECT * FROM inventory ORDER BY created_at DESC');
+    res.json(result.rows);
   } catch (error) {
     console.error('Error getting inventory:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 // Get all regular donations
 router.get('/regular', async (req, res) => {
   try {
-    const items = await db.any(`
+    const result = await db.query(`
       SELECT 
         id,
         donator_name as "donatorName",
@@ -39,7 +39,7 @@ router.get('/regular', async (req, res) => {
       FROM regular_donations 
       ORDER BY created_at DESC
     `);
-    res.json(items);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error getting regular donations:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -49,7 +49,7 @@ router.get('/regular', async (req, res) => {
 // Get all in-kind donations
 router.get('/inkind', async (req, res) => {
   try {
-    const items = await db.any(`
+    const result = await db.query(`
       SELECT 
         id,
         donator_name as "donatorName",
@@ -70,7 +70,7 @@ router.get('/inkind', async (req, res) => {
       FROM inkind_donations 
       ORDER BY created_at DESC
     `);
-    res.json(items);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error getting in-kind donations:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -81,11 +81,11 @@ router.get('/inkind', async (req, res) => {
 router.post('/', async (req, res) => {
   const { name, quantity, category, type } = req.body;
   try {
-    const newItem = await db.one(
+    const result = await db.query(
       'INSERT INTO inventory (name, quantity, category, type, last_updated) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING *',
       [name, quantity, category, type]
     );
-    res.status(201).json(newItem);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error adding inventory item:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -96,7 +96,7 @@ router.post('/', async (req, res) => {
 router.post('/regular', async (req, res) => {
   const { donatorName, email, contactNumber, item, quantity, category, frequency } = req.body;
   try {
-    const newItem = await db.one(`
+    const result = await db.query(`
       INSERT INTO regular_donations (
         donator_name, email, contact_number, item, quantity, 
         category, frequency, last_updated, verification_status
@@ -115,7 +115,7 @@ router.post('/regular', async (req, res) => {
         verification_status as "verificationStatus",
         'regular' as type
     `, [donatorName, email, contactNumber, item, quantity, category, frequency]);
-    res.status(201).json(newItem);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error adding regular donation:', error);
     res.status(500).json({ error: error.message });
@@ -126,7 +126,7 @@ router.post('/regular', async (req, res) => {
 router.post('/inkind', async (req, res) => {
   const { donatorName, email, contactNumber, item, quantity, category } = req.body;
   try {
-    const newItem = await db.one(`
+    const result = await db.query(`
       INSERT INTO inkind_donations (
         donator_name, email, contact_number, item, quantity, 
         category, last_updated, verification_status
@@ -144,7 +144,7 @@ router.post('/inkind', async (req, res) => {
         verification_status as "verificationStatus",
         'in-kind' as type
     `, [donatorName, email, contactNumber, item, quantity, category]);
-    res.status(201).json(newItem);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error adding in-kind donation:', error);
     res.status(500).json({ error: error.message });
@@ -156,11 +156,11 @@ router.put('/:id', async (req, res) => {
   const { id } = req.params;
   const { name, quantity, category, type } = req.body;
   try {
-    const updatedItem = await db.one(
+    const result = await db.query(
       'UPDATE inventory SET name = $1, quantity = $2, category = $3, type = $4, last_updated = CURRENT_TIMESTAMP WHERE id = $5 RETURNING *',
       [name, quantity, category, type, id]
     );
-    res.json(updatedItem);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating inventory item:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -172,7 +172,7 @@ router.put('/regular/:id', async (req, res) => {
   const { id } = req.params;
   const { donatorName, email, contactNumber, item, quantity, category, frequency } = req.body;
   try {
-    const updatedItem = await db.one(`
+    const result = await db.query(`
       UPDATE regular_donations 
       SET donator_name = $1, email = $2, contact_number = $3, 
           item = $4, quantity = $5, category = $6, frequency = $7,
@@ -190,7 +190,7 @@ router.put('/regular/:id', async (req, res) => {
         last_updated as "lastUpdated",
         'regular' as type
     `, [donatorName, email, contactNumber, item, quantity, category, frequency, id]);
-    res.json(updatedItem);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating regular donation:', error);
     res.status(500).json({ error: error.message });
@@ -202,7 +202,7 @@ router.put('/inkind/:id', async (req, res) => {
   const { id } = req.params;
   const { donatorName, email, contactNumber, item, quantity, category } = req.body;
   try {
-    const updatedItem = await db.one(`
+    const result = await db.query(`
       UPDATE inkind_donations 
       SET donator_name = $1, email = $2, contact_number = $3,
           item = $4, quantity = $5, category = $6,
@@ -210,7 +210,7 @@ router.put('/inkind/:id', async (req, res) => {
       WHERE id = $7 
       RETURNING *, 'in-kind' as type
     `, [donatorName, email, contactNumber, item, quantity, category, id]);
-    res.json(updatedItem);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error updating in-kind donation:', error);
     res.status(500).json({ error: error.message });
@@ -221,7 +221,7 @@ router.put('/inkind/:id', async (req, res) => {
 router.delete('/regular/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.result('DELETE FROM regular_donations WHERE id = $1', [id]);
+    const result = await db.query('DELETE FROM regular_donations WHERE id = $1', [id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Item not found' });
     }
@@ -236,7 +236,7 @@ router.delete('/regular/:id', async (req, res) => {
 router.delete('/inkind/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.result('DELETE FROM inkind_donations WHERE id = $1', [id]);
+    const result = await db.query('DELETE FROM inkind_donations WHERE id = $1', [id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Item not found' });
     }
@@ -252,11 +252,11 @@ router.post('/:id/distribute', async (req, res) => {
   const { id } = req.params;
   const { quantity } = req.body;
   try {
-    const updatedItem = await db.one(
+    const result = await db.query(
       'UPDATE inventory SET quantity = quantity - $1, last_updated = CURRENT_TIMESTAMP WHERE id = $2 AND quantity >= $1 RETURNING *',
       [quantity, id]
     );
-    res.json(updatedItem);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error distributing inventory item:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -269,15 +269,21 @@ router.post('/regular/:id/distribute', async (req, res) => {
   const { quantity, recipientId, recipientType } = req.body;
   
   try {
-    await db.tx(async t => {
-      const updatedItem = await t.one(`
+    // Replace db.tx with client transaction
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const updatedItemResult = await client.query(`
         UPDATE regular_donations 
         SET quantity = quantity - $1, last_updated = CURRENT_TIMESTAMP
         WHERE id = $2 AND quantity >= $1 
         RETURNING *, 'regular' as type
       `, [quantity, id]);
 
-      await t.one(`
+      const updatedItem = updatedItemResult.rows[0];
+
+      await client.query(`
         INSERT INTO item_distributions 
         (item_id, recipient_id, recipient_type, quantity, item_type)
         VALUES ($1, $2, $3, $4, 'regular')
@@ -287,15 +293,21 @@ router.post('/regular/:id/distribute', async (req, res) => {
       // Create notification if recipient is a scholar with placeholder image
       if (recipientType === 'scholar') {
         const notificationContent = `📦 You have received ${quantity} ${updatedItem.item}`;
-        await t.none(`
+        await client.query(`
           INSERT INTO notifications 
           (user_id, type, content, related_id)
           VALUES ($1, 'distribution', $2, $3)
         `, [recipientId, notificationContent, id]);
       }
-
+      
+      await client.query('COMMIT');
       res.json(updatedItem);
-    });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Error distributing regular donation:', error);
     res.status(500).json({ error: error.message });
@@ -307,15 +319,21 @@ router.post('/inkind/:id/distribute', async (req, res) => {
   const { quantity, recipientId, recipientType } = req.body;
   
   try {
-    await db.tx(async t => {
-      const updatedItem = await t.one(`
+    // Replace db.tx with client transaction
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      const updatedItemResult = await client.query(`
         UPDATE inkind_donations 
         SET quantity = quantity - $1, last_updated = CURRENT_TIMESTAMP
         WHERE id = $2 AND quantity >= $1 
         RETURNING *, 'in-kind' as type
       `, [quantity, id]);
 
-      await t.one(`
+      const updatedItem = updatedItemResult.rows[0];
+
+      await client.query(`
         INSERT INTO item_distributions 
         (item_id, recipient_id, recipient_type, quantity, item_type)
         VALUES ($1, $2, $3, $4, 'in-kind')
@@ -325,15 +343,21 @@ router.post('/inkind/:id/distribute', async (req, res) => {
       // Create notification if recipient is a scholar with placeholder image
       if (recipientType === 'scholar') {
         const notificationContent = `📦 You have received ${quantity} ${updatedItem.item}`;
-        await t.none(`
+        await client.query(`
           INSERT INTO notifications 
           (user_id, type, content, related_id)
           VALUES ($1, 'distribution', $2, $3)
         `, [recipientId, notificationContent, id]);
       }
-
+      
+      await client.query('COMMIT');
       res.json(updatedItem);
-    });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Error distributing in-kind donation:', error);
     res.status(500).json({ error: error.message });
@@ -343,7 +367,8 @@ router.post('/inkind/:id/distribute', async (req, res) => {
 // Update get distributions route
 router.get('/distributions', async (req, res) => {
   try {
-    const distributions = await db.any(`
+    // Replace db.any with db.query
+    const result = await db.query(`
       SELECT 
         d.id,
         d.quantity,
@@ -362,7 +387,7 @@ router.get('/distributions', async (req, res) => {
       LEFT JOIN inkind_donations id ON d.item_id = id.id AND d.item_type = 'in-kind'
       ORDER BY d.distributed_at DESC
     `);
-    res.json(distributions);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error getting distributions:', error);
     res.status(500).json({ error: error.message });
@@ -372,7 +397,8 @@ router.get('/distributions', async (req, res) => {
 // Add this new route to get distributions with location data
 router.get('/distributions-with-location', async (req, res) => {
   try {
-    const distributions = await db.any(`
+    // Replace db.any with db.query
+    const result = await db.query(`
       SELECT 
         d.id,
         d.recipient_id as "recipientId",
@@ -399,7 +425,7 @@ router.get('/distributions-with-location', async (req, res) => {
       ORDER BY d.distributed_at DESC
     `);
     
-    res.json(distributions);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error getting distributions with location:', error);
     res.status(500).json({ error: error.message });
@@ -412,7 +438,8 @@ router.post('/regular/:id/verify', authenticateToken, async (req, res) => {
   const verifiedBy = req.user ? req.user.email : 'system'; // Add fallback
   
   try {
-    const verifiedItem = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       UPDATE regular_donations 
       SET verification_status = 'verified',
           verified_at = CURRENT_TIMESTAMP,
@@ -437,7 +464,7 @@ router.post('/regular/:id/verify', authenticateToken, async (req, res) => {
         'regular' as type
     `, [verifiedBy, id]);
     
-    res.json(verifiedItem);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error verifying regular donation:', error);
     res.status(500).json({ error: error.message });
@@ -451,7 +478,8 @@ router.post('/regular/:id/reject', authenticateToken, async (req, res) => {
   const rejectedBy = req.user ? req.user.email : 'system'; // Add fallback
   
   try {
-    const rejectedItem = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       UPDATE regular_donations 
       SET verification_status = 'rejected',
           rejected_at = CURRENT_TIMESTAMP,
@@ -461,7 +489,7 @@ router.post('/regular/:id/reject', authenticateToken, async (req, res) => {
       RETURNING *, 'regular' as type
     `, [rejectedBy, reason, id]);
     
-    res.json(rejectedItem);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error rejecting regular donation:', error);
     res.status(500).json({ error: error.message });
@@ -474,7 +502,8 @@ router.post('/inkind/:id/verify', authenticateToken, async (req, res) => {
   const verifiedBy = req.user ? req.user.email : 'system';
   
   try {
-    const verifiedItem = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       UPDATE inkind_donations 
       SET verification_status = 'verified',
           verified_at = CURRENT_TIMESTAMP,
@@ -498,7 +527,7 @@ router.post('/inkind/:id/verify', authenticateToken, async (req, res) => {
         'in-kind' as type
     `, [verifiedBy, id]);
     
-    res.json(verifiedItem);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error verifying in-kind donation:', error);
     res.status(500).json({ error: error.message });
@@ -511,7 +540,8 @@ router.post('/inkind/:id/reject', authenticateToken, async (req, res) => {
   const rejectedBy = req.user ? req.user.email : 'system';
   
   try {
-    const rejectedItem = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       UPDATE inkind_donations 
       SET verification_status = 'rejected',
           rejected_at = CURRENT_TIMESTAMP,
@@ -521,7 +551,7 @@ router.post('/inkind/:id/reject', authenticateToken, async (req, res) => {
       RETURNING *, 'in-kind' as type
     `, [rejectedBy, reason, id]);
     
-    res.json(rejectedItem);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Error rejecting in-kind donation:', error);
     res.status(500).json({ error: error.message });

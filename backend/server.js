@@ -31,11 +31,11 @@ if (!fs.existsSync(forumUploadsDir)) {
   fs.mkdirSync(forumUploadsDir, { recursive: true });
 }
 
-// Remove the Pool connection code and replace with db test
+// Fix the connection handling code
 db.connect()
-  .then(obj => {
+  .then(client => {
     console.log('Connected to PostgreSQL');
-    obj.done();
+    client.release(); // Use release() instead of done()
   })
   .catch(error => {
     console.error('Error connecting to PostgreSQL:', error);

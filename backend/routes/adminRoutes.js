@@ -135,12 +135,13 @@ router.post('/scholars/bulk-delete', roleAuth(['admin']), scholarController.bulk
 // Add this new endpoint
 router.get('/scholar-count', async (req, res) => {
   try {
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role = 'scholar'
     `);
-    res.json({ count: parseInt(result.count) });
+    res.json({ count: parseInt(result.rows[0].count) });
   } catch (error) {
     console.error('Error getting scholar count:', error);
     res.status(500).json({ error: 'Failed to get scholar count' });
@@ -150,14 +151,15 @@ router.get('/scholar-count', async (req, res) => {
 // Simplify the scholar reports endpoint to just count total reports
 router.get('/scholar-reports', async (req, res) => {
   try {
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       SELECT COUNT(*) as count
       FROM report_cards
       WHERE submitted_at >= NOW() - INTERVAL '30 days'
     `);
     
     res.json({
-      count: parseInt(result.count)
+      count: parseInt(result.rows[0].count)
     });
   } catch (error) {
     console.error('Error getting scholar reports count:', error);
@@ -168,11 +170,12 @@ router.get('/scholar-reports', async (req, res) => {
 // Update this endpoint to simply sum quantities without status check
 router.get('/items-distributed', async (req, res) => {
   try {
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       SELECT COALESCE(SUM(quantity), 0) as total_items
       FROM item_distributions
     `);
-    res.json({ count: parseInt(result.total_items) });
+    res.json({ count: parseInt(result.rows[0].total_items) });
   } catch (error) {
     console.error('Error getting items distributed count:', error);
     res.status(500).json({ error: 'Failed to get items distributed count' });
@@ -194,8 +197,8 @@ router.post('/profile-photo',
       const filePath = `/uploads/${role}/${req.file.filename}`;
       const tableName = role === 'admin' ? 'admin_users' : 'staff_users';
 
-      // Update database with new photo path
-      const result = await db.one(
+      // Replace db.one with db.query
+      const result = await db.query(
         `UPDATE ${tableName} 
          SET profile_photo = $1 
          WHERE id = $2 
@@ -203,7 +206,7 @@ router.post('/profile-photo',
         [filePath, id]
       );
 
-      res.json({ user: result });
+      res.json({ user: result.rows[0] });
     } catch (error) {
       console.error('Error updating profile photo:', error);
       res.status(500).json({ error: 'Failed to update profile photo' });
@@ -221,8 +224,9 @@ router.put('/profile',
       const { role, id } = req.user;
       const tableName = role === 'admin' ? 'admin_users' : 'staff_users';
 
-      // Get current user data
-      const user = await db.one(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
+      // Get current user data - replace db.one with db.query
+      const userResult = await db.query(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
+      const user = userResult.rows[0];
 
       // Verify current password
       const validPassword = await bcrypt.compare(currentPassword, user.password);
@@ -249,8 +253,9 @@ router.put('/profile',
                       RETURNING id, name, email, profile_photo, role`;
       queryParams.push(id);
 
-      const result = await db.one(updateQuery, queryParams);
-      res.json({ user: result });
+      // Replace db.one with db.query
+      const result = await db.query(updateQuery, queryParams);
+      res.json({ user: result.rows[0] });
     } catch (error) {
       console.error('Error updating profile:', error);
       res.status(500).json({ error: 'Failed to update profile' });
@@ -268,11 +273,12 @@ router.delete('/events/:id', eventController.deleteEvent);
 // Add new endpoint for events count
 router.get('/events-count', async (req, res) => {
   try {
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       SELECT COUNT(*) as count 
       FROM events
     `);
-    res.json({ count: parseInt(result.count) });
+    res.json({ count: parseInt(result.rows[0].count) });
   } catch (error) {
     console.error('Error getting events count:', error);
     res.status(500).json({ error: 'Failed to get events count' });
@@ -282,13 +288,14 @@ router.get('/events-count', async (req, res) => {
 // Add new endpoint for new users count (volunteers and sponsors)
 router.get('/new-users-count', async (req, res) => {
   try {
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role IN ('volunteer', 'sponsor')
       AND created_at >= NOW() - INTERVAL '30 days'
     `);
-    res.json({ count: parseInt(result.count) });
+    res.json({ count: parseInt(result.rows[0].count) });
   } catch (error) {
     console.error('Error getting new users count:', error);
     res.status(500).json({ error: 'Failed to get new users count' });
@@ -298,7 +305,8 @@ router.get('/new-users-count', async (req, res) => {
 // Update generous donors endpoint to only show donors who have made donations in the current month
 router.get('/generous-donors', async (req, res) => {
   try {
-    const result = await db.any(`
+    // Replace db.any with db.query
+    const result = await db.query(`
       WITH combined_donations AS (
         -- First, handle registered users' donations separately
         SELECT 
@@ -337,7 +345,7 @@ router.get('/generous-donors', async (req, res) => {
       LIMIT 4
     `);
 
-    const donorsWithFormattedAmount = result.map(donor => ({
+    const donorsWithFormattedAmount = result.rows.map(donor => ({
       ...donor,
       total_donations: parseFloat(donor.total_donations).toLocaleString('en-PH', {
         style: 'currency',
@@ -355,7 +363,8 @@ router.get('/generous-donors', async (req, res) => {
 // Update donations summary endpoint to match Bank and ScholarDonations logic
 router.get('/donations-summary', async (req, res) => {
   try {
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       WITH monthly_totals AS (
         SELECT 
           DATE_TRUNC('month', month) as month_start,
@@ -418,11 +427,11 @@ router.get('/donations-summary', async (req, res) => {
     `);
 
     res.json({
-      current_total: parseFloat(result.current_month).toLocaleString('en-PH', {
+      current_total: parseFloat(result.rows[0].current_month).toLocaleString('en-PH', {
         style: 'currency',
         currency: 'PHP'
       }),
-      percentage_change: parseFloat(result.percentage_change || 0).toFixed(2)
+      percentage_change: parseFloat(result.rows[0].percentage_change || 0).toFixed(2)
     });
   } catch (error) {
     console.error('Error getting donations summary:', error);
@@ -433,7 +442,8 @@ router.get('/donations-summary', async (req, res) => {
 // Add new endpoint for donation time distribution
 router.get('/donation-time-stats', async (req, res) => {
   try {
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       WITH all_donations AS (
         SELECT created_at
         FROM scholar_donations
@@ -461,15 +471,16 @@ router.get('/donation-time-stats', async (req, res) => {
       FROM time_periods
     `);
 
+    const row = result.rows[0];
     res.json({
-      data: [result.morning, result.afternoon, result.evening],
-      period: `${result.start_date} - ${result.end_date}`,
+      data: [row.morning, row.afternoon, row.evening],
+      period: `${row.start_date} - ${row.end_date}`,
       donations: {
-        morning: result.morning,
-        afternoon: result.afternoon,
-        evening: result.evening
+        morning: row.morning,
+        afternoon: row.afternoon,
+        evening: row.evening
       },
-      total: result.total
+      total: row.total
     });
   } catch (error) {
     console.error('Error getting donation time stats:', error);
@@ -480,7 +491,8 @@ router.get('/donation-time-stats', async (req, res) => {
 // Add new endpoint for donation trends
 router.get('/donation-trends', async (req, res) => {
   try {
-    const results = await db.any(`
+    // Replace db.any with db.query
+    const results = await db.query(`
       WITH RECURSIVE months AS (
         SELECT 
           DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months') as month
@@ -514,16 +526,16 @@ router.get('/donation-trends', async (req, res) => {
     `);
 
     // Get current and previous month totals from the results
-    const currentMonthTotal = parseFloat(results[results.length - 1].amount);
-    const previousMonthTotal = parseFloat(results[results.length - 2]?.amount || 0);
+    const currentMonthTotal = parseFloat(results.rows[results.rows.length - 1].amount);
+    const previousMonthTotal = parseFloat(results.rows[results.rows.length - 2]?.amount || 0);
     
     // Calculate percentage change
     const percentageChange = previousMonthTotal === 0 ? 0 :
       ((currentMonthTotal - previousMonthTotal) / previousMonthTotal * 100);
 
     res.json({
-      labels: results.map(r => r.month_label),
-      data: results.map(r => parseFloat(r.amount)),
+      labels: results.rows.map(r => r.month_label),
+      data: results.rows.map(r => parseFloat(r.amount)),
       current_total: currentMonthTotal.toLocaleString('en-PH', {
         style: 'currency',
         currency: 'PHP'
@@ -539,7 +551,8 @@ router.get('/donation-trends', async (req, res) => {
 // Fix daily traffic endpoint to properly read donations
 router.get('/daily-traffic', async (req, res) => {
   try {
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       WITH RECURSIVE time_slots AS (
         SELECT 
           generate_series(
@@ -596,13 +609,14 @@ router.get('/daily-traffic', async (req, res) => {
       FROM slot_counts
     `);
 
-    const todayTotal = parseInt(result.today_total) || 0;
-    const yesterdayTotal = parseInt(result.yesterday_total) || 0;
+    const row = result.rows[0];
+    const todayTotal = parseInt(row.today_total) || 0;
+    const yesterdayTotal = parseInt(row.yesterday_total) || 0;
     const percentageChange = yesterdayTotal === 0 ? 0 :
       ((todayTotal - yesterdayTotal) / yesterdayTotal * 100);
 
     res.json({
-      hourlyData: result.hourly_data || [0, 0, 0, 0, 0], // Default to zeros if no data
+      hourlyData: row.hourly_data || [0, 0, 0, 0, 0], // Default to zeros if no data
       total: todayTotal,
       percentageChange: percentageChange.toFixed(2)
     });
@@ -683,7 +697,9 @@ router.post('/sponsors/bulk-delete', roleAuth(['admin']), async (req, res) => {
 // Add these new routes
 router.get('/mpin-status', authMiddleware, roleAuth(['admin']), async (req, res) => {
   try {
-    const admin = await db.one('SELECT is_mpin_enabled FROM admin_users WHERE id = $1', [req.user.id]);
+    // Replace db.one with db.query
+    const result = await db.query('SELECT is_mpin_enabled FROM admin_users WHERE id = $1', [req.user.id]);
+    const admin = result.rows[0];
     res.json({ isMpinEnabled: admin.is_mpin_enabled });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch MPIN status' });
@@ -697,7 +713,9 @@ router.post('/toggle-mpin', authMiddleware, roleAuth(['admin']), async (req, res
     
     // If disabling MPIN, verify password first
     if (!enabled) {
-      const admin = await db.one('SELECT password FROM admin_users WHERE id = $1', [req.user.id]);
+      // Replace db.one with db.query
+      const adminResult = await db.query('SELECT password FROM admin_users WHERE id = $1', [req.user.id]);
+      const admin = adminResult.rows[0];
       const isValidPassword = await bcrypt.compare(password, admin.password);
       
       if (!isValidPassword) {
@@ -705,12 +723,13 @@ router.post('/toggle-mpin', authMiddleware, roleAuth(['admin']), async (req, res
       }
     }
     
-    const result = await db.one(
+    // Replace db.one with db.query
+    const result = await db.query(
       'UPDATE admin_users SET is_mpin_enabled = $1 WHERE id = $2 RETURNING is_mpin_enabled',
       [enabled, req.user.id]
     );
     
-    res.json({ isMpinEnabled: result.is_mpin_enabled });
+    res.json({ isMpinEnabled: result.rows[0].is_mpin_enabled });
   } catch (error) {
     console.error('Toggle MPIN error:', error);
     res.status(500).json({ error: 'Failed to toggle MPIN' });
@@ -728,7 +747,7 @@ router.post('/set-mpin', authMiddleware, roleAuth(['admin']), async (req, res) =
     
     // Hash the MPIN before storing
     const hashedMpin = await bcrypt.hash(mpin, 10);
-    await db.none(
+    await db.query(
       'UPDATE admin_users SET mpin = $1 WHERE id = $2',
       [hashedMpin, req.user.id]
     );
@@ -742,7 +761,8 @@ router.post('/set-mpin', authMiddleware, roleAuth(['admin']), async (req, res) =
 // Add new endpoint for items distributed statistics
 router.get('/items-distributed-stats', async (req, res) => {
   try {
-    const results = await db.any(`
+    // Replace db.any with db.query
+    const results = await db.query(`
       WITH RECURSIVE months AS (
         SELECT 
           DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months') as month
@@ -768,14 +788,14 @@ router.get('/items-distributed-stats', async (req, res) => {
     `);
 
     // Calculate totals and percentage change
-    const currentMonthTotal = parseInt(results[results.length - 1].amount);
-    const previousMonthTotal = parseInt(results[results.length - 2]?.amount || 0);
+    const currentMonthTotal = parseInt(results.rows[results.rows.length - 1].amount);
+    const previousMonthTotal = parseInt(results.rows[results.rows.length - 2]?.amount || 0);
     const percentageChange = previousMonthTotal === 0 ? 0 :
       ((currentMonthTotal - previousMonthTotal) / previousMonthTotal * 100);
 
     res.json({
-      labels: results.map(r => r.month_label),
-      data: results.map(r => parseInt(r.amount)),
+      labels: results.rows.map(r => r.month_label),
+      data: results.rows.map(r => parseInt(r.amount)),
       total: currentMonthTotal,
       percentage_change: percentageChange.toFixed(2)
     });
@@ -785,97 +805,16 @@ router.get('/items-distributed-stats', async (req, res) => {
   }
 });
 
-// Add new endpoints for feedback analytics
-router.get('/feedback-analytics', authMiddleware, async (req, res) => {
-  try {
-    const results = await db.task(async t => {
-      // Get overall statistics with proper type casting
-      const overallStats = await t.one(`
-        SELECT 
-          COALESCE(AVG(rating)::numeric, 0) as average_rating,
-          COUNT(*) as total_feedback,
-          COUNT(DISTINCT event_id) as events_with_feedback
-        FROM event_feedback
-      `);
-
-      // Convert string to number explicitly
-      overallStats.average_rating = parseFloat(overallStats.average_rating) || 0;
-
-      // Rest of the code remains the same
-      const wordFrequency = await t.any(`
-        WITH words AS (
-          SELECT regexp_split_to_table(lower(comment), '\\s+') as word
-          FROM event_feedback
-          WHERE comment IS NOT NULL
-        )
-        SELECT word, COUNT(*) as frequency
-        FROM words
-        WHERE length(word) > 3
-        GROUP BY word
-        ORDER BY frequency DESC
-        LIMIT 50
-      `);
-
-      // Add proper type casting for event statistics
-      const eventStats = await t.any(`
-        SELECT 
-          e.id,
-          e.title,
-          COALESCE(AVG(ef.rating)::numeric, 0) as average_rating,
-          COUNT(ef.*) as feedback_count,
-          COALESCE(json_agg(
-            json_build_object(
-              'rating', ef.rating,
-              'comment', ef.comment,
-              'created_at', ef.created_at,
-              'user_name', u.name
-            )
-          ) FILTER (WHERE ef.id IS NOT NULL), '[]') as feedback_details
-        FROM events e
-        LEFT JOIN event_feedback ef ON e.id = ef.event_id
-        LEFT JOIN users u ON ef.user_id = u.id
-        GROUP BY e.id, e.title
-        ORDER BY e.date DESC
-      `);
-
-      // Convert average_rating to number for each event
-      eventStats.forEach(event => {
-        event.average_rating = parseFloat(event.average_rating) || 0;
-      });
-
-      const sentimentStats = await t.one(`
-        SELECT 
-          COUNT(*) FILTER (WHERE rating >= 4) as positive_feedback,
-          COUNT(*) FILTER (WHERE rating = 3) as neutral_feedback,
-          COUNT(*) FILTER (WHERE rating <= 2) as negative_feedback
-        FROM event_feedback
-      `);
-
-      return {
-        overallStats,
-        wordFrequency,
-        eventStats,
-        sentimentStats
-      };
-    });
-
-    res.json(results);
-  } catch (error) {
-    console.error('Error getting feedback analytics:', error);
-    res.status(500).json({ error: 'Failed to get feedback analytics' });
-  }
-});
-
-// Add these new endpoints
+// Add these new endpoints for user counts
 router.get('/new-sponsors-count', async (req, res) => {
   try {
-    const result = await db.one(`
+    const result = await db.query(`
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role = 'sponsor'
       AND created_at >= NOW() - INTERVAL '30 days'
     `);
-    res.json({ count: parseInt(result.count) });
+    res.json({ count: parseInt(result.rows[0].count) });
   } catch (error) {
     console.error('Error getting new sponsors count:', error);
     res.status(500).json({ error: 'Failed to get new sponsors count' });
@@ -884,13 +823,13 @@ router.get('/new-sponsors-count', async (req, res) => {
 
 router.get('/new-volunteers-count', async (req, res) => {
   try {
-    const result = await db.one(`
+    const result = await db.query(`
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role = 'volunteer'
       AND created_at >= NOW() - INTERVAL '30 days'
     `);
-    res.json({ count: parseInt(result.count) });
+    res.json({ count: parseInt(result.rows[0].count) });
   } catch (error) {
     console.error('Error getting new volunteers count:', error);
     res.status(500).json({ error: 'Failed to get new volunteers count' });

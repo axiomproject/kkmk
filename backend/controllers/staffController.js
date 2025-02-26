@@ -5,11 +5,13 @@ const bcrypt = require('bcryptjs');
 const staffController = {
   async getDashboardData(req, res) {
     try {
+      // Replace db.one and db.any with db.query
+      const totalVolunteersResult = await db.query('SELECT COUNT(*) FROM users WHERE role = $1', ['volunteer']);
+      const recentEventsResult = await db.query('SELECT * FROM events ORDER BY created_at DESC LIMIT 5');
+      
       const dashboardData = {
-        // Add dashboard data as needed
-        totalVolunteers: await db.one('SELECT COUNT(*) FROM users WHERE role = $1', ['volunteer']),
-        recentEvents: await db.any('SELECT * FROM events ORDER BY created_at DESC LIMIT 5'),
-        // Add more dashboard statistics as needed
+        totalVolunteers: totalVolunteersResult.rows[0],
+        recentEvents: recentEventsResult.rows
       };
       res.json(dashboardData);
     } catch (error) {
@@ -47,8 +49,13 @@ const staffController = {
         return res.status(400).json({ error: 'Staff ID not found' });
       }
 
-      // Get current staff data
-      const staff = await db.one('SELECT * FROM staff_users WHERE id = $1', [staffId]);
+      // Get current staff data - replace db.one with db.query
+      const staffResult = await db.query('SELECT * FROM staff_users WHERE id = $1', [staffId]);
+      if (staffResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Staff not found' });
+      }
+      
+      const staff = staffResult.rows[0];
       console.log('Found staff user:', { id: staff.id, name: staff.name });
 
       // Verify current password
@@ -81,7 +88,9 @@ const staffController = {
         params: queryParams.map((p, i) => i === 2 && newPassword ? '[HASHED]' : p)
       });
 
-      const result = await db.one(updateQuery, queryParams);
+      // Replace db.one with db.query
+      const resultData = await db.query(updateQuery, queryParams);
+      const result = resultData.rows[0];
       console.log('Profile update result:', result);
       
       res.json({ user: result });
@@ -134,8 +143,9 @@ const staffController = {
 
   async getEvents(req, res) {
     try {
-      const events = await db.any('SELECT * FROM events ORDER BY created_at DESC');
-      res.json(events);
+      // Replace db.any with db.query
+      const result = await db.query('SELECT * FROM events ORDER BY created_at DESC');
+      res.json(result.rows);
     } catch (error) {
       console.error('Error fetching events:', error);
       res.status(500).json({ error: 'Failed to fetch events' });
@@ -145,11 +155,12 @@ const staffController = {
   async createEvent(req, res) {
     try {
       const { title, description, date, location } = req.body;
-      const newEvent = await db.one(
+      // Replace db.one with db.query
+      const result = await db.query(
         'INSERT INTO events (title, description, date, location, created_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
         [title, description, date, location, req.user.userId]
       );
-      res.status(201).json(newEvent);
+      res.status(201).json(result.rows[0]);
     } catch (error) {
       console.error('Error creating event:', error);
       res.status(500).json({ error: 'Failed to create event' });
@@ -160,11 +171,12 @@ const staffController = {
     try {
       const { id } = req.params;
       const { title, description, date, location } = req.body;
-      const updatedEvent = await db.one(
+      // Replace db.one with db.query
+      const result = await db.query(
         'UPDATE events SET title = $1, description = $2, date = $3, location = $4, updated_at = NOW() WHERE id = $5 RETURNING *',
         [title, description, date, location, id]
       );
-      res.json(updatedEvent);
+      res.json(result.rows[0]);
     } catch (error) {
       console.error('Error updating event:', error);
       res.status(500).json({ error: 'Failed to update event' });

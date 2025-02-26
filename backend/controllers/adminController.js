@@ -1,6 +1,6 @@
 const AdminModel = require('../models/adminModel');
 const bcrypt = require('bcryptjs');
-const db = require('../config/db'); // Add this line
+const db = require('../config/db');
 
 // User Management
 const getUsers = async (req, res) => {
@@ -208,11 +208,12 @@ const updateProfilePhoto = async (req, res) => {
 
     const result = await AdminModel.updateProfilePhoto(adminId, photoPath);
     
-    // Send back the full user object with updated photo
-    const updatedAdmin = await db.one(
+    // Send back the full user object with updated photo - replace db.one with db.query
+    const updatedAdminResult = await db.query(
       'SELECT id, name, email, profile_photo FROM admin_users WHERE id = $1',
       [adminId]
     );
+    const updatedAdmin = updatedAdminResult.rows[0];
 
     res.json({
       message: 'Profile photo updated successfully',
@@ -236,8 +237,12 @@ const updateAdminProfile = async (req, res) => {
     const adminId = req.user.id;
     const { name, email, currentPassword, newPassword } = req.body;
     
-    // First get the current admin user
-    const admin = await db.one('SELECT * FROM admin_users WHERE id = $1', [adminId]);
+    // First get the current admin user - replace db.one with db.query
+    const adminResult = await db.query('SELECT * FROM admin_users WHERE id = $1', [adminId]);
+    if (adminResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Admin not found' });
+    }
+    const admin = adminResult.rows[0];
 
     // If changing password, verify current password
     if (newPassword) {
