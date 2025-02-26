@@ -1132,7 +1132,7 @@ const validateLocation = () => {
                     src={event.image.startsWith('http') 
                       ? event.image 
                       : event.image.startsWith('/uploads') 
-                        ? `${axios.defaults.baseURL}${event.image}`
+                        ? `${event.image}`
                         : '/images/default-event.jpg'
                     } 
                     alt={event.title} 
@@ -1198,7 +1198,7 @@ const validateLocation = () => {
                         src={event.image.startsWith('http') 
                           ? event.image 
                           : event.image.startsWith('/uploads') 
-                            ? `${axios.defaults.baseURL}${event.image}`
+                            ? `${event.image}`
                             : '/images/default-event.jpg'
                         } 
                         alt={event.title} 
