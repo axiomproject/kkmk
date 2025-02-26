@@ -805,6 +805,90 @@ router.get('/items-distributed-stats', async (req, res) => {
   }
 });
 
+// Add new endpoints for feedback analytics
+router.get('/feedback-analytics', authMiddleware, async (req, res) => {
+  try {
+    // Get overall statistics with proper type casting
+    const overallStatsResult = await db.query(`
+      SELECT 
+        COALESCE(AVG(rating)::numeric, 0) as average_rating,
+        COUNT(*) as total_feedback,
+        COUNT(DISTINCT event_id) as events_with_feedback
+      FROM event_feedback
+    `);
+    const overallStats = overallStatsResult.rows[0];
+    
+    // Convert string to number explicitly
+    overallStats.average_rating = parseFloat(overallStats.average_rating) || 0;
+
+    // Get word frequency
+    const wordFrequencyResult = await db.query(`
+      WITH words AS (
+        SELECT regexp_split_to_table(lower(comment), '\\s+') as word
+        FROM event_feedback
+        WHERE comment IS NOT NULL
+      )
+      SELECT word, COUNT(*) as frequency
+      FROM words
+      WHERE length(word) > 3
+      GROUP BY word
+      ORDER BY frequency DESC
+      LIMIT 50
+    `);
+    const wordFrequency = wordFrequencyResult.rows;
+
+    // Get event statistics
+    const eventStatsResult = await db.query(`
+      SELECT 
+        e.id,
+        e.title,
+        COALESCE(AVG(ef.rating)::numeric, 0) as average_rating,
+        COUNT(ef.*) as feedback_count,
+        COALESCE(json_agg(
+          json_build_object(
+            'rating', ef.rating,
+            'comment', ef.comment,
+            'created_at', ef.created_at,
+            'user_name', u.name
+          )
+        ) FILTER (WHERE ef.id IS NOT NULL), '[]') as feedback_details
+      FROM events e
+      LEFT JOIN event_feedback ef ON e.id = ef.event_id
+      LEFT JOIN users u ON ef.user_id = u.id
+      GROUP BY e.id, e.title
+      ORDER BY e.date DESC
+    `);
+    const eventStats = eventStatsResult.rows;
+
+    // Convert average_rating to number for each event
+    eventStats.forEach(event => {
+      event.average_rating = parseFloat(event.average_rating) || 0;
+    });
+
+    // Get sentiment statistics
+    const sentimentStatsResult = await db.query(`
+      SELECT 
+        COUNT(*) FILTER (WHERE rating >= 4) as positive_feedback,
+        COUNT(*) FILTER (WHERE rating = 3) as neutral_feedback,
+        COUNT(*) FILTER (WHERE rating <= 2) as negative_feedback
+      FROM event_feedback
+    `);
+    const sentimentStats = sentimentStatsResult.rows[0];
+
+    const results = {
+      overallStats,
+      wordFrequency,
+      eventStats,
+      sentimentStats
+    };
+
+    res.json(results);
+  } catch (error) {
+    console.error('Error getting feedback analytics:', error);
+    res.status(500).json({ error: 'Failed to get feedback analytics' });
+  }
+});
+
 // Add these new endpoints for user counts
 router.get('/new-sponsors-count', async (req, res) => {
   try {
