@@ -85,8 +85,8 @@ router.post('/profile-photo',
       const filePath = `/uploads/staff/${req.file.filename}`;
       console.log('File path to be saved:', filePath);
       
-      // Update database with new photo path
-      const result = await db.one(
+      // Update database with new photo path - convert to standard pg-node
+      const result = await db.query(
         `UPDATE staff_users 
          SET profile_photo = $1 
          WHERE id = $2 
@@ -94,8 +94,8 @@ router.post('/profile-photo',
         [filePath, userId]
       );
 
-      console.log('Updated staff user:', result);
-      res.json({ user: result });
+      console.log('Updated staff user:', result.rows[0]);
+      res.json({ user: result.rows[0] });
     } catch (error) {
       console.error('Error updating profile photo:', error);
       res.status(500).json({ error: 'Failed to update profile photo' });

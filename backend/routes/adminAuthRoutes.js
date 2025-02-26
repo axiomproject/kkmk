@@ -21,8 +21,17 @@ router.post('/verify-mpin', async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    // Get admin user and verify MPIN
-    const admin = await db.one('SELECT mpin, is_mpin_enabled FROM admin_users WHERE id = $1', [decoded.id]);
+    // Get admin user and verify MPIN - replace db.one with db.query
+    const result = await db.query(
+      'SELECT mpin, is_mpin_enabled FROM admin_users WHERE id = $1', 
+      [decoded.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Admin user not found' });
+    }
+    
+    const admin = result.rows[0];
     
     if (!admin.is_mpin_enabled) {
       return res.status(400).json({ error: 'MPIN is not enabled for this account' });

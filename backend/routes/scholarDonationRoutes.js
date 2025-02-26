@@ -29,8 +29,9 @@ router.use((req, res, next) => {
 // Get all scholar donations
 router.get('/', async (req, res) => {
     try {
+        // Replace db.query with pool.query format
         const result = await db.query('SELECT * FROM scholar_donations ORDER BY created_at DESC');
-        res.json(result);
+        res.json(result.rows);
     } catch (error) {
         console.error('Error fetching scholar donations:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -40,6 +41,7 @@ router.get('/', async (req, res) => {
 // Get all scholar donations with scholar details
 router.get('/all', async (req, res) => {
     try {
+        // Replace db.query with pool.query format
         const result = await db.query(`
             SELECT 
                 sd.*,
@@ -56,7 +58,7 @@ router.get('/all', async (req, res) => {
             LEFT JOIN users u ON sd.sponsor_id = u.id
             ORDER BY sd.created_at DESC
         `);
-        res.json(result);
+        res.json(result.rows);
     } catch (error) {
         console.error('Error fetching scholar donations:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -66,6 +68,7 @@ router.get('/all', async (req, res) => {
 // Get donations by sponsor ID
 router.get('/sponsor/:sponsorId', async (req, res) => {
     try {
+        // Replace db.query with pool.query format
         const result = await db.query(`
             SELECT 
                 sd.*,
@@ -86,7 +89,7 @@ router.get('/sponsor/:sponsorId', async (req, res) => {
             ORDER BY sd.created_at DESC
         `, [req.params.sponsorId]);
         
-        res.json(result);
+        res.json(result.rows);
     } catch (error) {
         console.error('Error fetching sponsor donations:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -96,6 +99,7 @@ router.get('/sponsor/:sponsorId', async (req, res) => {
 // Get donation history for a scholar
 router.get('/history/:scholarId', async (req, res) => {
     try {
+        // Replace db.query with pool.query format
         const result = await db.query(`
             SELECT 
                 CAST(amount AS INTEGER) as amount,
@@ -106,7 +110,7 @@ router.get('/history/:scholarId', async (req, res) => {
             ORDER BY created_at DESC
         `, [req.params.scholarId]);
         
-        res.json(result);
+        res.json(result.rows);
     } catch (error) {
         console.error('Error fetching donation history:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -126,6 +130,7 @@ router.post('/', upload.single('proof_of_donation'), async (req, res) => {
         } = req.body;
         const proof_image = req.file ? `/uploads/scholardonations/${req.file.filename}` : null;
 
+        // Replace db.query with pool.query format
         const result = await db.query(
             'INSERT INTO scholar_donations (scholar_id, donor_name, donor_email, donor_phone, amount, payment_method, proof_image) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
             [
@@ -139,7 +144,7 @@ router.post('/', upload.single('proof_of_donation'), async (req, res) => {
             ]
         );
 
-        res.status(201).json(result[0]);
+        res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error('Error creating scholar donation:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -173,6 +178,7 @@ router.post('/submit', upload.single('proof'), async (req, res) => {
             message 
         });
 
+        // Replace db.query with pool.query format
         const result = await db.query(
             `INSERT INTO scholar_donations (
                 scholar_id, sponsor_id, donor_name, donor_email, 
@@ -191,7 +197,7 @@ router.post('/submit', upload.single('proof'), async (req, res) => {
             ]
         );
 
-        res.status(201).json(result[0]);
+        res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error('Error submitting scholar donation:', error);
         res.status(500).json({ error: 'Internal server error', details: error.message });
@@ -205,15 +211,24 @@ router.post('/verify/:id', async (req, res) => {
         const verifier = 'admin@kkmk.org';
 
         // Use a transaction to ensure both updates succeed or fail together
-        const result = await db.tx(async t => {
+        const client = await db.connect();
+        try {
+            await client.query('BEGIN');
+            
             // First get the donation details
-            const donation = await t.one(
+            const donationResult = await client.query(
                 'SELECT * FROM scholar_donations WHERE id = $1',
                 [id]
             );
+            const donation = donationResult.rows[0];
+
+            if (!donation) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ error: 'Donation not found' });
+            }
 
             // Update the donation status
-            const updatedDonation = await t.one(
+            const updatedDonationResult = await client.query(
                 `UPDATE scholar_donations 
                  SET verification_status = 'verified',
                      verified_at = CURRENT_TIMESTAMP,
@@ -224,7 +239,7 @@ router.post('/verify/:id', async (req, res) => {
             );
 
             // Update the scholar's current amount
-            await t.one(
+            await client.query(
                 `UPDATE scholars 
                  SET current_amount = current_amount + $1,
                      updated_at = CURRENT_TIMESTAMP
@@ -233,10 +248,14 @@ router.post('/verify/:id', async (req, res) => {
                 [donation.amount, donation.scholar_id]
             );
 
-            return updatedDonation;
-        });
-
-        res.json(result);
+            await client.query('COMMIT');
+            res.json(updatedDonationResult.rows[0]);
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     } catch (error) {
         console.error('Error verifying donation:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -251,6 +270,7 @@ router.post('/reject/:id', async (req, res) => {
         // For now, use a generic admin value. You can update this later with proper user tracking
         const rejecter = 'admin@kkmk.org';
 
+        // Replace db.query with pool.query format
         const result = await db.query(
             `UPDATE scholar_donations 
              SET verification_status = 'rejected',
@@ -262,11 +282,11 @@ router.post('/reject/:id', async (req, res) => {
             [rejecter, reason, id]
         );
 
-        if (result.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Donation not found' });
         }
 
-        res.json(result[0]);
+        res.json(result.rows[0]);
     } catch (error) {
         console.error('Error rejecting donation:', error);
         res.status(500).json({ error: 'Internal server error' });

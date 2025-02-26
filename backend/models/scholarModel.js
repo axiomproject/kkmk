@@ -2,7 +2,8 @@ const db = require('../config/db');
 
 const ScholarModel = {
   async getAllScholars() {
-    return await db.any(`
+    // Replace db.any with db.query
+    const result = await db.query(`
       SELECT s.*,
              u.id as assigned_user_id,
              u.name as assigned_user_name,
@@ -12,10 +13,12 @@ const ScholarModel = {
       LEFT JOIN users u ON s.user_id = u.id
       ORDER BY s.created_at DESC
     `);
+    return result.rows;
   },
 
   async getScholarById(id) {
-    return await db.oneOrNone(`
+    // Replace db.oneOrNone with db.query
+    const result = await db.query(`
       SELECT s.*,
              u.id as assigned_user_id,
              u.name as assigned_user_name,
@@ -25,10 +28,12 @@ const ScholarModel = {
       LEFT JOIN users u ON s.user_id = u.id
       WHERE s.id = $1
     `, [id]);
+    return result.rows.length ? result.rows[0] : null;
   },
 
   async createScholar(data) {
-    return await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       INSERT INTO scholars (
         first_name, last_name, address, date_of_birth,
         grade_level, school, guardian_name, guardian_phone,
@@ -58,6 +63,7 @@ const ScholarModel = {
       data.currentAmount || 0,
       data.amountNeeded || 0
     ]);
+    return result.rows[0];
   },
 
   async updateScholar(id, updates) {
@@ -111,63 +117,100 @@ const ScholarModel = {
     console.log('Update query:', query);
     console.log('Update values:', values);
 
-    return await db.one(query, values);
+    // Replace db.one with db.query
+    const result = await db.query(query, values);
+    return result.rows[0];
   },
 
   async deleteScholar(id) {
-    return await db.tx(async t => {
+    // Replace db.tx with a transaction pattern using client
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
       // Delete related donations first
-      await t.none('DELETE FROM scholar_donations WHERE scholar_id = $1', [id]);
+      await client.query('DELETE FROM scholar_donations WHERE scholar_id = $1', [id]);
       // Then delete the scholar
-      return await t.result('DELETE FROM scholars WHERE id = $1', [id]);
-    });
+      const result = await client.query('DELETE FROM scholars WHERE id = $1 RETURNING id', [id]);
+      
+      await client.query('COMMIT');
+      return { rowCount: result.rowCount };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async bulkDeleteScholars(ids) {
-    return await db.tx(async t => {
+    // Replace db.tx with a transaction pattern using client
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
       // Delete related donations first
-      await t.none('DELETE FROM scholar_donations WHERE scholar_id = ANY($1::int[])', [ids]);
+      await client.query('DELETE FROM scholar_donations WHERE scholar_id = ANY($1::int[])', [ids]);
       // Then delete the scholars
-      return await t.result('DELETE FROM scholars WHERE id = ANY($1::int[])', [ids]);
-    });
+      const result = await client.query('DELETE FROM scholars WHERE id = ANY($1::int[])', [ids]);
+      
+      await client.query('COMMIT');
+      return { rowCount: result.rowCount };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async assignUser(scholarId, userId) {
-    return await db.tx(async t => {
-      // Clear any existing assignment
-      await t.none('UPDATE scholars SET user_id = NULL WHERE user_id = $1', [userId]);
+    // Replace db.tx with a transaction pattern using client
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
       
-      // Assign the user and get the updated scholar with user info
-      return await t.one(`
-        UPDATE scholars 
-        SET user_id = $1, updated_at = NOW()
-        WHERE id = $2
-        RETURNING (
-          SELECT json_build_object(
-            'id', s.id,
-            'first_name', s.first_name,
-            'last_name', s.last_name,
-            'assigned_user_id', u.id,
-            'assigned_user_name', u.name,
-            'assigned_user_email', u.email,
-            'assigned_user_profile_photo', u.profile_photo
-          )
-          FROM scholars s
-          LEFT JOIN users u ON u.id = $1
-          WHERE s.id = $2
-        ) as scholar
-      `, [userId, scholarId])
-      .then(result => result.scholar);
-    });
+      // Clear any existing assignment
+      await client.query('UPDATE scholars SET user_id = NULL WHERE user_id = $1', [userId]);
+      
+      // Assign the user
+      await client.query('UPDATE scholars SET user_id = $1, updated_at = NOW() WHERE id = $2', 
+        [userId, scholarId]);
+      
+      // Get updated scholar with user info
+      const result = await client.query(`
+        SELECT 
+          s.id,
+          s.first_name,
+          s.last_name,
+          u.id as assigned_user_id,
+          u.name as assigned_user_name,
+          u.email as assigned_user_email,
+          u.profile_photo as assigned_user_profile_photo
+        FROM scholars s
+        LEFT JOIN users u ON s.user_id = u.id
+        WHERE s.id = $1
+      `, [scholarId]);
+      
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async unassignUser(scholarId) {
-    return await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       UPDATE scholars 
       SET user_id = NULL, updated_at = NOW()
       WHERE id = $1
       RETURNING *
     `, [scholarId]);
+    return result.rows[0];
   }
 };
 

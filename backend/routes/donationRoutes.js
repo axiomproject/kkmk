@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const router = express.Router();
-const db = require('../config/db'); // Change from pool to db
+const db = require('../config/db');
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -25,10 +25,13 @@ const upload = multer({
 router.get('/', async (req, res) => {
   try {
     console.log('Fetching monetary donations...');
-    const donations = await db.any(`
+    // Replace db.any with db.query
+    const result = await db.query(`
       SELECT * FROM monetary_donations 
       ORDER BY created_at DESC
     `);
+    
+    const donations = result.rows;
 
     // Add full URLs to proof_of_payment paths
     const donationsWithUrls = donations.map(donation => ({
@@ -75,8 +78,8 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
 
     console.log('Proof of payment file:', proofOfPayment);
 
-    // Use db.one instead of pool.query to ensure we get exactly one row back
-    const result = await db.one(
+    // Replace db.one with db.query
+    const result = await db.query(
       `INSERT INTO monetary_donations (
         full_name, email, contact_number, amount, message, 
         proof_of_payment, date, verification_status
@@ -94,10 +97,10 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
       ]
     );
 
-    console.log('Donation saved successfully:', result);
+    console.log('Donation saved successfully:', result.rows[0]);
     
     const responseData = {
-      ...result,
+      ...result.rows[0],
       proof_of_payment: proofOfPayment ? `http://localhost:5175/uploads/donations/${proofOfPayment}` : null
     };
 
@@ -117,7 +120,8 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
 router.put('/:id/verify', async (req, res) => {
   try {
     console.log('Verifying donation:', req.params.id);
-    const result = await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       UPDATE monetary_donations 
       SET 
         verification_status = 'verified', 
@@ -127,8 +131,8 @@ router.put('/:id/verify', async (req, res) => {
       RETURNING *
     `, ['Admin', req.params.id]);
 
-    console.log('Verification result:', result);
-    res.json(result);
+    console.log('Verification result:', result.rows[0]);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Verification error:', error);
     res.status(500).json({ error: error.message });
@@ -140,7 +144,8 @@ router.put('/:id/reject', async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    const result = await db.one(
+    // Replace db.one with db.query
+    const result = await db.query(
       `UPDATE monetary_donations 
        SET verification_status = 'rejected',
            rejected_at = NOW(),
@@ -149,7 +154,7 @@ router.put('/:id/reject', async (req, res) => {
        WHERE id = $3 RETURNING *`,
       ['Admin', reason, id]
     );
-    res.json(result);
+    res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -159,7 +164,8 @@ router.put('/:id/reject', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await db.none('DELETE FROM monetary_donations WHERE id = $1', [id]);
+    // Replace db.none with db.query
+    await db.query('DELETE FROM monetary_donations WHERE id = $1', [id]);
     res.json({ message: 'Donation deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });

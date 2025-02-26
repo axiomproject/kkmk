@@ -5,24 +5,26 @@ const AdminModel = {
 
   // User Management
   async getAllUsers() {
-    return await db.any('SELECT * FROM users ORDER BY created_at DESC');
+    const result = await db.query('SELECT * FROM users ORDER BY created_at DESC');
+    return result.rows;
   },
 
   async updateUser(id, updates) {
     const { name, email, role, status } = updates;
-    return await db.one(
+    const result = await db.query(
       'UPDATE users SET name = $1, email = $2, role = $3, status = $4, updated_at = NOW() WHERE id = $5 RETURNING *',
       [name, email, role, status, id]
     );
+    return result.rows[0];
   },
 
   async deleteUser(id) {
-    return await db.none('DELETE FROM users WHERE id = $1', [id]);
+    await db.query('DELETE FROM users WHERE id = $1', [id]);
   },
 
   // Staff Management - using staff_users table
   async getAllStaff() {
-    return await db.any(`
+    const result = await db.query(`
       SELECT 
         id,
         name,
@@ -36,15 +38,17 @@ const AdminModel = {
       FROM staff_users 
       ORDER BY created_at DESC
     `);
+    return result.rows;
   },
 
   async getStaffById(id) {
-    return await db.oneOrNone('SELECT * FROM staff_users WHERE id = $1', [id]);
+    const result = await db.query('SELECT * FROM staff_users WHERE id = $1', [id]);
+    return result.rows.length ? result.rows[0] : null;
   },
 
   async createStaffMember(staffData) {
     const { name, email, password, department, phone } = staffData;
-    return await db.one(
+    const result = await db.query(
       `INSERT INTO staff_users (
         name, email, password, department, phone, 
         status, created_at, updated_at
@@ -52,6 +56,7 @@ const AdminModel = {
       RETURNING id, name, email, department, phone, status`,
       [name, email, password, department, phone, 'active']
     );
+    return result.rows[0];
   },
 
   async updateStaffMember(id, updates) {
@@ -77,18 +82,23 @@ const AdminModel = {
       RETURNING id, name, email, department, phone, status
     `;
 
-    return await db.one(query, values);
+    const result = await db.query(query, values);
+    return result.rows[0];
   },
 
   async deleteStaffMember(id) {
-    return await db.result('DELETE FROM staff_users WHERE id = $1', [id]);
+    const result = await db.query('DELETE FROM staff_users WHERE id = $1', [id]);
+    return result;
   },
 
   async bulkDeleteStaffMembers(ids) {
     try {
-      return await db.tx(async t => {
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        
         // Delete staff members
-        const result = await t.result(
+        const result = await client.query(
           'DELETE FROM staff_users WHERE id = ANY($1::int[]) RETURNING id',
           [ids]
         );
@@ -97,8 +107,14 @@ const AdminModel = {
           throw new Error('No staff members found to delete');
         }
         
+        await client.query('COMMIT');
         return result;
-      });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Bulk delete error:', error);
       throw error;
@@ -107,7 +123,7 @@ const AdminModel = {
 
   // Volunteer Management
   async getVolunteers() {
-    return await db.any(`
+    const result = await db.query(`
       SELECT 
         id,
         name,
@@ -124,10 +140,11 @@ const AdminModel = {
       WHERE role = 'volunteer'
       ORDER BY created_at DESC
     `);
+    return result.rows;
   },
 
   async getVolunteerById(id) {
-    return await db.oneOrNone(`
+    const result = await db.query(`
       SELECT 
         id, name, email, username, phone,
         date_of_birth, status, last_login,
@@ -135,6 +152,7 @@ const AdminModel = {
       FROM users 
       WHERE id = $1 AND role = 'volunteer'
     `, [id]);
+    return result.rows.length ? result.rows[0] : null;
   },
 
   async updateVolunteer(id, updates) {
@@ -175,34 +193,43 @@ const AdminModel = {
       RETURNING id, name, email, username, phone, date_of_birth, status, is_verified, profile_photo
     `;
 
-    return await db.one(query, values);
+    const result = await db.query(query, values);
+    return result.rows[0];
   },
 
   async deleteVolunteer(id) {
     try {
-      // Use a transaction to ensure all operations succeed or fail together
-      return await db.tx(async t => {
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        
         // Delete notifications where volunteer is the recipient
-        await t.none('DELETE FROM notifications WHERE user_id = $1', [id]);
+        await client.query('DELETE FROM notifications WHERE user_id = $1', [id]);
         
         // Delete notifications where volunteer is the actor
-        await t.none('DELETE FROM notifications WHERE actor_id = $1', [id]);
+        await client.query('DELETE FROM notifications WHERE actor_id = $1', [id]);
         
         // Delete event participants records for this volunteer
-        await t.none('DELETE FROM event_participants WHERE user_id = $1', [id]);
+        await client.query('DELETE FROM event_participants WHERE user_id = $1', [id]);
         
         // Finally delete the volunteer
-        const result = await t.oneOrNone(
+        const result = await client.query(
           'DELETE FROM users WHERE id = $1 AND role = $2 RETURNING id',
           [id, 'volunteer']
         );
         
-        if (!result) {
+        if (result.rows.length === 0) {
           throw new Error('Volunteer not found');
         }
         
-        return result;
-      });
+        await client.query('COMMIT');
+        return result.rows[0];
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Delete error:', error);
       throw error;
@@ -211,7 +238,7 @@ const AdminModel = {
 
   async createVolunteer(volunteerData) {
     const { name, username, email, password, date_of_birth } = volunteerData;
-    return await db.one(`
+    const result = await db.query(`
       INSERT INTO users (
         name, username, email, password, 
         date_of_birth, role, status, 
@@ -224,18 +251,22 @@ const AdminModel = {
       date_of_birth, 'volunteer', 'active', 
       false
     ]);
+    return result.rows[0];
   },
 
   async bulkDeleteVolunteers(ids) {
     try {
-      return await db.tx(async t => {
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        
         // Delete related records for all volunteers
-        await t.none('DELETE FROM notifications WHERE user_id = ANY($1::int[])', [ids]);
-        await t.none('DELETE FROM notifications WHERE actor_id = ANY($1::int[])', [ids]);
-        await t.none('DELETE FROM event_participants WHERE user_id = ANY($1::int[])', [ids]);
+        await client.query('DELETE FROM notifications WHERE user_id = ANY($1::int[])', [ids]);
+        await client.query('DELETE FROM notifications WHERE actor_id = ANY($1::int[])', [ids]);
+        await client.query('DELETE FROM event_participants WHERE user_id = ANY($1::int[])', [ids]);
         
         // Delete the volunteers
-        const result = await t.result(
+        const result = await client.query(
           'DELETE FROM users WHERE id = ANY($1::int[]) AND role = $2 RETURNING id',
           [ids, 'volunteer']
         );
@@ -244,8 +275,14 @@ const AdminModel = {
           throw new Error('No volunteers found to delete');
         }
         
+        await client.query('COMMIT');
         return result;
-      });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Bulk delete error:', error);
       throw error;
@@ -254,7 +291,7 @@ const AdminModel = {
 
   // Scholar Management
   async getScholars() {
-    return await db.any(`
+    const result = await db.query(`
       SELECT 
         id,
         name,
@@ -271,13 +308,15 @@ const AdminModel = {
       WHERE role = 'scholar'
       ORDER BY created_at DESC
     `);
+    return result.rows;
   },
 
   async getScholarById(id) {
-    return await db.oneOrNone(`
+    const result = await db.query(`
       SELECT * FROM users 
       WHERE id = $1 AND role = 'scholar'
     `, [id]);
+    return result.rows.length ? result.rows[0] : null;
   },
 
   async createScholar(scholarData) {
@@ -291,7 +330,7 @@ const AdminModel = {
       throw new Error('Password is required');
     }
 
-    return await db.one(`
+    const result = await db.query(`
       INSERT INTO users (
         username, password, email, name,
         phone, status, is_verified, date_of_birth,
@@ -310,6 +349,7 @@ const AdminModel = {
       date_of_birth,
       role
     ]);
+    return result.rows[0];
   },
 
   async updateScholar(id, updates) {
@@ -334,21 +374,33 @@ const AdminModel = {
       RETURNING id, name, email, username, phone, date_of_birth, status, is_verified
     `;
 
-    return await db.one(query, values);
+    const result = await db.query(query, values);
+    return result.rows[0];
   },
 
   async deleteScholar(id) {
-    return await db.tx(async t => {
-      // Delete related records (similar to volunteer deletion)
-      await t.none('DELETE FROM notifications WHERE user_id = $1', [id]);
-      await t.none('DELETE FROM notifications WHERE actor_id = $1', [id]);
-      await t.none('DELETE FROM event_participants WHERE user_id = $1', [id]);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
       
-      return await t.oneOrNone(
+      // Delete related records (similar to volunteer deletion)
+      await client.query('DELETE FROM notifications WHERE user_id = $1', [id]);
+      await client.query('DELETE FROM notifications WHERE actor_id = $1', [id]);
+      await client.query('DELETE FROM event_participants WHERE user_id = $1', [id]);
+      
+      const result = await client.query(
         'DELETE FROM users WHERE id = $1 AND role = $2 RETURNING id',
         [id, 'scholar']
       );
-    });
+      
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async bulkDeleteScholars(ids) {
@@ -364,14 +416,17 @@ const AdminModel = {
         throw new Error('No valid IDs provided for deletion');
       }
 
-      return await db.tx(async t => {
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+        
         // Delete related records
-        await t.none('DELETE FROM notifications WHERE user_id = ANY($1::integer[])', [numericIds]);
-        await t.none('DELETE FROM notifications WHERE actor_id = ANY($1::integer[])', [numericIds]);
-        await t.none('DELETE FROM event_participants WHERE user_id = ANY($1::integer[])', [numericIds]);
+        await client.query('DELETE FROM notifications WHERE user_id = ANY($1::integer[])', [numericIds]);
+        await client.query('DELETE FROM notifications WHERE actor_id = ANY($1::integer[])', [numericIds]);
+        await client.query('DELETE FROM event_participants WHERE user_id = ANY($1::integer[])', [numericIds]);
         
         // Delete the scholars
-        const result = await t.result(
+        const result = await client.query(
           'DELETE FROM users WHERE id = ANY($1::integer[]) AND role = $2 RETURNING id',
           [numericIds, 'scholar']
         );
@@ -382,8 +437,14 @@ const AdminModel = {
           throw new Error('No scholars found to delete');
         }
         
+        await client.query('COMMIT');
         return result;
-      });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Bulk delete error:', error);
       throw error;
@@ -392,7 +453,7 @@ const AdminModel = {
 
   // Sponsor Management
   async getSponsors() {
-    return await db.any(`
+    const result = await db.query(`
       SELECT 
         id,
         name,
@@ -409,13 +470,15 @@ const AdminModel = {
       WHERE role = 'sponsor'
       ORDER BY created_at DESC
     `);
+    return result.rows;
   },
 
   async getSponsorById(id) {
-    return await db.oneOrNone(`
+    const result = await db.query(`
       SELECT * FROM users 
       WHERE id = $1 AND role = 'sponsor'
     `, [id]);
+    return result.rows.length ? result.rows[0] : null;
   },
 
   async createSponsor(sponsorData) {
@@ -425,7 +488,7 @@ const AdminModel = {
       role
     } = sponsorData;
 
-    return await db.one(`
+    const result = await db.query(`
       INSERT INTO users (
         username, password, email, name,
         phone, status, is_verified, date_of_birth,
@@ -444,6 +507,7 @@ const AdminModel = {
       date_of_birth,
       role
     ]);
+    return result.rows[0];
   },
 
   async updateSponsor(id, updates) {
@@ -468,20 +532,32 @@ const AdminModel = {
       RETURNING id, name, email, username, phone, date_of_birth, status, is_verified
     `;
 
-    return await db.one(query, values);
+    const result = await db.query(query, values);
+    return result.rows[0];
   },
 
   async deleteSponsor(id) {
-    return await db.tx(async t => {
-      // Delete related records
-      await t.none('DELETE FROM notifications WHERE user_id = $1', [id]);
-      await t.none('DELETE FROM notifications WHERE actor_id = $1', [id]);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
       
-      return await t.oneOrNone(
+      // Delete related records
+      await client.query('DELETE FROM notifications WHERE user_id = $1', [id]);
+      await client.query('DELETE FROM notifications WHERE actor_id = $1', [id]);
+      
+      const result = await client.query(
         'DELETE FROM users WHERE id = $1 AND role = $2 RETURNING id',
         [id, 'sponsor']
       );
-    });
+      
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async bulkDeleteSponsors(ids) {
@@ -494,12 +570,15 @@ const AdminModel = {
         throw new Error('No valid IDs provided for deletion');
       }
 
-      return await db.tx(async t => {
-        // Delete related records
-        await t.none('DELETE FROM notifications WHERE user_id = ANY($1::integer[])', [numericIds]);
-        await t.none('DELETE FROM notifications WHERE actor_id = ANY($1::integer[])', [numericIds]);
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
         
-        const result = await t.result(
+        // Delete related records
+        await client.query('DELETE FROM notifications WHERE user_id = ANY($1::integer[])', [numericIds]);
+        await client.query('DELETE FROM notifications WHERE actor_id = ANY($1::integer[])', [numericIds]);
+        
+        const result = await client.query(
           'DELETE FROM users WHERE id = ANY($1::integer[]) AND role = $2 RETURNING id',
           [numericIds, 'sponsor']
         );
@@ -508,8 +587,14 @@ const AdminModel = {
           throw new Error('No sponsors found to delete');
         }
         
+        await client.query('COMMIT');
         return result;
-      });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
     } catch (error) {
       console.error('Bulk delete error:', error);
       throw error;

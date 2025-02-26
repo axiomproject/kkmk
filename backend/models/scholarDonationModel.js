@@ -2,7 +2,8 @@ const db = require('../config/db');
 
 const ScholarDonationModel = {
   async createDonation(data) {
-    return await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       INSERT INTO scholar_donations (
         scholar_id, sponsor_id, donor_email, donor_phone,
         amount, payment_method, proof_image, message
@@ -18,10 +19,12 @@ const ScholarDonationModel = {
       data.proofOfPayment || null,
       data.message || ''
     ]);
+    return result.rows[0];
   },
 
   async getDonationWithSponsorInfo(id) {
-    return await db.oneOrNone(`
+    // Replace db.oneOrNone with db.query
+    const result = await db.query(`
       SELECT 
         sd.*,
         u.name as donor_name,
@@ -30,6 +33,7 @@ const ScholarDonationModel = {
       LEFT JOIN users u ON sd.sponsor_id = u.id
       WHERE sd.id = $1
     `, [id]);
+    return result.rows.length ? result.rows[0] : null;
   }
 };
 

@@ -39,6 +39,7 @@ const authMiddleware = require('../middleware/authMiddleware');  // Add this if 
 // Get all events (without locations)
 router.get('/', async (req, res) => {
     try {
+        // This is already using db.query correctly
         const events = await db.query(`
             SELECT 
                 id,
@@ -60,7 +61,7 @@ router.get('/', async (req, res) => {
             FROM events 
             ORDER BY date DESC
         `);
-        res.json(events);
+        res.json(events.rows);
     } catch (error) {
         console.error('Error fetching events:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -70,7 +71,8 @@ router.get('/', async (req, res) => {
 // Get all events with locations
 router.get('/locations', async (req, res) => {
     try {
-        const events = await db.query(`
+        // This is already using db.query correctly
+        const result = await db.query(`
             SELECT 
                 id,
                 title as name,
@@ -92,7 +94,7 @@ router.get('/locations', async (req, res) => {
             AND status = 'OPEN'
             ORDER BY date ASC
         `);
-        res.json(events);
+        res.json(result.rows);
     } catch (error) {
         console.error('Error fetching events:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -103,11 +105,12 @@ router.get('/locations', async (req, res) => {
 router.post('/locations', async (req, res) => {
     try {
         const { event_id, lat, lng } = req.body;
-        const result = await db.one(
+        // Replace db.one with db.query
+        const result = await db.query(
             'INSERT INTO event_locations (event_id, lat, lng) VALUES ($1, $2, $3) RETURNING *',
             [event_id, lat, lng]
         );
-        res.status(201).json(result);
+        res.status(201).json(result.rows[0]);
     } catch (error) {
         console.error('Error adding event location:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -190,10 +193,13 @@ router.get('/:id/check-participation', authMiddleware, async (req, res) => {
     const eventId = req.params.id;
     const userId = req.user.id;
 
-    const participation = await db.oneOrNone(
+    // Replace db.oneOrNone with db.query
+    const result = await db.query(
       'SELECT status FROM event_participants WHERE event_id = $1 AND user_id = $2',
       [eventId, userId]
     );
+    
+    const participation = result.rows[0];
 
     res.json({
       hasJoined: !!participation,
@@ -210,7 +216,8 @@ router.get('/:id/check-participation', authMiddleware, async (req, res) => {
 router.get('/pending-feedback', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const events = await db.any(`
+    // This is already using db.query correctly
+    const events = await db.query(`
       SELECT DISTINCT e.id, e.title, e.date
       FROM events e
       INNER JOIN event_participants ep ON e.id = ep.event_id
@@ -227,7 +234,7 @@ router.get('/pending-feedback', authMiddleware, async (req, res) => {
       ORDER BY e.date DESC
     `, [userId]);
     
-    res.json(events);
+    res.json(events.rows);
   } catch (error) {
     console.error('Error fetching pending feedback:', error);
     res.status(500).json({ error: 'Failed to fetch pending feedback' });

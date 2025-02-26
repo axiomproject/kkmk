@@ -10,7 +10,10 @@ const adminLogin = async (req, res) => {
     const query = 'SELECT * FROM admin_users WHERE email = $1';
     console.log('Executing query:', query);
     
-    const admin = await db.oneOrNone(query, [email]);
+    // Replace db.oneOrNone with db.query
+    const adminResult = await db.query(query, [email]);
+    const admin = adminResult.rows[0];
+    
     console.log('Admin found:', admin ? 'Yes' : 'No');
     console.log('Stored password hash:', admin?.password);
     console.log('Attempting to compare with:', password);

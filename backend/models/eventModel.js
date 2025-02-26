@@ -2,7 +2,8 @@ const db = require('../config/db');
 
 const EventModel = {
   async getAllEvents() {
-    const events = await db.query(`
+    // Replace db.query with the already-using db.query (this is already correct)
+    const result = await db.query(`
       SELECT 
         id,
         title,
@@ -25,17 +26,19 @@ const EventModel = {
     `);
     
     // Add debug logging
-    console.log('Raw events from database:', events.map(e => ({
+    console.log('Raw events from database:', result.rows.map(e => ({
       id: e.id,
       title: e.title,
       image: e.image
     })));
     
-    return events;
+    return result.rows;
   },
 
   async getEventById(id) {
-    return await db.oneOrNone('SELECT * FROM events WHERE id = $1', [id]);
+    // Replace db.oneOrNone with db.query
+    const result = await db.query('SELECT * FROM events WHERE id = $1', [id]);
+    return result.rows.length ? result.rows[0] : null;
   },
 
   async createEvent(eventData) {
@@ -43,10 +46,11 @@ const EventModel = {
       title, date, location, description,
       totalVolunteers, currentVolunteers, status,
       contactPhone, contactEmail, startTime, endTime,
-      imagePath, latitude, longitude // Add these fields
+      imagePath, latitude, longitude
     } = eventData;
 
-    return await db.one(
+    // Replace db.one with db.query
+    const result = await db.query(
       `INSERT INTO events (
         title, date, location, image, description,
         total_volunteers, current_volunteers, status,
@@ -67,6 +71,7 @@ const EventModel = {
         longitude ? parseFloat(longitude) : null
       ]
     );
+    return result.rows[0];
   },
 
   async updateEvent(id, eventData) {
@@ -74,7 +79,7 @@ const EventModel = {
       title, date, location, description,
       totalVolunteers, currentVolunteers, status,
       contactPhone, contactEmail, startTime, endTime,
-      imagePath, latitude, longitude // Add these fields
+      imagePath, latitude, longitude
     } = eventData;
 
     // Create base array of values
@@ -90,8 +95,8 @@ const EventModel = {
       contactEmail,
       startTime,
       endTime,
-      latitude ? parseFloat(latitude) : null, // Add latitude
-      longitude ? parseFloat(longitude) : null // Add longitude
+      latitude ? parseFloat(latitude) : null,
+      longitude ? parseFloat(longitude) : null
     ];
 
     // Start building the query
@@ -123,33 +128,41 @@ const EventModel = {
     query += ` WHERE id = $${values.length + 1} RETURNING *`;
     values.push(id);  // Add the ID as the last parameter
 
-    return await db.one(query, values);
+    // Replace db.one with db.query
+    const result = await db.query(query, values);
+    return result.rows[0];
   },
 
   async deleteEvent(id) {
-    return await db.result('DELETE FROM events WHERE id = $1', [id]);
+    // Replace db.result with db.query
+    const result = await db.query('DELETE FROM events WHERE id = $1', [id]);
+    return result;
   },
 
   async joinEvent(eventId, userId) {
-    return await db.tx(async t => {
+    // Replace db.tx with client transaction
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
       // Check if user has already joined
-      const existing = await t.oneOrNone(
+      const existingResult = await client.query(
         'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
-      if (existing) {
+      if (existingResult.rows.length > 0) {
         throw new Error('You have already joined this event');
       }
 
       // Add participant with ACTIVE status
-      await t.none(
+      await client.query(
         'INSERT INTO event_participants(event_id, user_id, status) VALUES($1, $2, $3)',
         [eventId, userId, 'ACTIVE']
       );
 
       // Update current_volunteers count
-      const updated = await t.one(
+      const updatedResult = await client.query(
         `UPDATE events 
          SET current_volunteers = current_volunteers + 1 
          WHERE id = $1 AND current_volunteers < total_volunteers 
@@ -157,30 +170,40 @@ const EventModel = {
         [eventId]
       );
 
-      return updated;
-    });
+      await client.query('COMMIT');
+      return updatedResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async unjoinEvent(eventId, userId) {
-    return await db.tx(async t => {
+    // Replace db.tx with client transaction
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
       // Check if user has joined
-      const existing = await t.oneOrNone(
+      const existingResult = await client.query(
         'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
-      if (!existing) {
+      if (existingResult.rows.length === 0) {
         throw new Error('You have not joined this event');
       }
 
       // Remove participant
-      await t.none(
+      await client.query(
         'DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
       // Update current_volunteers count
-      const updated = await t.one(
+      const updatedResult = await client.query(
         `UPDATE events 
          SET current_volunteers = current_volunteers - 1 
          WHERE id = $1 AND current_volunteers > 0
@@ -188,12 +211,19 @@ const EventModel = {
         [eventId]
       );
 
-      return updated;
-    });
+      await client.query('COMMIT');
+      return updatedResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async getEventParticipants(eventId) {
-    return await db.any(
+    // Replace db.any with db.query
+    const result = await db.query(
       `SELECT 
         u.id, 
         u.name, 
@@ -208,36 +238,42 @@ const EventModel = {
        ORDER BY ep.joined_at DESC`,
       [eventId]
     );
+    return result.rows;
   },
 
   async hasUserJoined(eventId, userId) {
-    const result = await db.oneOrNone(
+    // Replace db.oneOrNone with db.query
+    const result = await db.query(
       'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
       [eventId, userId]
     );
-    return !!result;
+    return result.rows.length > 0;
   },
 
   async removeParticipant(eventId, userId) {
-    return await db.tx(async t => {
+    // Replace db.tx with client transaction
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
       // Check if participant exists
-      const participant = await t.oneOrNone(
+      const participantResult = await client.query(
         'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
-      if (!participant) {
+      if (participantResult.rows.length === 0) {
         throw new Error('Participant not found in this event');
       }
 
       // Remove participant
-      await t.none(
+      await client.query(
         'DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
       // Update current_volunteers count
-      const updated = await t.one(
+      const updatedResult = await client.query(
         `UPDATE events 
          SET current_volunteers = current_volunteers - 1 
          WHERE id = $1 AND current_volunteers > 0
@@ -245,12 +281,19 @@ const EventModel = {
         [eventId]
       );
 
-      return updated;
-    });
+      await client.query('COMMIT');
+      return updatedResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async getVolunteers() {
     try {
+      // This is already using db.query correctly
       const result = await db.query(`
         SELECT 
           u.id,
@@ -270,45 +313,51 @@ const EventModel = {
   },
 
   async addVolunteer(eventId, volunteerId) {
-    return await db.tx(async t => {
+    // Replace db.tx with client transaction
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
       // Check if volunteer exists
-      const volunteer = await t.oneOrNone(
+      const volunteerResult = await client.query(
         'SELECT * FROM users WHERE id = $1 AND role = $2',
         [volunteerId, 'volunteer']
       );
 
-      if (!volunteer) {
+      if (volunteerResult.rows.length === 0) {
         throw new Error('Volunteer not found');
       }
 
       // Check if volunteer is already in the event
-      const existing = await t.oneOrNone(
+      const existingResult = await client.query(
         'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, volunteerId]
       );
 
-      if (existing) {
+      if (existingResult.rows.length > 0) {
         throw new Error('Volunteer is already added to this event');
       }
 
       // Check if event has space for more volunteers
-      const event = await t.one(
+      const eventResult = await client.query(
         'SELECT * FROM events WHERE id = $1',
         [eventId]
       );
+      
+      const event = eventResult.rows[0];
 
       if (event.current_volunteers >= event.total_volunteers) {
         throw new Error('Event has reached maximum volunteer capacity');
       }
 
       // Add participant with PENDING status
-      await t.none(
+      await client.query(
         'INSERT INTO event_participants(event_id, user_id, status) VALUES($1, $2, $3)',
         [eventId, volunteerId, 'PENDING']
       );
 
       // Update current_volunteers count and return updated event
-      const updatedEvent = await t.one(
+      const updatedEventResult = await client.query(
         `UPDATE events 
          SET current_volunteers = current_volunteers + 1 
          WHERE id = $1 
@@ -316,12 +365,19 @@ const EventModel = {
         [eventId]
       );
 
-      return updatedEvent;
-    });
+      await client.query('COMMIT');
+      return updatedEventResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async getCompletedEventsNeedingFeedback(userId) {
-    return await db.any(`
+    // Replace db.any with db.query
+    const result = await db.query(`
       SELECT 
         e.id,
         e.title,
@@ -336,15 +392,18 @@ const EventModel = {
       AND e.date + e.end_time::time < CURRENT_TIMESTAMP
       AND ep.status = 'ACTIVE'
     `, [userId]);
+    return result.rows;
   },
 
   async submitEventFeedback(userId, eventId, feedback) {
-    return await db.one(`
+    // Replace db.one with db.query
+    const result = await db.query(`
       INSERT INTO event_feedback 
         (user_id, event_id, rating, comment)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `, [userId, eventId, feedback.rating, feedback.comment]);
+    return result.rows[0];
   }
 };
 
