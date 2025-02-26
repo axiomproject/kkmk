@@ -80,10 +80,10 @@ const InteractiveMap: React.FC = () => {
         console.log('Raw response:', response.data);
 
         const currentDate = new Date();
-        const futureEvents = response.data.filter((event: { date: string | number | Date; }) => {
+        const futureEvents = response.data.filter((event: { date: string }) => {
           const eventDate = new Date(event.date);
           return eventDate >= currentDate;
-        }).map((event: { image: string; }) => ({
+        }).map((event: { image: string }) => ({
           ...event,
           image: event.image.startsWith('http') 
             ? event.image 
