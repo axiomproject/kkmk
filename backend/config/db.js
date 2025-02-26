@@ -1,65 +1,35 @@
-const { Pool } = require('pg');
-const dotenv = require('dotenv');
+const pgp = require('pg-promise')();
 
-// Load environment variables
-dotenv.config();
-
-// Create connection pool using environment variables
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
-
-// Log connection parameters (excluding password)
-console.log('Database connection parameters:', {
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
-  ssl: process.env.NODE_ENV === 'production'
-});
-
-module.exports = {
-  query: (text, params) => pool.query(text, params),
-  
-  // Add 'any' function to mimic pg-promise functionality
-  any: async (text, params) => {
-    const result = await pool.query(text, params);
-    return result.rows || [];
-  },
-  
-  // Add 'one' function to mimic pg-promise functionality
-  one: async (text, params) => {
-    const result = await pool.query(text, params);
-    if (result.rows.length === 0) {
-      throw new Error('No data returned from the query.');
-    }
-    return result.rows[0];
-  },
-  
-  // Add 'none' function to mimic pg-promise functionality
-  none: async (text, params) => {
-    await pool.query(text, params);
-    return null;
-  },
-  
-  connect: async () => {
-    // Get a client from the pool
-    const client = await pool.connect();
-    
-    // Add done method to client for backward compatibility
-    const clientWithDone = {
-      ...client,
-      done: () => client.release()
-    };
-    
-    return clientWithDone;
-  },
-  
-  // Expose pool for direct access if needed
-  pool: pool
+const config = {
+  user: process.env.DB_USER || 'kkmk_db',
+  host: process.env.DB_HOST || 'dpg-cuq5r8ggph6c73cuq6ig-a.singapore-postgres.render.com',
+  database: process.env.DB_NAME || 'kkmk',
+  password: process.env.DB_PASSWORD || 'c3dv1H1UcmugVinLWsxd1J4ozszIyK3C',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  ssl: {
+    rejectUnauthorized: false
+  }
 };
+
+const db = pgp(config);
+
+// Add error handling
+db.connect()
+  .then(obj => {
+    console.log('Database connection successful');
+    obj.done();
+
+    // Test the connection with a simple query
+    db.query('SELECT NOW()')
+      .then(result => {
+        console.log('Database connection test successful:', result);
+      })
+      .catch(error => {
+        console.error('Database connection test failed:', error);
+      });
+  })
+  .catch(error => {
+    console.error('Database connection error:', error);
+  });
+
+module.exports = db;
