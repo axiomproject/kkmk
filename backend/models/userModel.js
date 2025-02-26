@@ -4,12 +4,15 @@ const crypto = require('crypto');
 const db = require('../config/db');
 
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'kkmk',
-  password: 'test',
+  user: process.env.DB_USER || 'kkmk_db',
+  host: process.env.DB_HOST || 'dpg-cuq5r8ggph6c73cuq6ig-a.singapore-postgres.render.com',
+  database: process.env.DB_NAME || 'kkmk',
+  password: process.env.DB_PASSWORD || 'c3dv1H1UcmugVinLWsxd1J4ozszIyK3C',
   port: 5432,
-});
+  ssl: {
+    rejectUnauthorized: false
+  }
+}); // Updated po
 
 const createUser = async (name, username, email, password, dateOfBirth, role = 'volunteer', faceData = null) => {
   try {
