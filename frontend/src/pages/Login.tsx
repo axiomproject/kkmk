@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import api from '../config/axios'; // Replace axios import
+import React, { useState, useRef, useCallback } from 'react';
+import api from '../config/axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { PATHS } from '../routes/paths';
 import { LoginResponse } from '../types/auth';
@@ -15,6 +15,8 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [showFaceLogin, setShowFaceLogin] = useState(false);
   const [faceLoginAttempts, setFaceLoginAttempts] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProcessingFace, setIsProcessingFace] = useState(false);
   const MAX_FACE_LOGIN_ATTEMPTS = 3;
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -52,6 +54,8 @@ const Login: React.FC = () => {
       return;
     }
 
+    setIsSubmitting(true);
+    
     try {
       const response = await api.post('/admin/auth/verify-mpin', {
         mpin,
@@ -67,13 +71,21 @@ const Login: React.FC = () => {
       }
     } catch (error: any) {
       setMpinError(error.response?.data?.error || 'MPIN verification failed');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  // Optimize user login with debounce/state guard
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+    
     setError('');
     setInactiveAccount(false);
+    setIsSubmitting(true);
     
     try {
       let response;
@@ -81,7 +93,6 @@ const Login: React.FC = () => {
       if (identifier.includes('@kkmk.com')) {
         if (identifier.startsWith('staff.')) {
           // Staff login remains unchanged
-          console.log('Attempting staff login...');
           response = await api.post('/staff/auth/login', {
             email: identifier,
             password
@@ -112,14 +123,14 @@ const Login: React.FC = () => {
           }
         }
       } else {
-        // Regular user login remains unchanged
+        // Regular user login with optimizations
         response = await api.post('/login', {
           email: identifier,
           password
         });
   
         if (response.data.token && response.data.user) {
-          // First store the data
+          // First store the data - do this asynchronously
           localStorage.setItem('token', response.data.token);
           localStorage.setItem('user', JSON.stringify(response.data.user));
           
@@ -137,28 +148,31 @@ const Login: React.FC = () => {
         }
       }
     } catch (err: any) {
-      console.error('Login error:', err);
       if (err.response?.data?.inactive) {
         setInactiveAccount(true);
         setError(err.response.data.error);
       } else {
         setError(err.response?.data?.error || 'Login failed');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleFaceLogin = async (faceData: string) => {
+  // Optimize face login with useCallback and state guards
+  const handleFaceLogin = useCallback(async (faceData: string) => {
+    // Prevent processing multiple face login attempts simultaneously
+    if (isProcessingFace) return;
+    
     try {
       setError('');
       setInactiveAccount(false);
-      console.log('Attempting face login...');
+      setIsProcessingFace(true);
       
       const response = await api.post('/login/face', { 
         faceData,
         attemptNumber: faceLoginAttempts + 1
       });
-  
-      console.log('Face login response:', response.data);
   
       // Handle rescan request
       if (response.data.needsRescan) {
@@ -175,15 +189,20 @@ const Login: React.FC = () => {
   
       // Handle successful login
       if (response.data.token && response.data.user) {
-        console.log('Face login successful');
-        login(response.data.user, response.data.token);
+        // Store token and user data simultaneously
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Update auth context
+        await login(response.data.user, response.data.token);
+        
+        // Navigate based on role
         navigate(response.data.user.role === 'admin' ? 
           PATHS.ADMIN.DASHBOARD : PATHS.VOLUNTEER_PROFILE);
       } else {
         throw new Error('Invalid response format');
       }
     } catch (err: any) {
-      console.error('Face login error:', err);
       if (err.response?.data?.inactive) {
         setInactiveAccount(true);
         setError(err.response.data.error);
@@ -197,10 +216,11 @@ const Login: React.FC = () => {
           }
         }
       }
+    } finally {
+      setIsProcessingFace(false);
     }
-  };
+  }, [faceLoginAttempts, isProcessingFace, login, navigate]);
   
-
   const handleFaceLoginFailure = () => {
     setError('Face login failed after multiple attempts. Please use password login.');
     setShowFaceLogin(false);
@@ -225,10 +245,11 @@ const Login: React.FC = () => {
             transition={pageTransition}
           >
             <img src={kkmkLogo} 
-            alt="KKMK Logo" 
-            className="auth-logo"
-            onClick={() => navigate('/')}
-          style={{ cursor: 'pointer' }} />
+              alt="KKMK Logo" 
+              className="auth-logo"
+              onClick={() => navigate('/')}
+              style={{ cursor: 'pointer' }} 
+            />
             
             {!showMpinInput ? (
               // Regular login form
@@ -255,6 +276,7 @@ const Login: React.FC = () => {
                       value={identifier} 
                       onChange={(e) => setIdentifier(e.target.value)} 
                       placeholder="Username or Email"
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div className="form-group">
@@ -263,19 +285,27 @@ const Login: React.FC = () => {
                       value={password} 
                       onChange={(e) => setPassword(e.target.value)} 
                       placeholder="Password"
+                      disabled={isSubmitting}
                     />
                   </div>
                   <p className="forgot-password">
                     <Link to={PATHS.FORGOT_PASSWORD}>Forgot Password?</Link>
                   </p>
-                  <button type="submit" className="auth-button">Login</button>
+                  <button 
+                    type="submit" 
+                    className="auth-button" 
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Logging in...' : 'Login'}
+                  </button>
                 </form>
                 <button 
                   type="button" 
                   className="face-login-button"
                   onClick={() => setShowFaceLogin(true)}
+                  disabled={isProcessingFace}
                 >
-                  Login with Face
+                  {isProcessingFace ? 'Processing...' : 'Login with Face'}
                 </button>
 
                 {showFaceLogin && (
@@ -311,6 +341,7 @@ const Login: React.FC = () => {
                       }}
                       className="mpin-hidden-input"
                       autoFocus
+                      disabled={isSubmitting}
                     />
                     <div className="mpin-display">
                       {[...Array(4)].map((_, index) => (
@@ -321,7 +352,13 @@ const Login: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                  <button type="submit" className="auth-button">Verify MPIN</button>
+                  <button 
+                    type="submit" 
+                    className="auth-button"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Verifying...' : 'Verify MPIN'}
+                  </button>
                   <button 
                     type="button" 
                     className="auth-button secondary"
@@ -330,6 +367,7 @@ const Login: React.FC = () => {
                       setTempAuthData(null);
                       setMpin('');
                     }}
+                    disabled={isSubmitting}
                   >
                     Back to Login
                   </button>

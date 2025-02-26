@@ -10,6 +10,7 @@ import Instagram from '../../img/volunteer/instagram.png';
 import copyicon from '../../img/volunteer/copyicon.png';
 import shareicon from '../../img/volunteer/shareicon.png';
 import '../../styles/Layout.css';
+import '../../styles/EventFeedback.css'; // Import the new CSS file
 import { 
   User, 
   PhotoUpdateResponse, 

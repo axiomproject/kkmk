@@ -110,7 +110,7 @@ const FundraiserSection: React.FC = () => {
         const response = await api.get('/scholars');
         setStudents(response.data);
       } catch (error) {
-        console.error('Error fetching students:', error);
+        // Removed console.error here
       }
     };
 
@@ -355,7 +355,7 @@ const Home: React.FC = () => {
           }));
         }
       } catch (error) {
-        console.error('Failed to load content:', error);
+        // Removed console.error here
       }
     };
     loadContent();
