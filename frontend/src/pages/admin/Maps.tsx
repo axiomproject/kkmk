@@ -728,7 +728,7 @@ const AdminMap: React.FC = () => {
 
           // Construct image URL with fallback
           const imageUrl = event.image
-            ? `http://localhost:5175${event.image}`
+            ? `${event.image}`
             : '/images/default-event.jpg';
 
           return {

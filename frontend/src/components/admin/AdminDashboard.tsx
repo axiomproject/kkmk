@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
+import {CategoryScale} from 'chart.js'; 
+
 import {
   Chart as ChartJS,
   LinearScale,
@@ -11,7 +13,7 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
-
+ChartJS.register(CategoryScale);
 // Register Chart.js components BEFORE any other chart code
 ChartJS.register(  // Make sure CategoryScale is registered first
   LinearScale,
