@@ -12,25 +12,37 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
-import api from '../../config/axios';
 
-// Register the necessary Chart.js components
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, ArcElement);
+// Register Chart.js components BEFORE any other chart code
+ChartJS.register(
+  CategoryScale,  // Make sure CategoryScale is registered first
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
+
+// Import other deps after Chart.js registration
+import api from '../../config/axios';
 import "../../styles/admin/AdminAnalytics.css";
 import { 
-  FaMoneyBillWave, // for earnings
-  FaChild, // for spending
-  FaHandHoldingHeart, // for donations
-  FaGift, // for flag
-  FaUsers, // for tasks
-  FaChartLine, // for total
-  FaUserCircle, // for donor avatar
-  FaCalendarAlt,  // Add this import
-  FaChartBar,  // Add this import
-  FaCheck, // Add this import
+  FaMoneyBillWave, 
+  FaChild, 
+  FaHandHoldingHeart, 
+  FaGift, 
+  FaUsers, 
+  FaChartLine, 
+  FaUserCircle, 
+  FaCalendarAlt,  
+  FaChartBar,  
+  FaCheck, 
   FaCalendarPlus,
-  FaGraduationCap, // Add this import
-  FaArrowDown, FaArrowRight, FaArrowUp // Add this import
+  FaGraduationCap, 
+  FaArrowDown, FaArrowRight, FaArrowUp 
 } from 'react-icons/fa';
 
 interface Donor {
