@@ -209,6 +209,37 @@ app.use('/api', userRoutes);  // Add this line before authRoutes
 app.use('/api', authRoutes);
 app.use('/api/donations', donationRoutes);
 
+// Add a root path handler to show API is running
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'online',
+    message: 'KKMK Payatas API Server',
+    version: '1.0.0',
+    documentation: '/api/docs',
+    checkUploads: '/api/check-uploads'
+  });
+});
+
+// Add basic API documentation endpoint
+app.get('/api/docs', (req, res) => {
+  res.status(200).json({
+    apiEndpoints: {
+      auth: '/api/auth - User authentication endpoints',
+      admin: '/api/admin - Admin management endpoints',
+      staff: '/api/staff - Staff management endpoints',
+      scholars: '/api/scholars - Scholar management endpoints',
+      donations: '/api/donations - Donation management endpoints',
+      events: '/api/events - Event management endpoints',
+      forum: '/api/forum - Forum management endpoints',
+      inventory: '/api/inventory - Inventory management endpoints',
+      notifications: '/api/notifications - Notification management endpoints',
+      content: '/api/content - Content management endpoints',
+      contacts: '/api/contacts - Contact management endpoints'
+    },
+    uploadsCheck: '/api/check-uploads - Debug endpoint to verify uploads directory'
+  });
+});
+
 // Add debug middleware for API requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`, {
