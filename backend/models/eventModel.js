@@ -2,40 +2,46 @@ const db = require('../config/db');
 
 const EventModel = {
   async getAllEvents() {
-    const events = await db.query(`
-      SELECT 
-        id,
-        title,
-        date,
-        description,
-        location,
-        image,
-        latitude,
-        longitude,
-        status,
-        created_at,
-        total_volunteers,
-        current_volunteers,
-        contact_phone,
-        contact_email,
-        start_time,
-        end_time
-      FROM events 
-      ORDER BY date DESC
-    `);
-    
-    // Add debug logging
-    console.log('Raw events from database:', events.map(e => ({
-      id: e.id,
-      title: e.title,
-      image: e.image
-    })));
-    
-    return events;
+    try {
+      const result = await db.query(`
+        SELECT 
+          id,
+          title,
+          date,
+          description,
+          location,
+          image,
+          latitude,
+          longitude,
+          status,
+          created_at,
+          total_volunteers,
+          current_volunteers,
+          contact_phone,
+          contact_email,
+          start_time,
+          end_time
+        FROM events 
+        ORDER BY date DESC
+      `);
+      
+      // Add debug logging
+      console.log('Raw events from database:', result.rows.map(e => ({
+        id: e.id,
+        title: e.title,
+        image: e.image
+      })));
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error in getAllEvents:', error);
+      throw error;
+    }
   },
 
   async getEventById(id) {
-    return await db.oneOrNone('SELECT * FROM events WHERE id = $1', [id]);
+    const result = await db.query('SELECT * FROM events WHERE id = $1', [id]);
+    return result.rows[0] || null;
   },
 
   async createEvent(eventData) {
@@ -46,7 +52,7 @@ const EventModel = {
       imagePath, latitude, longitude // Add these fields
     } = eventData;
 
-    return await db.one(
+    const result = await db.query(
       `INSERT INTO events (
         title, date, location, image, description,
         total_volunteers, current_volunteers, status,
@@ -67,6 +73,7 @@ const EventModel = {
         longitude ? parseFloat(longitude) : null
       ]
     );
+    return result.rows[0];
   },
 
   async updateEvent(id, eventData) {
@@ -123,33 +130,35 @@ const EventModel = {
     query += ` WHERE id = $${values.length + 1} RETURNING *`;
     values.push(id);  // Add the ID as the last parameter
 
-    return await db.one(query, values);
+    const result = await db.query(query, values);
+    return result.rows[0];
   },
 
   async deleteEvent(id) {
-    return await db.result('DELETE FROM events WHERE id = $1', [id]);
+    const result = await db.query('DELETE FROM events WHERE id = $1 RETURNING *', [id]);
+    return result.rowCount;
   },
 
   async joinEvent(eventId, userId) {
     return await db.tx(async t => {
       // Check if user has already joined
-      const existing = await t.oneOrNone(
+      const existing = await t.query(
         'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
-      if (existing) {
+      if (existing.rows.length > 0) {
         throw new Error('You have already joined this event');
       }
 
       // Add participant with ACTIVE status
-      await t.none(
+      await t.query(
         'INSERT INTO event_participants(event_id, user_id, status) VALUES($1, $2, $3)',
         [eventId, userId, 'ACTIVE']
       );
 
       // Update current_volunteers count
-      const updated = await t.one(
+      const updated = await t.query(
         `UPDATE events 
          SET current_volunteers = current_volunteers + 1 
          WHERE id = $1 AND current_volunteers < total_volunteers 
@@ -157,30 +166,30 @@ const EventModel = {
         [eventId]
       );
 
-      return updated;
+      return updated.rows[0];
     });
   },
 
   async unjoinEvent(eventId, userId) {
     return await db.tx(async t => {
       // Check if user has joined
-      const existing = await t.oneOrNone(
+      const existing = await t.query(
         'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
-      if (!existing) {
+      if (existing.rows.length === 0) {
         throw new Error('You have not joined this event');
       }
 
       // Remove participant
-      await t.none(
+      await t.query(
         'DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
       // Update current_volunteers count
-      const updated = await t.one(
+      const updated = await t.query(
         `UPDATE events 
          SET current_volunteers = current_volunteers - 1 
          WHERE id = $1 AND current_volunteers > 0
@@ -188,12 +197,12 @@ const EventModel = {
         [eventId]
       );
 
-      return updated;
+      return updated.rows[0];
     });
   },
 
   async getEventParticipants(eventId) {
-    return await db.any(
+    const result = await db.query(
       `SELECT 
         u.id, 
         u.name, 
@@ -208,36 +217,37 @@ const EventModel = {
        ORDER BY ep.joined_at DESC`,
       [eventId]
     );
+    return result.rows;
   },
 
   async hasUserJoined(eventId, userId) {
-    const result = await db.oneOrNone(
+    const result = await db.query(
       'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
       [eventId, userId]
     );
-    return !!result;
+    return result.rows.length > 0;
   },
 
   async removeParticipant(eventId, userId) {
     return await db.tx(async t => {
       // Check if participant exists
-      const participant = await t.oneOrNone(
+      const participant = await t.query(
         'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
-      if (!participant) {
+      if (participant.rows.length === 0) {
         throw new Error('Participant not found in this event');
       }
 
       // Remove participant
-      await t.none(
+      await t.query(
         'DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, userId]
       );
 
       // Update current_volunteers count
-      const updated = await t.one(
+      const updated = await t.query(
         `UPDATE events 
          SET current_volunteers = current_volunteers - 1 
          WHERE id = $1 AND current_volunteers > 0
@@ -245,7 +255,7 @@ const EventModel = {
         [eventId]
       );
 
-      return updated;
+      return updated.rows[0];
     });
   },
 
@@ -272,43 +282,43 @@ const EventModel = {
   async addVolunteer(eventId, volunteerId) {
     return await db.tx(async t => {
       // Check if volunteer exists
-      const volunteer = await t.oneOrNone(
+      const volunteer = await t.query(
         'SELECT * FROM users WHERE id = $1 AND role = $2',
         [volunteerId, 'volunteer']
       );
 
-      if (!volunteer) {
+      if (volunteer.rows.length === 0) {
         throw new Error('Volunteer not found');
       }
 
       // Check if volunteer is already in the event
-      const existing = await t.oneOrNone(
+      const existing = await t.query(
         'SELECT * FROM event_participants WHERE event_id = $1 AND user_id = $2',
         [eventId, volunteerId]
       );
 
-      if (existing) {
+      if (existing.rows.length > 0) {
         throw new Error('Volunteer is already added to this event');
       }
 
       // Check if event has space for more volunteers
-      const event = await t.one(
+      const event = await t.query(
         'SELECT * FROM events WHERE id = $1',
         [eventId]
       );
 
-      if (event.current_volunteers >= event.total_volunteers) {
+      if (event.rows[0].current_volunteers >= event.rows[0].total_volunteers) {
         throw new Error('Event has reached maximum volunteer capacity');
       }
 
       // Add participant with PENDING status
-      await t.none(
+      await t.query(
         'INSERT INTO event_participants(event_id, user_id, status) VALUES($1, $2, $3)',
         [eventId, volunteerId, 'PENDING']
       );
 
       // Update current_volunteers count and return updated event
-      const updatedEvent = await t.one(
+      const updatedEvent = await t.query(
         `UPDATE events 
          SET current_volunteers = current_volunteers + 1 
          WHERE id = $1 
@@ -316,12 +326,12 @@ const EventModel = {
         [eventId]
       );
 
-      return updatedEvent;
+      return updatedEvent.rows[0];
     });
   },
 
   async getCompletedEventsNeedingFeedback(userId) {
-    return await db.any(`
+    const result = await db.query(`
       SELECT 
         e.id,
         e.title,
@@ -336,15 +346,17 @@ const EventModel = {
       AND e.date + e.end_time::time < CURRENT_TIMESTAMP
       AND ep.status = 'ACTIVE'
     `, [userId]);
+    return result.rows;
   },
 
   async submitEventFeedback(userId, eventId, feedback) {
-    return await db.one(`
+    const result = await db.query(`
       INSERT INTO event_feedback 
         (user_id, event_id, rating, comment)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `, [userId, eventId, feedback.rating, feedback.comment]);
+    return result.rows[0];
   }
 };
 

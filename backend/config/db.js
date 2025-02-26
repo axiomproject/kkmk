@@ -1,35 +1,37 @@
-const pgp = require('pg-promise')();
+const { Pool } = require('pg');
+require('dotenv').config();
 
-const config = {
-  user: process.env.DB_USER || 'kkmk_db',
-  host: process.env.DB_HOST || 'dpg-cuq5r8ggph6c73cuq6ig-a.singapore-postgres.render.com',
+// Get database configuration from environment variables
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Create connection configuration with proper SSL handling for production
+const connectionConfig = {
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'test',
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'kkmk',
-  password: process.env.DB_PASSWORD || 'c3dv1H1UcmugVinLWsxd1J4ozszIyK3C',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 10000, // 10 seconds
+  idleTimeoutMillis: 30000, // 30 seconds
 };
 
-const db = pgp(config);
+// Log configuration (without sensitive data)
+console.log('Database connection config:', {
+  host: connectionConfig.host,
+  port: connectionConfig.port,
+  database: connectionConfig.database,
+  ssl: !!connectionConfig.ssl,
+  environment: process.env.NODE_ENV || 'development'
+});
 
-// Add error handling
-db.connect()
-  .then(obj => {
-    console.log('Database connection successful');
-    obj.done();
+// Create pool
+const pool = new Pool(connectionConfig);
 
-    // Test the connection with a simple query
-    db.query('SELECT NOW()')
-      .then(result => {
-        console.log('Database connection test successful:', result);
-      })
-      .catch(error => {
-        console.error('Database connection test failed:', error);
-      });
-  })
-  .catch(error => {
-    console.error('Database connection error:', error);
-  });
+// Add error handling for the pool
+pool.on('error', (err) => {
+  console.error('Unexpected database error:', err);
+});
 
-module.exports = db;
+// Export the pool directly
+module.exports = pool;
