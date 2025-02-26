@@ -69,21 +69,51 @@ const VolunteerSettings = () => {
     // Remove all non-digit characters
     const cleaned = value.replace(/\D/g, '');
     
-    // Check if it starts with 0 or 63 or +63
-    let final = cleaned;
+    // Format the phone number to always start with +639
+    let formatted = cleaned;
+
+    // If the number starts with 0, replace it with +639
     if (cleaned.startsWith('0')) {
-      final = `+63${cleaned.substring(1)}`;
-    } else if (cleaned.startsWith('63')) {
-      final = `+${cleaned}`;
-    } else if (!cleaned.startsWith('+')) {
-      final = `+63${cleaned}`;
+      formatted = `639${cleaned.substring(1)}`;
+    } 
+    // If the number starts with 9 directly, add +63 prefix
+    else if (cleaned.startsWith('9')) {
+      formatted = `639${cleaned}`;
+    } 
+    // If the number starts with 63, normalize it
+    else if (cleaned.startsWith('63')) {
+      formatted = cleaned;
+    } 
+    // For any other format, try to extract and normalize to +639 format
+    else {
+      // Remove any leading digits that might not be part of the phone number
+      // and ensure it starts with 639
+      const match = cleaned.match(/9\d+$/);
+      if (match) {
+        formatted = `639${match[0]}`;
+      } else {
+        formatted = cleaned;
+      }
     }
 
-    // Format as: +63 9XX XXX XXXX
-    if (final.length >= 12) {
-      return `${final.slice(0, 3)} ${final.slice(3, 6)} ${final.slice(6, 9)} ${final.slice(9, 13)}`;
+    // Ensure it starts with + for display
+    if (!formatted.startsWith('+')) {
+      formatted = `+${formatted}`;
     }
-    return final;
+
+    // Format for better readability: +63 9XX XXX XXXX
+    if (formatted.length >= 12) {
+      // Extract the parts
+      const countryCode = formatted.slice(0, 3); // +63
+      const prefix = formatted.slice(3, 4);      // 9
+      const firstPart = formatted.slice(4, 7);   // XXX
+      const secondPart = formatted.slice(7, 10); // XXX
+      const lastPart = formatted.slice(10, 14);  // XXXX
+      
+      return `${countryCode} ${prefix}${firstPart} ${secondPart} ${lastPart}`;
+    }
+    
+    return formatted;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,8 +158,9 @@ const VolunteerSettings = () => {
       newErrors.username = 'Username can only contain letters, numbers, and underscores';
     }
 
-    // Philippine phone number validation
+    // Philippine phone number validation - must start with +639
     if (formData.phone) {
+      // Updated regex to strictly check for +63 9XX XXX XXXX format
       const phoneRegex = /^\+63 9\d{2} \d{3} \d{4}$/;
       if (!phoneRegex.test(formData.phone)) {
         newErrors.phone = 'Please enter a valid Philippine phone number (+63 9XX XXX XXXX)';
@@ -226,6 +257,15 @@ const VolunteerSettings = () => {
           dateOfBirth: updatedUser.dateOfBirth
         });
         
+        // Dispatch custom event to notify Header component of user info change
+        const userInfoUpdateEvent = new CustomEvent('userInfoUpdated', { 
+          detail: { 
+            name: formData.name,
+            email: formData.email
+          }
+        });
+        window.dispatchEvent(userInfoUpdateEvent);
+        
         alert('Changes saved successfully!');
       }
     } catch (error) {
@@ -292,7 +332,10 @@ const VolunteerSettings = () => {
     const hasValidUsername = formData.username.length >= 3 && 
                            formData.username.length <= 20 && 
                            /^[a-zA-Z0-9_]+$/.test(formData.username);
+    
+    // Updated phone validation to ensure it always starts with +639
     const hasValidPhone = !formData.phone || /^\+63 9\d{2} \d{3} \d{4}$/.test(formData.phone);
+    
     const hasValidDate = !!formData.dateOfBirth;
 
     return hasValidName && hasValidEmail && hasValidUsername && hasValidPhone && hasValidDate;

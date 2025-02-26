@@ -430,6 +430,12 @@ const VolunteerProfile: React.FC = () => {
       // Update all states with merged data
       if (photoType === 'profile') {
         setProfilePhoto(updatedUser.profilePhoto || defaultProfile);
+        
+        // Dispatch custom event to notify Header component of profile photo change
+        const photoUpdateEvent = new CustomEvent('profilePhotoUpdated', { 
+          detail: { profilePhoto: updatedUser.profilePhoto }
+        });
+        window.dispatchEvent(photoUpdateEvent);
       } else {
         setCoverPhoto(updatedUser.coverPhoto || Coverpphotoprofile);
       }
