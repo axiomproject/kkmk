@@ -49,16 +49,11 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
 
     return { user: result.rows[0], verificationToken };
   } catch (error) {
-    console.error('Detailed error in createUser:', error);
-    if (error.message.includes('double precision[]')) {
-      console.error('Face descriptors data:', face_descriptors);
-    }
     throw error;
   }
 };
 
 const findUserByEmailOrUsername = async (identifier) => {
-  console.log('Finding user by email or username:', identifier);
   const result = await pool.query(
     `SELECT id, email, name, username, profile_photo, cover_photo, intro, 
             known_as, date_of_birth, phone, password, is_verified, role,
@@ -67,12 +62,10 @@ const findUserByEmailOrUsername = async (identifier) => {
      WHERE email = $1 OR username = $1`,
     [identifier]
   );
-  console.log('User found in DB:', result.rows[0]);
   return result.rows[0];
 };
 
 const updateUserPhotos = async (userId, profilePhoto, coverPhoto) => {
-  console.log('Updating user photos for userId:', userId);
   const query = `
     UPDATE users 
     SET profile_photo = COALESCE($1, profile_photo),
@@ -81,12 +74,10 @@ const updateUserPhotos = async (userId, profilePhoto, coverPhoto) => {
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
   const result = await pool.query(query, [profilePhoto, coverPhoto, userId]);
-  console.log('Updated user:', result.rows[0]);
   return result.rows[0];
 };
 
 const updateUserInfo = async (userId, intro, knownAs) => {
-  console.log('Updating user info for userId:', userId);
   const query = `
     UPDATE users 
     SET intro = COALESCE($1, intro),
@@ -95,12 +86,10 @@ const updateUserInfo = async (userId, intro, knownAs) => {
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
   const result = await pool.query(query, [intro, knownAs, userId]);
-  console.log('Updated user info:', result.rows[0]);
   return result.rows[0];
 };
 
 const updateUserDetails = async (userId, name, email, username, dateOfBirth, phone, intro, knownAs) => {
-  console.log('Updating user details for userId:', userId);
   const query = `
     UPDATE users 
     SET name = COALESCE($1, name),
@@ -114,7 +103,6 @@ const updateUserDetails = async (userId, name, email, username, dateOfBirth, pho
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
   const result = await pool.query(query, [name, email, username, dateOfBirth, phone, intro, knownAs, userId]);
-  console.log('Updated user details:', result.rows[0]);
   return result.rows[0];
 };
 
@@ -141,8 +129,6 @@ const updateUserPassword = async (userId, oldPassword, newPassword) => {
 };
 
 const verifyEmail = async (token) => {
-  console.log('Starting verification process for token:', token);
-  
   try {
     const client = await pool.connect();
     
@@ -161,7 +147,6 @@ const verifyEmail = async (token) => {
       
       if (verifiedCheck.rows.length > 0) {
         await client.query('COMMIT');
-        console.log('User was already verified:', verifiedCheck.rows[0]);
         return { ...verifiedCheck.rows[0], alreadyVerified: true };
       }
       
@@ -177,12 +162,10 @@ const verifyEmail = async (token) => {
       
       if (result.rows.length === 0) {
         await client.query('COMMIT');
-        console.log('No user found with token:', token);
         return null;
       }
       
       await client.query('COMMIT');
-      console.log('Verification successful for user:', result.rows[0]);
       return result.rows[0];
       
     } catch (err) {
@@ -192,7 +175,6 @@ const verifyEmail = async (token) => {
       client.release();
     }
   } catch (error) {
-    console.error('Error during verification:', error);
     throw error;
   }
 };
@@ -305,7 +287,6 @@ const normalizeAndPrepareFaceData = (faceData) => {
 
     return normalizedData;
   } catch (error) {
-    console.error('Error normalizing face data:', error);
     return null;
   }
 };
@@ -335,7 +316,6 @@ const calculateFeatureSimilarity = (points1, points2) => {
 
     return pointCount > 0 ? totalSimilarity / pointCount : 0;
   } catch (error) {
-    console.error('Error calculating feature similarity:', error);
     return 0;
   }
 };
@@ -371,13 +351,8 @@ const calculateFaceSimilarity = (stored, incoming) => {
 
     const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0;
 
-    // Log detailed scoring
-    console.log('Feature scores:', featureScores);
-    console.log('Final weighted score:', finalScore);
-
     return finalScore;
   } catch (error) {
-    console.error('Error in similarity calculation:', error);
     return 0;
   }
 };
@@ -404,7 +379,6 @@ const compareFeaturePoints = (points1, points2) => {
 
     return totalSimilarity / len;
   } catch (error) {
-    console.error('Error comparing points:', error);
     return 0;
   }
 };
@@ -433,7 +407,6 @@ const validateFaceData = (faceData) => {
 
     return hasAllFeatures && hasValidPoints;
   } catch (error) {
-    console.error('Face data validation error:', error);
     return false;
   }
 };
@@ -468,7 +441,6 @@ const findUserByFaceData = async (faceData) => {
     }
     
     const SIMILARITY_THRESHOLD = 0.6;
-    console.log(`Best match similarity: ${highestSimilarity}, threshold: ${SIMILARITY_THRESHOLD}`);
     
     if (highestSimilarity > SIMILARITY_THRESHOLD) {
       const { password, face_descriptors, face_landmarks, ...safeUser } = bestMatch;
@@ -489,7 +461,6 @@ const findUserByFaceData = async (faceData) => {
       needsRescan: highestSimilarity > 0.4
     };
   } catch (error) {
-    console.error('Face recognition error:', error);
     throw error;
   }
 };
@@ -526,7 +497,6 @@ const updateUserLocation = async (userId, latitude, longitude) => {
 
     return result.rows[0];
   } catch (error) {
-    console.error('Error updating user location:', error);
     throw error;
   }
 };
@@ -542,7 +512,6 @@ const archiveUser = async (userId) => {
     );
     return result.rows[0];
   } catch (error) {
-    console.error('Error archiving user:', error);
     throw error;
   }
 };
@@ -569,7 +538,6 @@ const deleteUser = async (userId) => {
     return result.rows[0];
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Error in deleteUser:', error);
     throw error;
   } finally {
     client.release();

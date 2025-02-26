@@ -2,16 +2,7 @@ const express = require('express');
 const router = express.Router();
 const notificationModel = require('../models/notificationModel');
 
-// Add debug middleware
-router.use((req, res, next) => {
-  console.log('Notification route hit:', {
-    method: req.method,
-    url: req.url,
-    userId: req.params.userId
-  });
-  next();
-});
-
+// Remove debug middleware that logs routes
 router.get('/user/:userId', async (req, res) => {  // Changed from /:userId to /user/:userId
   try {
     if (!req.params.userId) {
@@ -29,7 +20,7 @@ router.post('/user/:userId/read-all', async (req, res) => {
     await notificationModel.markAllAsRead(req.params.userId);
     res.json({ success: true });
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
+    // Remove console.error
     res.status(500).json({ error: 'Failed to mark notifications as read' });
   }
 });
@@ -43,10 +34,9 @@ router.post('/:id/read', async (req, res) => {
   }
 });
 
-// Add this new route
 router.post('/send', async (req, res) => {
   try {
-    const { userId, type, content, relatedId } = req.body;  // Add relatedId to destructuring
+    const { userId, type, content, relatedId } = req.body;
     let notification;
 
     switch (type) {
@@ -55,7 +45,7 @@ router.post('/send', async (req, res) => {
           userId,
           type,
           content,
-          relatedId: relatedId, // Use the provided relatedId instead of userId
+          relatedId: relatedId,
           actorId: null,
           actorName: 'System',
           actorAvatar: '/images/notify-icon.png'
@@ -72,7 +62,7 @@ router.post('/send', async (req, res) => {
           userId,
           type,
           content,
-          relatedId: relatedId || userId, // Use relatedId if provided, fallback to userId
+          relatedId: relatedId || userId,
           actorId: null,
           actorName: 'System',
           actorAvatar: '/images/notify-icon.png'
@@ -81,12 +71,11 @@ router.post('/send', async (req, res) => {
     
     res.json(notification);
   } catch (error) {
-    console.error('Error sending notification:', error);
+    // Remove console.error
     res.status(500).json({ error: 'Failed to send notification' });
   }
 });
 
-// Add new route for sending bulk notifications
 router.post('/send-bulk', async (req, res) => {
   try {
     const { userIds, type, content, relatedId } = req.body;
@@ -107,19 +96,17 @@ router.post('/send-bulk', async (req, res) => {
     
     res.json({ success: true, count: notifications.length });
   } catch (error) {
-    console.error('Error sending bulk notifications:', error);
+    // Remove console.error
     res.status(500).json({ error: 'Failed to send notifications' });
   }
 });
 
-// Add this new route for handling confirmation responses
 router.post('/event-response', async (req, res) => {
   try {
-    console.log('Received event response:', req.body); // Debug log
-
+    // Remove debug logs
     const notificationId = req.body.notificationId;
     const userId = parseInt(req.body.userId);
-    const eventId = parseInt(req.body.eventId); // Ensure this is a number
+    const eventId = parseInt(req.body.eventId);
     const confirmed = req.body.confirmed;
 
     // Validate inputs
@@ -130,8 +117,7 @@ router.post('/event-response', async (req, res) => {
       });
     }
 
-    console.log('Processing event response:', { notificationId, userId, eventId, confirmed }); // Debug log
-
+    // Remove debug logs
     const result = await notificationModel.handleEventResponse(
       notificationId, 
       userId, 
@@ -141,7 +127,7 @@ router.post('/event-response', async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Error handling event response:', error);
+    // Remove console.error
     res.status(500).json({ 
       error: error.message || 'Failed to process event response',
       details: error.toString()

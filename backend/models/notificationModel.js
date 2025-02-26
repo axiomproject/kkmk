@@ -25,7 +25,7 @@ const notificationModel = {
       FROM notifications
       WHERE user_id = $1
       ORDER BY created_at DESC
-      LIMIT 20`,  // Increased from 10 to 20
+      LIMIT 20`,
       [userId]
     );
   },
@@ -89,8 +89,6 @@ const notificationModel = {
           [eventId, userId]
         );
 
-        console.log('Found participant:', participant); // Debug log
-
         if (!participant) {
           throw new Error('Participant not found in event');
         }
@@ -114,8 +112,6 @@ const notificationModel = {
             ['ACTIVE', eventId, userId, 'PENDING']
           );
           
-          console.log('Update result:', result); // Debug log
-          
           if (result.rowCount === 0) {
             // Check if already active
             const currentStatus = await t.oneOrNone(
@@ -124,7 +120,7 @@ const notificationModel = {
             );
             
             if (currentStatus && currentStatus.status === 'ACTIVE') {
-              console.log('Participant already active');
+              // Participant already active - removed console.log
             } else {
               throw new Error('Failed to update participant status');
             }
@@ -139,7 +135,7 @@ const notificationModel = {
   
         return { success: true };
       } catch (error) {
-        console.error('Error in handleEventResponse:', error);
+        // Removed console.error
         throw error;
       }
     });
