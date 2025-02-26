@@ -1,32 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Bar, Doughnut, Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from "chart.js";
-
-// Register Chart.js components BEFORE any other chart code
-ChartJS.register(
-  CategoryScale,  // Make sure CategoryScale is registered first
-  LinearScale,
-  BarElement,
-  LineElement,
-  PointElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
-
-// Import other deps after Chart.js registration
 import api from '../../config/axios';
 import "../../styles/admin/AdminAnalytics.css";
 import { 
@@ -44,6 +16,57 @@ import {
   FaGraduationCap, 
   FaArrowDown, FaArrowRight, FaArrowUp 
 } from 'react-icons/fa';
+
+// Import Chart.js components dynamically to avoid SSR issues
+import { lazy, Suspense } from 'react';
+import { Bar, Doughnut } from "react-chartjs-2";
+
+// Dynamically import Chart.js components
+const ChartComponent = lazy(() => 
+  import('./ChartComponent').then(module => ({
+    default: module.default
+  }))
+);
+
+// Create a simple loading component for Suspense
+const ChartLoading = () => (
+  <div className="chart-loading">
+    <p>Loading chart...</p>
+  </div>
+);
+
+// Use a simpler fallback display when chart fails
+interface SimpleFallbackChartProps {
+  data: number[];
+  labels: string[];
+  height?: number;
+}
+
+const SimpleFallbackChart = ({ data, labels, height = 200 }: SimpleFallbackChartProps) => (
+  <div className="fallback-chart" style={{ height }}>
+    <div className="chart-labels">
+      {labels.map((label, i) => (
+        <div key={i} className="chart-label">{label}</div>
+      ))}
+    </div>
+    <div className="chart-bars">
+      {data.map((value, i) => {
+        const maxValue = Math.max(...data);
+        const percentage = (value / maxValue) * 100;
+        return (
+          <div key={i} className="chart-bar-container">
+            <div 
+              className="chart-bar" 
+              style={{ height: `${percentage}%` }}
+              title={`${labels[i]}: ${value}`}
+            ></div>
+            <div className="chart-value">{value}</div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
 
 interface Donor {
   id: number;
@@ -122,6 +145,8 @@ const Analytics: React.FC = () => {
     total: 0,
     percentage_change: '0'
   });
+
+  const [chartError, setChartError] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -566,6 +591,11 @@ const trafficChartOptions = {
     }
   };
 
+  const handleChartError = () => {
+    console.error('Chart rendering failed');
+    setChartError(true);
+  };
+
   return (
     <>
       <div className="sta-container-total">
@@ -685,7 +715,22 @@ const trafficChartOptions = {
         </div>
       </div>
       <div className="sta-chart-container">
-        <Bar data={barData} options={barOptions} height={200} />
+        {!chartError ? (
+          <Suspense fallback={<ChartLoading />}>
+            <ChartComponent 
+              data={barData} 
+              options={barOptions} 
+              height={200}
+              onError={handleChartError} 
+              type="bar"
+            />
+          </Suspense>
+        ) : (
+          <SimpleFallbackChart 
+            data={itemsStats.data} 
+            labels={itemsStats.labels}
+          />
+        )}
       </div>
     </div>
 
@@ -788,6 +833,7 @@ const trafficChartOptions = {
                   {Math.abs(parseFloat(dailyTraffic.percentageChange))}%
                 </span>
               </div>
+  
             </div>
             <Bar data={trafficChartData} options={trafficChartOptions} height={180} />
           </div>
@@ -825,3 +871,5 @@ const trafficChartOptions = {
 };
 
 export default Analytics;
+
+
