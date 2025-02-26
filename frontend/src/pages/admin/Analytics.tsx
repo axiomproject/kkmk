@@ -34,6 +34,7 @@ import {
 import EventFeedbackAnalytics from '../../components/EventFeedbackAnalytics';
 import ForumAnalytics from '../../components/analytics/ForumAnalytics';
 
+
 interface Donor {
   id: number;
   name: string;
@@ -749,7 +750,7 @@ const Analytics: React.FC = () => {
     <div className="sta-feedback-analytics-section">
       <EventFeedbackAnalytics />
     </div>
-    <div className="sta-feedback-analytics-section">
+    <div className="sta-forum-analytics-section">
       <ForumAnalytics />
     </div>
     </>

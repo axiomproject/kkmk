@@ -221,3 +221,40 @@
     flex-direction: column;
   }
 }
+
+/* Add these styles to your existing CSS file */
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 18px;
+  color: #666;
+}
+
+.error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 18px;
+  color: #d32f2f;
+  text-align: center;
+  padding: 20px;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  background-color: #ffebee;
+  margin: 20px;
+}
+
+.error-banner {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
