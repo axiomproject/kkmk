@@ -7,7 +7,6 @@ const ContentController = {
     try {
       const { page } = req.params;
       const content = await ContentModel.getContent(page);
-      console.log('Retrieved content for page:', page, content);
 
       // Page-specific default content
       const defaultContent = {
@@ -76,10 +75,8 @@ const ContentController = {
         };
       }
 
-      console.log('Sending content:', content || defaultContent);
       res.json(content || defaultContent);
     } catch (error) {
-      console.error('Error getting content:', error);
       res.status(500).json({ error: error.message });
     }
   },
@@ -88,9 +85,6 @@ const ContentController = {
     try {
       const { page } = req.params;
       
-      console.log('Raw request body:', req.body);
-      console.log('Content type:', req.headers['content-type']);
-
       let contentData;
       
       // Handle both JSON and form-data
@@ -100,7 +94,6 @@ const ContentController = {
         try {
           contentData = JSON.parse(req.body.content);
         } catch (e) {
-          console.error('Parse error:', e);
           throw new Error('Invalid JSON format');
         }
       } else {
@@ -111,11 +104,9 @@ const ContentController = {
         throw new Error('Invalid content data');
       }
 
-      console.log('Content to save:', contentData);
       const updated = await ContentModel.updateContent(page, contentData);
       res.json(updated);
     } catch (error) {
-      console.error('Error in updateContent:', error);
       res.status(500).json({ 
         error: error.message,
         receivedBody: req.body,
@@ -127,10 +118,8 @@ const ContentController = {
   async getPages(req, res) {
     try {
       const pages = await ContentModel.getPages();
-      console.log('Pages from DB:', pages);
       res.json(['home', 'story', 'team', 'community', 'graduates', 'partner', 'contact', 'life']);
     } catch (error) {
-      console.error('Error getting pages:', error);
       res.status(500).json({ error: error.message });
     }
   },
@@ -154,15 +143,7 @@ const ContentController = {
       }
 
       const imagePath = `/uploads/content/${req.file.filename}`;
-      const fullPath = path.join(__dirname, '..', imagePath);
       
-      console.log({
-        uploadDir,
-        imagePath,
-        fullPath,
-        fileInfo: req.file
-      });
-
       res.json({ 
         imagePath,
         success: true,
@@ -173,7 +154,6 @@ const ContentController = {
         }
       });
     } catch (error) {
-      console.error('Error uploading image:', error);
       res.status(500).json({ error: error.message });
     }
   }

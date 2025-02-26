@@ -2,21 +2,10 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { Pool } = require('pg'); // Add pool import
 const authenticateToken = require('../middleware/authenticateToken'); // Add this line
 const ScholarModel = require('../models/scholarModel');
 const ReportCardModel = require('../models/reportCardModel');
-
-const pool = new Pool({
-  user: process.env.DB_USER || 'kkmk_db',
-  host: process.env.DB_HOST || 'dpg-cuq5r8ggph6c73cuq6ig-a.singapore-postgres.render.com',
-  database: process.env.DB_NAME || 'kkmk',
-  password: process.env.DB_PASSWORD || 'c3dv1H1UcmugVinLWsxd1J4ozszIyK3C',
-  port: 5432,
-  ssl: {
-    rejectUnauthorized: false
-  }
-}); // Updated pool configuration with Render details
+const db = require('../config/db'); // Use the shared db connection
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -263,7 +252,8 @@ router.delete('/:id', async (req, res) => {
 // Add these new routes
 router.get('/pending-locations', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(`
+    // Replace pool.query with db.query
+    const result = await db.query(`
       SELECT 
         id,
         name,
@@ -294,7 +284,8 @@ router.put('/verify-location/:id', authenticateToken, async (req, res) => {
   const { verified, address } = req.body;
   
   try {
-    const result = await pool.query(`
+    // Replace pool.query with db.query
+    const result = await db.query(`
       UPDATE users
       SET location_verified = $1,
           location_updated_at = CURRENT_TIMESTAMP,
@@ -326,7 +317,8 @@ router.put('/verify-location/:id', authenticateToken, async (req, res) => {
 
 router.get('/verified-locations', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(`
+    // Replace pool.query with db.query
+    const result = await db.query(`
       SELECT 
         s.id,
         s.name,
@@ -383,7 +375,8 @@ router.post('/location-remark/:id', authenticateToken, async (req, res) => {
   const { remark, visitDate } = req.body;
   
   try {
-    const result = await pool.query(`
+    // Replace pool.query with db.query
+    const result = await db.query(`
       UPDATE users
       SET location_remark = $1,
           scheduled_visit = $2,
@@ -414,7 +407,8 @@ router.get('/location-remarks/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   
   try {
-    const result = await pool.query(`
+    // Replace pool.query with db.query
+    const result = await db.query(`
       SELECT 
         location_remark,
         scheduled_visit,
@@ -442,7 +436,8 @@ router.post('/location-remarks/:scholarId/reject', authenticateToken, async (req
     const { location_remark } = req.body;
     
     // Reset user's location data and set verification to false
-    const result = await pool.query(
+    // Replace pool.query with db.query
+    const result = await db.query(
       `UPDATE users 
        SET location_verified = false,
            latitude = NULL,
@@ -469,7 +464,8 @@ router.post('/location-remarks/:scholarId/reject', authenticateToken, async (req
 router.put('/reset-location/:id', authenticateToken, async (req, res) => {
   try {
     const scholarId = req.params.id;
-    const result = await pool.query(
+    // Replace pool.query with db.query
+    const result = await db.query(
       `UPDATE users 
        SET location_verified = FALSE,
            latitude = NULL,
