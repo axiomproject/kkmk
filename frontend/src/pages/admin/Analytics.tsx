@@ -98,61 +98,61 @@ const Analytics: React.FC = () => {
     const fetchData = async () => {
       try {
         // Fetch scholar count
-        const scholarResponse = await fetch('http://localhost:5175/api/admin/scholar-count');
+        const scholarResponse = await fetch('/api/admin/scholar-count');
         if (!scholarResponse.ok) throw new Error('Failed to fetch scholar count');
         const scholarData = await scholarResponse.json();
         setScholarCount(scholarData.count);
 
         // Fetch items distributed
-        const itemsResponse = await fetch('http://localhost:5175/api/admin/items-distributed');
+        const itemsResponse = await fetch('/api/admin/items-distributed');
         if (!itemsResponse.ok) throw new Error('Failed to fetch items distributed');
         const itemsData = await itemsResponse.json();
         setItemsDistributed(itemsData.count);
 
         // Fetch new sponsors count
-        const sponsorsResponse = await fetch('http://localhost:5175/api/admin/new-sponsors-count');
+        const sponsorsResponse = await fetch('/api/admin/new-sponsors-count');
         if (!sponsorsResponse.ok) throw new Error('Failed to fetch new sponsors count');
         const sponsorsData = await sponsorsResponse.json();
         setNewSponsorsCount(sponsorsData.count);
 
         // Fetch new volunteers count
-        const volunteersResponse = await fetch('http://localhost:5175/api/admin/new-volunteers-count');
+        const volunteersResponse = await fetch('/api/admin/new-volunteers-count');
         if (!volunteersResponse.ok) throw new Error('Failed to fetch new volunteers count');
         const volunteersData = await volunteersResponse.json();
         setNewVolunteersCount(volunteersData.count);
 
         // Fetch events count
-        const eventsResponse = await fetch('http://localhost:5175/api/admin/events-count');
+        const eventsResponse = await fetch('/api/admin/events-count');
         if (!eventsResponse.ok) throw new Error('Failed to fetch events count');
         const eventsData = await eventsResponse.json();
         setEventsCount(eventsData.count);
 
         // Fetch generous donors
-        const donorsResponse = await fetch('http://localhost:5175/api/admin/generous-donors');
+        const donorsResponse = await fetch('/api/admin/generous-donors');
         if (!donorsResponse.ok) throw new Error('Failed to fetch generous donors');
         const donorsData = await donorsResponse.json();
         setGenerousDonors(donorsData);
 
         // Fetch donations summary
-        const donationsResponse = await fetch('http://localhost:5175/api/admin/donations-summary');
+        const donationsResponse = await fetch('/api/admin/donations-summary');
         if (!donationsResponse.ok) throw new Error('Failed to fetch donations summary');
         const donationsData = await donationsResponse.json();
         setDonationSummary(donationsData);
 
         // Fetch donation time statistics
-        const timeResponse = await fetch('http://localhost:5175/api/admin/donation-time-stats');
+        const timeResponse = await fetch('/api/admin/donation-time-stats');
         if (!timeResponse.ok) throw new Error('Failed to fetch donation time stats');
         const timeData = await timeResponse.json();
         setTimeStats(timeData);
 
         // Fetch donation trends
-        const trendsResponse = await fetch('http://localhost:5175/api/admin/donation-trends');
+        const trendsResponse = await fetch('/api/admin/donation-trends');
         if (!trendsResponse.ok) throw new Error('Failed to fetch donation trends');
         const trendsData = await trendsResponse.json();
         setTrendStats(trendsData);
 
         // Fetch daily traffic
-        const trafficResponse = await fetch('http://localhost:5175/api/admin/daily-traffic');
+        const trafficResponse = await fetch('/api/admin/daily-traffic');
         if (!trafficResponse.ok) throw new Error('Failed to fetch daily traffic');
         const trafficData = await trafficResponse.json();
         setDailyTraffic(trafficData);
