@@ -1,6 +1,15 @@
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const db = require('../config/db');
+
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'kkmk',
+  password: 'test',
+  port: 5432,
+});
 
 const createUser = async (name, username, email, password, dateOfBirth, role = 'volunteer', faceData = null) => {
   try {
@@ -20,7 +29,7 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
       face_landmarks = JSON.stringify(parsedData.landmarks);
     }
 
-    const result = await db.query(
+    const result = await pool.query(
       `INSERT INTO users (
         name, username, email, password, date_of_birth, 
         verification_token, is_verified, role, created_at,
@@ -46,48 +55,17 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
 };
 
 const findUserByEmailOrUsername = async (identifier) => {
-  try {
-    console.log('Finding user by email or username:', identifier);
-    
-    if (!identifier) {
-      console.log('No identifier provided');
-      return null;
-    }
-
-    // First check if we can connect to the database
-    try {
-      await db.pool.query('SELECT 1');
-    } catch (dbError) {
-      console.error('Database connection error:', dbError);
-      throw new Error('Database connection failed');
-    }
-
-    const query = `
-      SELECT id, email, name, username, profile_photo, cover_photo, intro, 
-             known_as, date_of_birth, phone, password, is_verified, role,
-             facebook_url, twitter_url, instagram_url, status
-      FROM users 
-      WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)`;
-
-    console.log('Executing query:', { query, identifier });
-
-    const result = await db.query(query, [identifier]);
-
-    console.log('Query result:', {
-      rowCount: result?.rowCount || 0,
-      hasRows: !!result?.rows?.length
-    });
-
-    if (!result?.rows?.length) {
-      console.log('No user found for identifier:', identifier);
-      return null;
-    }
-
-    return result.rows[0];
-  } catch (error) {
-    console.error('Database error in findUserByEmailOrUsername:', error);
-    throw new Error(`Database error: ${error.message}`);
-  }
+  console.log('Finding user by email or username:', identifier);
+  const result = await pool.query(
+    `SELECT id, email, name, username, profile_photo, cover_photo, intro, 
+            known_as, date_of_birth, phone, password, is_verified, role,
+            facebook_url, twitter_url, instagram_url, status
+     FROM users 
+     WHERE email = $1 OR username = $1`,
+    [identifier]
+  );
+  console.log('User found in DB:', result.rows[0]);
+  return result.rows[0];
 };
 
 const updateUserPhotos = async (userId, profilePhoto, coverPhoto) => {
@@ -99,7 +77,7 @@ const updateUserPhotos = async (userId, profilePhoto, coverPhoto) => {
     WHERE id = $3 
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
-  const result = await db.query(query, [profilePhoto, coverPhoto, userId]);
+  const result = await pool.query(query, [profilePhoto, coverPhoto, userId]);
   console.log('Updated user:', result.rows[0]);
   return result.rows[0];
 };
@@ -113,7 +91,7 @@ const updateUserInfo = async (userId, intro, knownAs) => {
     WHERE id = $3 
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
-  const result = await db.query(query, [intro, knownAs, userId]);
+  const result = await pool.query(query, [intro, knownAs, userId]);
   console.log('Updated user info:', result.rows[0]);
   return result.rows[0];
 };
@@ -132,14 +110,14 @@ const updateUserDetails = async (userId, name, email, username, dateOfBirth, pho
     WHERE id = $8 
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
-  const result = await db.query(query, [name, email, username, dateOfBirth, phone, intro, knownAs, userId]);
+  const result = await pool.query(query, [name, email, username, dateOfBirth, phone, intro, knownAs, userId]);
   console.log('Updated user details:', result.rows[0]);
   return result.rows[0];
 };
 
 const updateUserPassword = async (userId, oldPassword, newPassword) => {
   // First verify the old password
-  const user = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
+  const user = await pool.query('SELECT password FROM users WHERE id = $1', [userId]);
   if (!user.rows[0]) {
     throw new Error('User not found');
   }
@@ -151,7 +129,7 @@ const updateUserPassword = async (userId, oldPassword, newPassword) => {
 
   // Hash and update the new password
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  const result = await db.query(
+  const result = await pool.query(
     'UPDATE users SET password = $1 WHERE id = $2 RETURNING id',
     [hashedPassword, userId]
   );
@@ -163,7 +141,7 @@ const verifyEmail = async (token) => {
   console.log('Starting verification process for token:', token);
   
   try {
-    const client = await db.connect();
+    const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
@@ -220,7 +198,7 @@ const createPasswordResetToken = async (email) => {
   const resetToken = crypto.randomBytes(32).toString('hex');
   const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-  const result = await db.query(
+  const result = await pool.query(
     'UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE email = $3 RETURNING email',
     [resetToken, resetTokenExpiry, email]
   );
@@ -229,7 +207,7 @@ const createPasswordResetToken = async (email) => {
 };
 
 const verifyResetToken = async (token) => {
-  const result = await db.query(
+  const result = await pool.query(
     'SELECT * FROM users WHERE reset_token = $1 AND reset_token_expiry > NOW()',
     [token]
   );
@@ -238,7 +216,7 @@ const verifyResetToken = async (token) => {
 
 const resetPassword = async (token, newPassword) => {
   const hashedPassword = await bcrypt.hash(newPassword, 10);
-  const result = await db.query(
+  const result = await pool.query(
     'UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE reset_token = $2 AND reset_token_expiry > NOW() RETURNING id',
     [hashedPassword, token]
   );
@@ -256,7 +234,7 @@ const updateUserSocials = async (userId, facebookUrl, twitterUrl, instagramUrl) 
               known_as, date_of_birth, phone, facebook_url, twitter_url, 
               instagram_url, role, is_verified`;
 
-  const result = await db.query(query, [facebookUrl, twitterUrl, instagramUrl, userId]);
+  const result = await pool.query(query, [facebookUrl, twitterUrl, instagramUrl, userId]);
   return result.rows[0];
 };
 
@@ -267,7 +245,7 @@ const updateLastLogin = async (userId) => {
     WHERE id = $1 
     RETURNING last_login`;
 
-  const result = await db.query(query, [userId]);
+  const result = await pool.query(query, [userId]);
   return result.rows[0];
 };
 
@@ -279,7 +257,7 @@ const updateFaceData = async (userId, faceData) => {
     WHERE id = $2 
     RETURNING id`;
 
-  const result = await db.query(query, [faceData, userId]);
+  const result = await pool.query(query, [faceData, userId]);
   return result.rows[0];
 };
 
@@ -460,7 +438,7 @@ const validateFaceData = (faceData) => {
 const findUserByFaceData = async (faceData) => {
   try {
     const { descriptor } = JSON.parse(faceData);
-    const users = await db.query(
+    const users = await pool.query(
       'SELECT * FROM users WHERE face_descriptors IS NOT NULL'
     );
     
@@ -524,7 +502,7 @@ const euclideanDistance = (a, b) => {
 
 const updateUserLocation = async (userId, latitude, longitude) => {
   try {
-    const result = await db.query(
+    const result = await pool.query(
       `UPDATE users 
        SET 
         latitude = $1,
@@ -552,7 +530,7 @@ const updateUserLocation = async (userId, latitude, longitude) => {
 
 const archiveUser = async (userId) => {
   try {
-    const result = await db.query(
+    const result = await pool.query(
       `UPDATE users 
        SET status = 'inactive'
        WHERE id = $1
@@ -567,7 +545,7 @@ const archiveUser = async (userId) => {
 };
 
 const deleteUser = async (userId) => {
-  const client = await db.connect();
+  const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
