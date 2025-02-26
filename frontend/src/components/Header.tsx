@@ -126,7 +126,36 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     if (userData) {
       setUser(JSON.parse(userData));
     }
-  }, []);
+    
+    // Add event listener for profile photo updates
+    const handleProfilePhotoUpdate = (event: CustomEvent) => {
+      if (user) {
+        setUser(prevUser => ({
+          ...prevUser!,
+          profilePhoto: event.detail.profilePhoto
+        }));
+      }
+    };
+    
+    // Add event listener for user info updates (name, email)
+    const handleUserInfoUpdate = (event: CustomEvent) => {
+      if (user) {
+        setUser(prevUser => ({
+          ...prevUser!,
+          name: event.detail.name,
+          email: event.detail.email
+        }));
+      }
+    };
+    
+    window.addEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+    window.addEventListener('userInfoUpdated', handleUserInfoUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
+      window.removeEventListener('userInfoUpdated', handleUserInfoUpdate as EventListener);
+    };
+  }, [user?.id]); // Depend on user ID to ensure we have a user before updating
 
   useEffect(() => {
     const fetchNotifications = async () => {

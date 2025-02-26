@@ -22,7 +22,6 @@ interface StudentDetails {
   school: string;
   guardian_name: string;
   guardian_phone: string;
-  address: string;
   other_details: string;
   status: string;
   current_amount: number;
@@ -592,7 +591,7 @@ const StudentDetails: React.FC = () => {
                       <p><strong>Gender:</strong> {student.gender}</p>
                       <p><strong>School:</strong> {student.school}</p>
                       <p><strong>Education Level:</strong> {student.grade_level}</p>
-                      <p><strong>Address:</strong> {student.address}</p>
+           
                  
                     
           
