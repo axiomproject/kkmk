@@ -26,7 +26,11 @@ const userRoutes = require('./routes/userRoutes'); // Import user routes
 const app = express();
 const port = 5175; // Changed port to avoid conflicts
 
-const forumUploadsDir = path.join(__dirname, 'uploads', 'forum');
+// Create absolute path for uploads directory
+const uploadsBaseDir = path.join(__dirname, 'uploads');
+
+// Create forum uploads directory
+const forumUploadsDir = path.join(uploadsBaseDir, 'forum');
 if (!fs.existsSync(forumUploadsDir)) {
   fs.mkdirSync(forumUploadsDir, { recursive: true });
 }
@@ -56,14 +60,14 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 app.use(express.json());
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads', 'donations');
+// Create donations uploads directory
+const uploadsDir = path.join(uploadsBaseDir, 'donations');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
 // Create uploads directory for admin photos and copy default avatar
-const adminUploadsDir = path.join(__dirname, 'uploads', 'admin');
+const adminUploadsDir = path.join(uploadsBaseDir, 'admin');
 const defaultAvatarSource = path.join(__dirname, 'assets', 'default-avatar.png');
 const defaultAvatarDest = path.join(adminUploadsDir, 'default-avatar.png');
 
@@ -82,54 +86,79 @@ if (!fs.existsSync(defaultAvatarDest)) {
 }
 
 // Create uploads directory for scholars
-const scholarUploadsDir = path.join(__dirname, 'uploads', 'scholars');
+const scholarUploadsDir = path.join(uploadsBaseDir, 'scholars');
 if (!fs.existsSync(scholarUploadsDir)) {
   fs.mkdirSync(scholarUploadsDir, { recursive: true });
 }
 
-// Create uploads directory for scholar donations (if it doesn't exist)
-const scholarDonationsDir = path.join(__dirname, 'uploads', 'scholardonations');
+// Create uploads directory for scholar donations
+const scholarDonationsDir = path.join(uploadsBaseDir, 'scholardonations');
 if (!fs.existsSync(scholarDonationsDir)) {
   fs.mkdirSync(scholarDonationsDir, { recursive: true });
 }
 
-// Update static file serving - add this before routes
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Create events uploads directory if it doesn't exist
+const eventsUploadsDir = path.join(uploadsBaseDir, 'events');
+if (!fs.existsSync(eventsUploadsDir)) {
+  fs.mkdirSync(eventsUploadsDir, { recursive: true });
+}
 
-// Update static file serving for admin uploads
-app.use('/uploads/admin', express.static(path.join(__dirname, 'uploads', 'admin')));
+// Explicitly define uploads directory path with console logging for debugging
+console.log('Uploads directory path:', uploadsBaseDir);
+app.use('/uploads', express.static(uploadsBaseDir));
 
-// Update the static file serving for events
-app.use('/uploads/events', express.static(path.join(__dirname, 'uploads', 'events')));
+// Add specific routes for different upload directories with logging
+app.use('/uploads/admin', (req, res, next) => {
+  console.log('Admin upload request:', req.url);
+  next();
+}, express.static(adminUploadsDir));
 
-// Add specific static route for scholar images
-app.use('/uploads/scholars', express.static(path.join(__dirname, 'uploads', 'scholars')));
+app.use('/uploads/events', (req, res, next) => {
+  console.log('Events upload request:', req.url);
+  next();
+}, express.static(eventsUploadsDir));
 
-// Add this before your routes
-app.use((req, res, next) => {
-  if (req.url.startsWith('/uploads/')) {
-    console.log('Static file request:', req.url);
+app.use('/uploads/scholars', (req, res, next) => {
+  console.log('Scholar upload request:', req.url);
+  next();
+}, express.static(scholarUploadsDir));
+
+app.use('/uploads/scholardonations', (req, res, next) => {
+  console.log('Scholar donation upload request:', req.url);
+  next();
+}, express.static(scholarDonationsDir));
+
+app.use('/uploads/forum', (req, res, next) => {
+  console.log('Forum upload request:', req.url);
+  next();
+}, express.static(forumUploadsDir));
+
+// Debugging route to check uploads directory
+app.get('/api/check-uploads', (req, res) => {
+  try {
+    const files = fs.readdirSync(uploadsBaseDir);
+    const directories = {};
+    
+    // Get subdirectories
+    fs.readdirSync(uploadsBaseDir).forEach(dir => {
+      const dirPath = path.join(uploadsBaseDir, dir);
+      if (fs.statSync(dirPath).isDirectory()) {
+        directories[dir] = fs.readdirSync(dirPath);
+      }
+    });
+    
+    res.json({
+      uploadsPath: uploadsBaseDir,
+      exists: fs.existsSync(uploadsBaseDir),
+      files,
+      directories
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err.message,
+      stack: err.stack
+    });
   }
-  next();
-});
-
-// Log static file requests
-app.use('/uploads', (req, res, next) => {
-  console.log('Static file request:', req.url);
-  next();
-});
-
-// Make sure this comes before your routes
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api/donations', donationRoutes);
-
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Handle SPA routing - serve index.html for all non-API routes
-app.get('*', (req, res, next) => {
-  if (req.url.startsWith('/api')) return next();
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Update middleware to only log errors
@@ -145,6 +174,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/api', eventRoutes);
+
 // Add debug middleware for notifications
 app.use((req, res, next) => {
   console.log('Incoming request:', {
@@ -177,6 +207,7 @@ app.use('/api/scholardonations', scholarDonationRoutes); // Add this line
 app.use('/api/events', eventRoutes);  // Add this line to register event routes
 app.use('/api', userRoutes);  // Add this line before authRoutes
 app.use('/api', authRoutes);
+app.use('/api/donations', donationRoutes);
 
 // Add debug middleware for API requests
 app.use((req, res, next) => {
