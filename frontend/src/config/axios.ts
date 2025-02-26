@@ -1,9 +1,11 @@
 import axios from 'axios';
 
+// Define the API URL based on environment
 const baseURL = import.meta.env.PROD 
   ? 'https://kkmkpayatas.onrender.com/api'
   : 'http://localhost:5175/api';
 
+// Create and export the axios instance
 const api = axios.create({
   baseURL,
   withCredentials: true,
@@ -40,4 +42,5 @@ api.interceptors.response.use(
   }
 );
 
+// Make sure to export as default to fix the module error
 export default api;

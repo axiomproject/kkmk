@@ -12,7 +12,7 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
-import api from '../../config/axios'; // Replace axios import
+import api from '../../config/axios';
 
 // Register the necessary Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend, ArcElement);
@@ -115,48 +115,70 @@ const Analytics: React.FC = () => {
     const fetchData = async () => {
       try {
         // Fetch scholar count
-        const scholarResponse = await api.get('/admin/scholar-count');
-        setScholarCount(scholarResponse.data.count);
+        const scholarResponse = await fetch('http://localhost:5175/api/admin/scholar-count');
+        if (!scholarResponse.ok) throw new Error('Failed to fetch scholar count');
+        const scholarData = await scholarResponse.json();
+        setScholarCount(scholarData.count);
 
         // Fetch items distributed
-        const itemsResponse = await api.get('/admin/items-distributed');
-        setItemsDistributed(itemsResponse.data.count);
+        const itemsResponse = await fetch('http://localhost:5175/api/admin/items-distributed');
+        if (!itemsResponse.ok) throw new Error('Failed to fetch items distributed');
+        const itemsData = await itemsResponse.json();
+        setItemsDistributed(itemsData.count);
 
         // Fetch new users count
-        const newUsersResponse = await api.get('/admin/new-users-count');
-        setNewUsersCount(newUsersResponse.data.count);
+        const newUsersResponse = await fetch('http://localhost:5175/api/admin/new-users-count');
+        if (!newUsersResponse.ok) throw new Error('Failed to fetch new users count');
+        const newUsersData = await newUsersResponse.json();
+        setNewUsersCount(newUsersData.count);
 
         // Fetch events count
-        const eventsResponse = await api.get('/admin/events-count');
-        setEventsCount(eventsResponse.data.count);
+        const eventsResponse = await fetch('http://localhost:5175/api/admin/events-count');
+        if (!eventsResponse.ok) throw new Error('Failed to fetch events count');
+        const eventsData = await eventsResponse.json();
+        setEventsCount(eventsData.count);
 
         // Fetch generous donors
-        const donorsResponse = await api.get('/admin/generous-donors');
-        setGenerousDonors(donorsResponse.data);
+        const donorsResponse = await fetch('http://localhost:5175/api/admin/generous-donors');
+        if (!donorsResponse.ok) throw new Error('Failed to fetch generous donors');
+        const donorsData = await donorsResponse.json();
+        setGenerousDonors(donorsData);
 
         // Fetch donations summary
-        const donationsResponse = await api.get('/admin/donations-summary');
-        setDonationSummary(donationsResponse.data);
+        const donationsResponse = await fetch('http://localhost:5175/api/admin/donations-summary');
+        if (!donationsResponse.ok) throw new Error('Failed to fetch donations summary');
+        const donationsData = await donationsResponse.json();
+        setDonationSummary(donationsData);
 
         // Fetch donation time statistics
-        const timeResponse = await api.get('/admin/donation-time-stats');
-        setTimeStats(timeResponse.data);
+        const timeResponse = await fetch('http://localhost:5175/api/admin/donation-time-stats');
+        if (!timeResponse.ok) throw new Error('Failed to fetch donation time stats');
+        const timeData = await timeResponse.json();
+        setTimeStats(timeData);
 
         // Fetch donation trends
-        const trendsResponse = await api.get('/admin/donation-trends');
-        setTrendStats(trendsResponse.data);
+        const trendsResponse = await fetch('http://localhost:5175/api/admin/donation-trends');
+        if (!trendsResponse.ok) throw new Error('Failed to fetch donation trends');
+        const trendsData = await trendsResponse.json();
+        setTrendStats(trendsData);
 
         // Fetch daily traffic
-        const trafficResponse = await api.get('/admin/daily-traffic');
-        setDailyTraffic(trafficResponse.data);
+        const trafficResponse = await fetch('http://localhost:5175/api/admin/daily-traffic');
+        if (!trafficResponse.ok) throw new Error('Failed to fetch daily traffic');
+        const trafficData = await trafficResponse.json();
+        setDailyTraffic(trafficData);
 
         // Fetch scholar reports
-        const scholarReportsResponse = await api.get('/admin/scholar-reports');
-        setScholarReportStatus(scholarReportsResponse.data);
+        const scholarReportsResponse = await fetch('http://localhost:5175/api/admin/scholar-reports');
+        if (!scholarReportsResponse.ok) throw new Error('Failed to fetch scholar reports');
+        const scholarReportsData = await scholarReportsResponse.json();
+        setScholarReportStatus(scholarReportsData);
 
         // Add new fetch for items distributed stats
-        const itemsStatsResponse = await api.get('/admin/items-distributed-stats');
-        setItemsStats(itemsStatsResponse.data);
+        const itemsStatsResponse = await fetch('http://localhost:5175/api/admin/items-distributed-stats');
+        if (!itemsStatsResponse.ok) throw new Error('Failed to fetch items distributed stats');
+        const itemsStatsData = await itemsStatsResponse.json();
+        setItemsStats(itemsStatsData);
 
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -513,9 +535,15 @@ const trafficChartOptions = {
   const handleStatusChange = async (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newStep = parseInt(event.target.value);
     try {
-      const response = await api.put('/admin/scholar-reports/status', {
-        verificationStep: newStep
+      const response = await fetch(`http://localhost:5175/api/admin/scholar-reports/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ verificationStep: newStep }),
       });
+
+      if (!response.ok) throw new Error('Failed to update status');
       
       setScholarReportStatus(prev => ({
         ...prev,
