@@ -1,56 +1,36 @@
 const nodemailer = require('nodemailer');
-const mg = require('nodemailer-mailgun-transport');
 
-// Create a transporter singleton with Mailgun configuration
-const createTransporter = () => {
-  // Mailgun authentication
-  const auth = {
-    auth: {
-      api_key: process.env.MAILGUN_API_KEY,
-      domain: process.env.MAILGUN_DOMAIN
-    }
-  };
-
-  console.log('Configuring Mailgun with domain:', process.env.MAILGUN_DOMAIN);
-  
-  // Create nodemailer transporter using mailgun transport
-  const transporter = nodemailer.createTransport(mg(auth));
-  
-  return transporter;
-};
-
-// Cache the transporter instance
-let transporterInstance = null;
-
-// Get transporter (create if not exists)
-const getTransporter = () => {
-  if (!transporterInstance) {
-    transporterInstance = createTransporter();
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  },
+  tls: {
+    rejectUnauthorized: false
   }
-  return transporterInstance;
-};
+});
 
-// Separate verification function that should be called during app startup, not during regular operations
-const verifyEmailService = async () => {
-  try {
-    // Mailgun doesn't support direct verification like SMTP
-    // We can do a simple check to ensure env variables are set
-    if (!process.env.MAILGUN_API_KEY || !process.env.MAILGUN_DOMAIN) {
-      throw new Error('Mailgun configuration missing');
-    }
-    console.log('Mailgun service is configured');
-    return true;
-  } catch (error) {
+// Test the connection
+transporter.verify((error, success) => {
+  if (error) {
     console.error('Email service error:', error);
-    throw error;
+  } else {
+    console.log('Email service is ready to send messages');
   }
-};
+});
 
 const sendVerificationEmail = async (email, verificationToken) => {
   const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
   
   const mailOptions = {
-    from: process.env.MAILGUN_SENDER || 'KKMK Support <noreply@example.com>',
+    from: {
+      name: 'KKMK Support',
+      address: process.env.EMAIL_USER
+    },
     to: email,
     subject: 'Verify Your KKMK Account',
     html: `
@@ -78,7 +58,6 @@ const sendVerificationEmail = async (email, verificationToken) => {
   };
 
   try {
-    const transporter = getTransporter();
     const info = await transporter.sendMail(mailOptions);
     console.log('Verification email sent:', info.messageId);
     return info;
@@ -92,7 +71,10 @@ const sendPasswordResetEmail = async (email, resetToken) => {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
   
   const mailOptions = {
-    from: process.env.MAILGUN_SENDER || 'KKMK Support <noreply@example.com>',
+    from: {
+      name: 'KKMK Support',
+      address: process.env.EMAIL_USER
+    },
     to: email,
     subject: 'Reset Your KKMK Password',
     html: `
@@ -120,7 +102,6 @@ const sendPasswordResetEmail = async (email, resetToken) => {
   };
 
   try {
-    const transporter = getTransporter();
     const info = await transporter.sendMail(mailOptions);
     console.log('Password reset email sent:', info.messageId);
     return info;
@@ -132,6 +113,5 @@ const sendPasswordResetEmail = async (email, resetToken) => {
 
 module.exports = {
   sendVerificationEmail,
-  sendPasswordResetEmail,
-  verifyEmailService
+  sendPasswordResetEmail
 };
