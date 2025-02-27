@@ -323,7 +323,9 @@ const AdminEvents: React.FC = () => {
       // Add baseURL to image path if it's a relative path
       const imageUrl = event.image.startsWith('http') 
         ? event.image 
-        : `${axios.defaults.baseURL}${event.image}`;
+        : event.image.startsWith('/uploads')
+          ? `${event.image}`
+          : `${axios.defaults.baseURL}${event.image}`;
       
       setImagePreview(imageUrl);
       setSelectedEvent(event);
@@ -342,14 +344,15 @@ const AdminEvents: React.FC = () => {
         longitude: event.longitude || null
       });
     } else {
-      // When creating new event, use empty string for id
+      // When creating new event, clear image preview
+      setImagePreview('');
       setShowModal(true);
       setFormData({
         id: '',
         title: '',
         date: '',
         location: '',
-        image: null,  // Reset to null for new events
+        image: null,
         description: '',
         totalVolunteers: 0,
         currentVolunteers: 0,
