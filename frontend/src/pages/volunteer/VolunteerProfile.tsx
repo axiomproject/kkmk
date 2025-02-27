@@ -1011,15 +1011,13 @@ const VolunteerProfile: React.FC = () => {
         )}
 
         {showFeedbackModal && currentFeedbackEvent && (
-          <div className="popup-overlay feedback" onClick={handleCloseFeedback}>
+          <div className="popup-overlay feedback" onClick={e => e.stopPropagation()}>
             <div className="feedback-popup" onClick={e => e.stopPropagation()}>
               <span 
                 className="modal-close" 
                 onClick={handleCloseFeedback}
                 title="Skip feedback"
               >×</span>
-                
-              </div>
               
               <h2>Event Feedback</h2>
               <p>Please share your experience at:<br/>{currentFeedbackEvent.title}</p>
@@ -1052,7 +1050,7 @@ const VolunteerProfile: React.FC = () => {
                 Submit Feedback
               </button>
             </div>
-        
+          </div>
         )}
 
         <input
