@@ -172,23 +172,36 @@ export default function ContentEditor() {
 
   const handleImageUpload = async (file: File, sectionIndex: number) => {
     try {
+      if (!file) {
+        console.error('No file selected');
+        return;
+      }
+        
       const formData = new FormData();
       formData.append('image', file);
-
+  
       console.log('Uploading file:', file.name);
-
-      const response = await api.post('/content/upload-image', formData);
-
+  
+      // Make sure proper headers are included for multipart/form-data
+      const response = await api.post('/content/upload-image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+  
       console.log('Upload response:', response.data);
-
+  
       const imagePath = response.data.imagePath;
       if (!imagePath) {
         throw new Error('No image path received from server');
       }
-
+  
       if (sectionIndex === -1) {
+        // This is a banner image
         setContent(prev => ({ ...prev, bannerImage: imagePath }));
+        console.log('Banner image updated:', imagePath);
       } else {
+        // This is a section image
         setContent(prev => {
           const newSections = [...prev.sections];
           newSections[sectionIndex] = {
@@ -203,6 +216,7 @@ export default function ContentEditor() {
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
     }
   };
+  
 
   const handleTestimonialImageUpload = async (file: File, index: number) => {
     try {
@@ -1609,7 +1623,13 @@ export default function ContentEditor() {
                       className="file-input"
                       id="banner-image"
                       accept="image/*"
-                      onChange={(e) => e.target.files && handleImageUpload(e.target.files[0], -1)}
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          handleImageUpload(e.target.files[0], -1);
+                        } else {
+                          console.error('No file selected');
+                        }
+                      }}
                     />
                     <label htmlFor="banner-image">
                       <span className="file-name-truncatee">Choose file</span>
