@@ -350,7 +350,7 @@ router.get('/verified-locations', authenticateToken, async (req, res) => {
       profile_photo: scholar.profile_photo ? (
         scholar.profile_photo.startsWith('data:image') ? scholar.profile_photo :
         scholar.profile_photo.startsWith('http') ? scholar.profile_photo :
-        `http://localhost:5175${scholar.profile_photo}`
+        `${scholar.profile_photo}`
       ) : null
     }));
 

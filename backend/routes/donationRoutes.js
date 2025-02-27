@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
     const donationsWithUrls = donations.map(donation => ({
       ...donation,
       proof_of_payment: donation.proof_of_payment 
-        ? `http://localhost:5175/uploads/donations/${donation.proof_of_payment}`
+        ? `/uploads/donations/${donation.proof_of_payment}`
         : null
     }));
 
@@ -101,7 +101,7 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
     
     const responseData = {
       ...result.rows[0],
-      proof_of_payment: proofOfPayment ? `http://localhost:5175/uploads/donations/${proofOfPayment}` : null
+      proof_of_payment: proofOfPayment ? `/uploads/donations/${proofOfPayment}` : null
     };
 
     console.log('Response with proof:', responseData);

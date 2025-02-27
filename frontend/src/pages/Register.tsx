@@ -28,6 +28,7 @@ const Register: React.FC = () => {
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -146,6 +147,7 @@ const Register: React.FC = () => {
 
       const response = await api.post('/register', registrationData);
       setSuccess(response.data.message);
+      setShowSuccessPopup(true);
     } catch (err: any) {
       console.error('Registration error:', err);
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
@@ -303,11 +305,47 @@ const Register: React.FC = () => {
     </div>
   );
 
+  // Success Popup Component - Updated for better animation
+  const renderSuccessPopup = () => (
+    <motion.div 
+      className="success-popup-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div 
+        className={`success-popup ${isClosingModal ? 'closing' : ''}`}
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ 
+          type: "spring",
+          stiffness: 300,
+          damping: 25,
+          duration: 0.3
+        }}
+      >
+        <div className="success-popup-content">
+          <div className="success-icon">✓</div>
+          <p>{success || 'Registration successful. Please check your email to verify your account.'}</p>
+          <button 
+            className="close-popup-btn"
+            onClick={() => setShowSuccessPopup(false)}
+          >
+            <svg viewBox="0 0 24 24" width="24" height="24">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
   const renderRegistrationForm = () => (
     <div className="registration-form">
       <h4>Complete your registration</h4>
       <p>Please fill in your details</p>
-      {success && <p className="success-message">{success}</p>}
+      {error && <p className="error-message">{error}</p>}
       <form onSubmit={handleSubmit} className="auth-form">
         <div className="form-group-row">
           <div className="form-group">
@@ -421,7 +459,6 @@ const Register: React.FC = () => {
             onSuccess={handleFaceVerificationSuccess}
           />
         )}
-        {error && <p className="error-message">{error}</p>}
         <button type="submit" className="auth-button-register">Register</button>
       </form>
       {showTermsModal && renderTermsModal()}
@@ -457,6 +494,11 @@ const Register: React.FC = () => {
               </>
             )}
           </motion.div>
+        </AnimatePresence>
+        
+        {/* Success Popup - Updated animation with AnimatePresence handled directly in renderSuccessPopup */}
+        <AnimatePresence>
+          {showSuccessPopup && renderSuccessPopup()}
         </AnimatePresence>
       </div>
     </div>
