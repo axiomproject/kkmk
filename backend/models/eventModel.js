@@ -134,9 +134,35 @@ const EventModel = {
   },
 
   async deleteEvent(id) {
-    // Replace db.result with db.query
-    const result = await db.query('DELETE FROM events WHERE id = $1', [id]);
-    return result;
+    // Use a transaction to ensure all operations succeed or fail together
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Delete related records from dismissed_feedback
+      await client.query('DELETE FROM dismissed_feedback WHERE event_id = $1', [id]);
+      
+      // Delete related records from event_feedback
+      await client.query('DELETE FROM event_feedback WHERE event_id = $1', [id]);
+      
+      // Delete related records from event_participants
+      await client.query('DELETE FROM event_participants WHERE event_id = $1', [id]);
+      
+      // Delete related records from event_locations (if exists)
+      await client.query('DELETE FROM event_locations WHERE event_id = $1', [id]);
+      
+      // Finally delete the event itself
+      const result = await client.query('DELETE FROM events WHERE id = $1', [id]);
+      
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error in deleteEvent transaction:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async joinEvent(eventId, userId) {
