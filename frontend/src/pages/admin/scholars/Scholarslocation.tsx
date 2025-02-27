@@ -58,7 +58,7 @@ const ScholarsLocation: React.FC = () => {
 
   const handleVerifyLocation = async (scholarId: number, isVerified: boolean) => {
     try {
-      // First, get the address from coordinates
+      // First, get the scholar details
       const scholar = pendingScholars.find(s => s.id === scholarId);
       if (!scholar) {
         throw new Error('Scholar not found');
@@ -69,16 +69,15 @@ const ScholarsLocation: React.FC = () => {
       
       let address = '';
       try {
+        // Use our backend API as a proxy to OpenStreetMap
+        const token = localStorage.getItem('token');
         const response = await api.get(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`
+          `/geocode/reverse?lat=${lat}&lon=${lng}`,
+          { headers: { Authorization: `Bearer ${token}` }}
         );
         
-        // Use a more detailed address format
-        const data = response.data;
-        address = data.display_name;
-        
-        // Add a delay to respect OpenStreetMap's usage policy
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Get the address from our backend response
+        address = response.data.address;
       } catch (error) {
         console.error('Error getting address:', error);
         address = 'Address lookup failed';
