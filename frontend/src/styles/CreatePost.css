@@ -187,11 +187,7 @@
   margin: 20px 0;
 }
 
-.image-preview {
-  margin-top: 12px;
-  position: relative;
-  display: inline-block;
-}
+
 
 .image-preview img {
   max-width: 100%;
