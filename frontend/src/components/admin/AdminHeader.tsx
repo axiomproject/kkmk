@@ -59,7 +59,11 @@ const AdminHeader = () => {
   return (
     <header className="admin-header">
       <div className="header-left">
-        <img src={kkmkLogo} alt="KKMK Logo" className="admin-logo" />
+        <img src={kkmkLogo} 
+        alt="KKMK Logo" 
+        onClick={() => navigate('/')}
+
+        className="admin-logo" />
       </div>
       <div className="header-right">
         <div 
