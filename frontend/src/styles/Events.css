@@ -1005,3 +1005,25 @@ button:disabled {
     stroke-dashoffset: 0;
   }
 }
+
+/* ...existing code... */
+
+.default-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.5;
+}
+
+.no-image-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #555;
+  font-weight: bold;
+  text-align: center;
+  margin: 0;
+}
+
+/* ...existing code... */

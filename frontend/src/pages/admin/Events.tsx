@@ -1143,13 +1143,13 @@ const validateLocation = () => {
                       ? event.image 
                       : event.image.startsWith('/uploads') 
                         ? `${event.image}`
-                        : '/images/default-event.jpg'
+                        : '/images/default-event.png'
                     } 
                     alt={event.title} 
                     className="event-image"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = '/images/default-event.jpg';
+                      target.src = '/images/default-event.png';
                       console.log('Failed to load image:', event.image); // Debug log
                     }}
                   />
@@ -1209,13 +1209,13 @@ const validateLocation = () => {
                           ? event.image 
                           : event.image.startsWith('/uploads') 
                             ? `${event.image}`
-                            : '/images/default-event.jpg'
+                            : '/images/default-event.png'
                         } 
                         alt={event.title} 
                         className="event-image"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
-                          target.src = '/images/default-event.jpg';
+                          target.src = '/images/default-event.png';
                           console.log('Failed to load image:', event.image); // Debug log
                         }}
                       />
@@ -1380,11 +1380,23 @@ const validateLocation = () => {
             <div className="image-upload-container">
               {imagePreview ? (
                 <div className="image-preview">
-                  <img src={imagePreview} alt="Preview" />
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/images/default-event.png';
+                    }}
+                  />
                 </div>
               ) : (
                 <div className="image-preview">
-                  <p className="no-image-placeholder">No image selected</p>
+                  <img 
+                    src="/images/default-event.png" 
+                    alt="Default preview" 
+                    className="default-preview-image" 
+                  />
+                  <p className="no-image-overlay">No image selected</p>
                 </div>
               )}
               <label className="image-upload-label">
