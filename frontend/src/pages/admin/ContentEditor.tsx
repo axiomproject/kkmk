@@ -816,9 +816,14 @@ export default function ContentEditor() {
                     <h3>Testimonial Image</h3>
                     <input
                       type="file"
+                      className="file-input"
+                      id={`testimonial-image-${index}`}
                       accept="image/*"
                       onChange={(e) => e.target.files && handleTestimonialImageUpload(e.target.files[0], index)}
                     />
+                    <label htmlFor={`testimonial-image-${index}`}>
+                      <span className="file-name-truncatee">Choose file</span>
+                    </label>
                     {testimonial.image && (
                       <div className="image-preview">
                         <img 
@@ -891,9 +896,14 @@ export default function ContentEditor() {
                     <h3>Member Image</h3>
                     <input
                       type="file"
+                      className="file-input"
+                      id={`team-member-image-${index}`}
                       accept="image/*"
                       onChange={(e) => e.target.files && handleTeamMemberImageUpload(e.target.files[0], index)}
                     />
+                    <label htmlFor={`team-member-image-${index}`}>
+                      <span className="file-name-truncatee">Choose file</span>
+                    </label>
                     {member.image && (
                       <div className="image-preview">
                         <img 
@@ -1036,9 +1046,14 @@ export default function ContentEditor() {
                     <h3>Image</h3>
                     <input
                       type="file"
+                      className="file-input"
+                      id={`gallery-image-${index}`}
                       accept="image/*"
                       onChange={(e) => e.target.files && handleGalleryImageUpload(e.target.files[0], index)}
                     />
+                    <label htmlFor={`gallery-image-${index}`}>
+                      <span className="file-name-truncatee">Choose file</span>
+                    </label>
                     {image.src && (
                       <div className="image-preview">
                         <img 
@@ -1151,6 +1166,8 @@ export default function ContentEditor() {
                     <h3>Feature Icon</h3>
                     <input
                       type="file"
+                      className="file-input"
+                      id={`feature-image-${index}`}
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files) {
@@ -1158,6 +1175,9 @@ export default function ContentEditor() {
                         }
                       }}
                     />
+                    <label htmlFor={`feature-image-${index}`}>
+                      <span className="file-name-truncatee">Choose file</span>
+                    </label>
                     {feature.image && (
                       <div className="image-preview">
                         <img 
@@ -1252,6 +1272,8 @@ export default function ContentEditor() {
                     <h3>Highlight Image</h3>
                     <input
                       type="file"
+                      className="file-input"
+                      id={`highlight-image-${index}`}
                       accept="image/*"
                       onChange={(e) => {
                         if (e.target.files) {
@@ -1259,6 +1281,9 @@ export default function ContentEditor() {
                         }
                       }}
                     />
+                    <label htmlFor={`highlight-image-${index}`}>
+                      <span className="file-name-truncatee">Choose file</span>
+                    </label>
                     {highlight.image && (
                       <div className="image-preview">
                         <img 
@@ -1304,6 +1329,8 @@ export default function ContentEditor() {
                 <h3>Community Image</h3>
                 <input
                   type="file"
+                  className="file-input"
+                  id="community-image"
                   accept="image/*"
                   onChange={(e) => {
                     if (e.target.files) {
@@ -1311,6 +1338,9 @@ export default function ContentEditor() {
                     }
                   }}
                 />
+                <label htmlFor="community-image">
+                  <span className="file-name-truncatee">Choose file</span>
+                </label>
                 {content.community?.image && (
                   <div className="image-preview">
                     <img 
@@ -1417,9 +1447,14 @@ export default function ContentEditor() {
                     <h3>Card Image</h3>
                     <input
                       type="file"
+                      className="file-input"
+                      id={`testimonial-card-image-${index}`}
                       accept="image/*"
                       onChange={(e) => e.target.files && handleTestimonialCardImageUpload(e.target.files[0], index)}
                     />
+                    <label htmlFor={`testimonial-card-image-${index}`}>
+                      <span className="file-name-truncatee">Choose file</span>
+                    </label>
                     {card.image && (
                       <div className="image-preview">
                         <img 
@@ -1476,9 +1511,13 @@ export default function ContentEditor() {
           <input
             type="file"
             className="file-input"
+            id={`section-image-${index}`}
             accept="image/*"
             onChange={(e) => e.target.files && handleImageUpload(e.target.files[0], index)}
           />
+          <label htmlFor={`section-image-${index}`}>
+            <span className="file-name-truncatee">Choose file</span>
+          </label>
           {section.image && (
             <div className="image-preview">
               <img 
@@ -1568,9 +1607,13 @@ export default function ContentEditor() {
                     <input
                       type="file"
                       className="file-input"
+                      id="banner-image"
                       accept="image/*"
                       onChange={(e) => e.target.files && handleImageUpload(e.target.files[0], -1)}
                     />
+                    <label htmlFor="banner-image">
+                      <span className="file-name-truncatee">Choose file</span>
+                    </label>
                     {content.bannerImage && (
                       <div className="image-preview">
                         <img 
