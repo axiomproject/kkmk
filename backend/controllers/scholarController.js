@@ -44,13 +44,20 @@ const scholarController = {
     try {
       const updates = { ...req.body };
       if (updates.password) {
-        updates.password = await bcrypt.hash(updates.password, 10);
+        if (typeof updates.password === 'string' && updates.password.trim() !== '') {
+          updates.password = await bcrypt.hash(updates.password, 10);
+        } else {
+          delete updates.password;
+        }
       }
       const scholar = await adminModel.updateScholar(req.params.id, updates);
       res.json(scholar);
     } catch (error) {
       console.error('Error updating scholar:', error);
-      res.status(500).json({ error: 'Failed to update scholar' });
+      res.status(500).json({ 
+        error: 'Failed to update scholar',
+        details: error.message 
+      });
     }
   },
 
