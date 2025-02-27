@@ -266,4 +266,26 @@ router.get('/events', async (req, res) => {
   }
 });
 
+// Add delete event route
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin or staff
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json({ error: 'Not authorized to delete events' });
+    }
+
+    const eventId = req.params.id;
+    const result = await EventModel.deleteEvent(eventId);
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    res.json({ message: 'Event deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    res.status(500).json({ error: 'Failed to delete event' });
+  }
+});
+
 module.exports = router;
