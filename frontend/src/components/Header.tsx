@@ -28,6 +28,24 @@ interface Notification {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
 
+// Add helper function to resolve avatar URL correctly
+const resolveAvatarUrl = (avatarUrl: string | null | undefined): string => {
+  if (!avatarUrl) return defaultAvatar;
+  
+  // If it's already an absolute URL or data URL, return it as is
+  if (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:')) {
+    return avatarUrl;
+  }
+  
+  // If it's a relative path, prepend API_URL
+  if (avatarUrl.startsWith('/uploads/')) {
+    return `${API_URL}${avatarUrl}`;
+  }
+  
+  // Default case: just try to use what we have
+  return avatarUrl;
+};
+
 const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const [user, setUser] = React.useState<User | null>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -422,7 +440,12 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
               </a>
             </div>
             <div className="notification-container" ref={notificationRef}>
-              <div className="notification-icon" onClick={() => setShowNotifications(!showNotifications)}>
+              <div className="notification-icon" onClick={async () => {
+                if (showNotifications) {
+                  await markUnreadNotificationsAsRead();
+                }
+                setShowNotifications(!showNotifications);
+              }}>
                 {unreadCount > 0 && (
                   <span className="notification-badge">{unreadCount}</span>
                 )}
@@ -458,9 +481,13 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                         className={`notification-item ${!notification.read ? 'unread' : ''}`}
                       >
                         <img 
-                          src={notification.type === 'distribution' ? packageIcon : notification.actor_avatar} 
+                          src={notification.type === 'distribution' ? packageIcon : resolveAvatarUrl(notification.actor_avatar)}
                           alt={notification.type === 'distribution' ? "Package" : "User avatar"}
                           className="notification-avatar"
+                          onError={(e) => {
+                            // If image fails to load, replace with default avatar
+                            (e.target as HTMLImageElement).src = defaultAvatar;
+                          }}
                         />
                         <div className="notification-content">
                           <p className="notification-text">{notification.content}</p>

@@ -82,6 +82,12 @@ if (!fs.existsSync(defaultAvatarDest)) {
   }
 }
 
+// Create uploads directory for staff photos
+const staffUploadsDir = path.join(__dirname, 'uploads', 'staff');
+if (!fs.existsSync(staffUploadsDir)) {
+  fs.mkdirSync(staffUploadsDir, { recursive: true });
+}
+
 // Create uploads directory for scholars
 const scholarUploadsDir = path.join(__dirname, 'uploads', 'scholars');
 if (!fs.existsSync(scholarUploadsDir)) {

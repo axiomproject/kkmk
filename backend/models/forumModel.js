@@ -369,6 +369,31 @@ const forumModel = {
         const recipientExists = recipientResult.rows.length > 0;
 
         if (recipientExists) {
+          // Get the absolute URL for the author's profile photo
+          let avatarUrl = author.profile_photo;
+          
+          // Debug the avatar URL
+          console.log('Original author avatar URL:', avatarUrl);
+          
+          // Check if the URL is already absolute
+          if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('data:')) {
+            // Extract filename from path if it contains slashes
+            const filename = avatarUrl.split('/').pop();
+            
+            // Ensure we have the correct path prefix for each user type
+            if (author.source === 'admin') {
+              avatarUrl = `/uploads/admin/${filename}`;
+            } else if (author.source === 'staff') {
+              avatarUrl = `/uploads/staff/${filename}`;
+            } else {
+              // For regular users
+              avatarUrl = `/uploads/users/${filename}`;
+            }
+          }
+          
+          // Log the processed avatar URL
+          console.log('Processed avatar URL for notification:', avatarUrl);
+          
           await client.query(`
             INSERT INTO notifications (user_id, type, content, related_id, actor_id, actor_name, actor_avatar)
             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -379,7 +404,7 @@ const forumModel = {
               postId,
               commentData.author_id,
               author.name,
-              author.profile_photo
+              avatarUrl
             ]
           );
         } else {
@@ -499,6 +524,31 @@ const forumModel = {
           const recipientExists = recipientResult.rows.length > 0;
 
           if (recipientExists) {
+            // Get the URL for the user's profile photo
+            let avatarUrl = user.profile_photo;
+            
+            // Debug the avatar URL
+            console.log('Original liker avatar URL:', avatarUrl);
+            
+            // Check if the URL is already absolute
+            if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('data:')) {
+              // Extract filename from path if it contains slashes
+              const filename = avatarUrl.split('/').pop();
+              
+              // Ensure we have the correct path prefix for each user type
+              if (user.user_type === 'admin') {
+                avatarUrl = `/uploads/admin/${filename}`;
+              } else if (user.user_type === 'staff') {
+                avatarUrl = `/uploads/staff/${filename}`;
+              } else {
+                // For regular users
+                avatarUrl = `/uploads/users/${filename}`;
+              }
+            }
+            
+            // Log the processed avatar URL
+            console.log('Processed avatar URL for notification:', avatarUrl);
+            
             await client.query(`
               INSERT INTO notifications 
               (user_id, type, content, related_id, actor_id, actor_name, actor_avatar, created_at)
@@ -510,7 +560,7 @@ const forumModel = {
                 postId,
                 userIdInt,
                 user.name,
-                user.profile_photo
+                avatarUrl // Use the processed avatar URL
               ]
             );
           } else {
@@ -609,9 +659,102 @@ const forumModel = {
         );
         
         const post = postResult.rows[0];
+        
+        // Get user info
+        const userResult = await client.query(`
+          SELECT 
+            COALESCE(u.name, a.name, s.name) as name,
+            COALESCE(u.profile_photo, a.profile_photo, s.profile_photo) as profile_photo,
+            CASE 
+              WHEN a.id IS NOT NULL THEN 'admin'
+              WHEN s.id IS NOT NULL THEN 'staff'
+              ELSE 'user'
+            END as user_type
+          FROM (
+            SELECT NULL as id, NULL as name, NULL as profile_photo WHERE false
+            UNION ALL
+            SELECT id, name, profile_photo FROM users WHERE id = $1
+            UNION ALL
+            SELECT id, name, profile_photo FROM admin_users WHERE id = $1
+            UNION ALL
+            SELECT id, name, profile_photo FROM staff_users WHERE id = $1
+          ) combined_users
+          LEFT JOIN users u ON combined_users.id = u.id AND u.id = $1
+          LEFT JOIN admin_users a ON combined_users.id = a.id AND a.id = $1
+          LEFT JOIN staff_users s ON combined_users.id = s.id AND s.id = $1
+          LIMIT 1
+        `, [userIdInt]);
+        
+        const user = userResult.rows[0];
 
-        // Rest of implementation follows the same pattern...
-        // Creating notification, checking recipient, etc.
+        if (!user) {
+          throw new Error(`User ID ${userIdInt} not found in any user table`);
+        }
+
+        // Create notification if the liker is not the post author
+        if (post.author_id !== userIdInt) {
+          // Check target user type
+          let targetTable;
+          if (post.author_type === 'admin') {
+            targetTable = 'admin_users';
+          } else if (post.author_type === 'staff') {
+            targetTable = 'staff_users';
+          } else {
+            targetTable = 'users';
+          }
+
+          // Verify recipient exists before creating notification
+          const recipientResult = await client.query(
+            `SELECT 1 FROM ${targetTable} WHERE id = $1`, 
+            [post.author_id]
+          );
+          
+          const recipientExists = recipientResult.rows.length > 0;
+
+          if (recipientExists) {
+            // Get the URL for the user's profile photo
+            let avatarUrl = user.profile_photo;
+            
+            // Debug the avatar URL
+            console.log('Original liker avatar URL:', avatarUrl);
+            
+            // Check if the URL is already absolute
+            if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('data:')) {
+              // Extract filename from path if it contains slashes
+              const filename = avatarUrl.split('/').pop();
+              
+              // Ensure we have the correct path prefix for each user type
+              if (user.user_type === 'admin') {
+                avatarUrl = `/uploads/admin/${filename}`;
+              } else if (user.user_type === 'staff') {
+                avatarUrl = `/uploads/staff/${filename}`;
+              } else {
+                // For regular users
+                avatarUrl = `/uploads/users/${filename}`;
+              }
+            }
+            
+            // Log the processed avatar URL
+            console.log('Processed avatar URL for notification:', avatarUrl);
+            
+            await client.query(`
+              INSERT INTO notifications 
+              (user_id, type, content, related_id, actor_id, actor_name, actor_avatar)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+              [
+                post.author_id,
+                'post_like',
+                `${user.name} liked your post "${post.title}"`,
+                postId,
+                userIdInt,
+                user.name,
+                avatarUrl // Use the processed avatar URL
+              ]
+            );
+          } else {
+            console.warn(`Cannot create notification: recipient ${post.author_id} not found in ${targetTable}`);
+          }
+        }
       } else {
         await client.query(
           'DELETE FROM forum_post_likes WHERE post_id = $1 AND user_id = $2',
