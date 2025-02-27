@@ -8,16 +8,27 @@ interface ScholarEditFormProps {
 }
 
 const ScholarEditForm = ({ scholar, onSubmit, onCancel }: ScholarEditFormProps) => {
-  const [formData, setFormData] = useState({
-    name: scholar.name || '',
-    email: scholar.email || '',
-    username: scholar.username || '',
-    phone: scholar.phone || '',
-    date_of_birth: scholar.date_of_birth ? 
-      new Date(scholar.date_of_birth).toISOString().split('T')[0] : '',
-    status: scholar.status || 'active',
-    is_verified: scholar.is_verified || false,
-    password: '' // Optional for updates
+  interface FormData {
+      name: string;
+      email: string;
+      username: string;
+      phone: string;
+      date_of_birth: string;
+      status: string;
+      is_verified: boolean;
+      password?: string; // Optional property
+  }
+  
+  const [formData, setFormData] = useState<FormData>({
+      name: scholar.name || '',
+      email: scholar.email || '',
+      username: scholar.username || '',
+      phone: scholar.phone || '',
+      date_of_birth: scholar.date_of_birth ? 
+        new Date(scholar.date_of_birth).toISOString().split('T')[0] : '',
+      status: scholar.status || 'active',
+      is_verified: scholar.is_verified || false,
+      password: '' // Optional for updates
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -30,11 +41,15 @@ const ScholarEditForm = ({ scholar, onSubmit, onCancel }: ScholarEditFormProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Only include password if it was changed
-    const submitData = {
-      ...formData,
-      ...(formData.password ? { password: formData.password } : {})
-    };
+    
+    // Create a new object with all form data except password
+    const submitData = { ...formData };
+    
+    // Only include password if it was actually entered (not empty)
+    if (!submitData.password) {
+      delete submitData.password;
+    }
+    
     onSubmit(submitData);
   };
 
