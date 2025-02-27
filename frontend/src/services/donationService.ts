@@ -8,7 +8,7 @@ interface DonationSubmission {
   date: string;
 }
 
-const API_URL = 'http://localhost:5175/api/donations';  // Use the direct port number from your server.js
+const API_URL = '/api/donations';  // Use the direct port number from your server.js
 
 class DonationService {
   static async submitDonation(formData: FormData) {
