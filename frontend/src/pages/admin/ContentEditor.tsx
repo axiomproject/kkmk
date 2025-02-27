@@ -402,7 +402,7 @@ export default function ContentEditor() {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     if (path.startsWith('/uploads')) {
-      return `http://localhost:5175${path}`;
+      return `${path}`;
     }
     return path;
   };
