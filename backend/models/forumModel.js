@@ -793,7 +793,392 @@ const forumModel = {
       console.error('Error in getEventPosts:', error);
       throw new Error(`Failed to get event posts: ${error.message}`);
     }
-  }
+  },
+
+  async deletePost(postId, userId) {
+    const client = await db.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Convert IDs to integers
+      const postIdInt = parseInt(postId, 10);
+      const userIdInt = parseInt(userId, 10);
+      
+      if (isNaN(postIdInt) || isNaN(userIdInt)) {
+        throw new Error('Invalid post or user ID');
+      }
+      
+      // Check post exists
+      const postResult = await client.query(
+        'SELECT author_id FROM forum_posts WHERE id = $1',
+        [postIdInt]
+      );
+      
+      if (postResult.rows.length === 0) {
+        return { success: false, message: 'Post not found' };
+      }
+      
+      const post = postResult.rows[0];
+      
+      // Check if the user is the author or has admin privileges
+      const isAdmin = await client.query(
+        'SELECT id FROM admin_users WHERE id = $1',
+        [userIdInt]
+      );
+      
+      const isStaff = await client.query(
+        'SELECT id FROM staff_users WHERE id = $1',
+        [userIdInt]
+      );
+      
+      // Get the role of the post author
+      const authorRoleResult = await client.query(`
+        SELECT 
+          CASE 
+            WHEN EXISTS (SELECT 1 FROM admin_users WHERE id = $1) THEN 'admin'
+            WHEN EXISTS (SELECT 1 FROM staff_users WHERE id = $1) THEN 'staff'
+            ELSE 'user'
+          END as role
+        `, [post.author_id]
+      );
+      
+      const authorRole = authorRoleResult.rows[0]?.role || 'user';
+      
+      // Staff cannot delete admin posts
+      if (isStaff.rows.length > 0 && authorRole === 'admin' && post.author_id !== userIdInt) {
+        throw new Error('Unauthorized to delete this post');
+      }
+      
+      const isAuthor = post.author_id === userIdInt;
+      const isAdminUser = isAdmin.rows.length > 0;
+      const isStaffUser = isStaff.rows.length > 0;
+      
+      if (!isAuthor && !isAdminUser && !isStaffUser) {
+        throw new Error('Unauthorized to delete this post');
+      }
+      
+      // Delete all related data in the correct order
+      // 1. First delete poll options and votes
+      await client.query(`
+        DELETE FROM forum_poll_options 
+        WHERE poll_id IN (SELECT id FROM forum_polls WHERE post_id = $1)
+      `, [postIdInt]);
+      
+      await client.query(`
+        DELETE FROM forum_poll_votes 
+        WHERE poll_id IN (SELECT id FROM forum_polls WHERE post_id = $1)
+      `, [postIdInt]);
+      
+      // 2. Delete polls
+      await client.query('DELETE FROM forum_polls WHERE post_id = $1', [postIdInt]);
+      
+      // 3. Delete comment likes
+      await client.query(`
+        DELETE FROM forum_comment_likes 
+        WHERE comment_id IN (SELECT id FROM forum_comments WHERE post_id = $1)
+      `, [postIdInt]);
+      
+      // 4. Delete comments
+      await client.query('DELETE FROM forum_comments WHERE post_id = $1', [postIdInt]);
+      
+      // 5. Delete post likes
+      await client.query('DELETE FROM forum_post_likes WHERE post_id = $1', [postIdInt]);
+      
+      // 6. Delete related notifications
+      await client.query('DELETE FROM notifications WHERE related_id = $1', [postIdInt]);
+      
+      // 7. Finally delete the post itself
+      await client.query('DELETE FROM forum_posts WHERE id = $1', [postIdInt]);
+      
+      await client.query('COMMIT');
+      
+      return { success: true };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+  
+  async getUserVotedPolls(userId) {
+    const userIdInt = parseInt(userId, 10);
+    const result = await db.query(`
+      SELECT DISTINCT post_id 
+      FROM forum_polls p
+      JOIN forum_poll_votes v ON p.id = v.poll_id
+      WHERE v.user_id = $1
+    `, [userIdInt]);
+    return result.rows.map(row => row.post_id);
+  },
+
+  async updatePollVote(postId, optionId, userId) {
+    const client = await db.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Convert IDs to integers
+      const postIdInt = parseInt(postId, 10);
+      const optionIdInt = parseInt(optionId, 10);
+      const userIdInt = parseInt(userId, 10);
+      
+      if (isNaN(postIdInt) || isNaN(optionIdInt) || isNaN(userIdInt)) {
+        throw new Error('Invalid ID format');
+      }
+      
+      // First, check if user has already voted on this poll
+      const pollIdResult = await client.query(`
+        SELECT p.id
+        FROM forum_polls p
+        WHERE p.post_id = $1
+      `, [postIdInt]);
+      
+      if (pollIdResult.rows.length === 0) {
+        throw new Error('Poll not found');
+      }
+      
+      const pollId = pollIdResult.rows[0].id;
+      
+      const existingVoteResult = await client.query(`
+        SELECT id, option_id
+        FROM forum_poll_votes
+        WHERE poll_id = $1 AND user_id = $2
+      `, [pollId, userIdInt]);
+      
+      const hasVoted = existingVoteResult.rows.length > 0;
+      
+      if (hasVoted) {
+        throw new Error('User has already voted on this poll');
+      }
+      
+      // Check if option exists
+      const optionResult = await client.query(`
+        SELECT id
+        FROM forum_poll_options
+        WHERE id = $1 AND poll_id = $2
+      `, [optionIdInt, pollId]);
+      
+      if (optionResult.rows.length === 0) {
+        throw new Error('Option not found');
+      }
+      
+      // Record the vote
+      await client.query(`
+        INSERT INTO forum_poll_votes (poll_id, option_id, user_id)
+        VALUES ($1, $2, $3)
+      `, [pollId, optionIdInt, userIdInt]);
+      
+      // Increment vote count for the option
+      await client.query(`
+        UPDATE forum_poll_options
+        SET votes = votes + 1
+        WHERE id = $1
+      `, [optionIdInt]);
+      
+      // Update total votes count in poll
+      await client.query(`
+        UPDATE forum_polls
+        SET total_votes = total_votes + 1
+        WHERE id = $1
+      `, [pollId]);
+      
+      // Fetch updated poll data
+      const updatedPollResult = await client.query(`
+        SELECT 
+          p.id,
+          p.question,
+          p.total_votes as "totalVotes",
+          json_agg(
+            json_build_object(
+              'id', po.id,
+              'text', po.text,
+              'votes', po.votes
+            )
+          ) as options
+        FROM forum_polls p
+        JOIN forum_poll_options po ON p.id = po.poll_id
+        WHERE p.post_id = $1
+        GROUP BY p.id
+      `, [postIdInt]);
+      
+      await client.query('COMMIT');
+      
+      return updatedPollResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+  
+  async updatePost(postId, userId, updateData) {
+    const client = await db.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Convert IDs to integers
+      const postIdInt = parseInt(postId, 10);
+      const userIdInt = parseInt(userId, 10);
+      
+      if (isNaN(postIdInt) || isNaN(userIdInt)) {
+        throw new Error('Invalid post or user ID');
+      }
+      
+      // Check post exists and get its current data
+      const postResult = await client.query(
+        'SELECT * FROM forum_posts WHERE id = $1',
+        [postIdInt]
+      );
+      
+      if (postResult.rows.length === 0) {
+        throw new Error('Post not found');
+      }
+      
+      const post = postResult.rows[0];
+      
+      // Only the author can edit their post
+      if (post.author_id !== userIdInt) {
+        throw new Error('Unauthorized to edit this post');
+      }
+      
+      // If it's a poll, check if it already has votes
+      if (updateData.type === 'poll' && post.type === 'poll') {
+        const pollResult = await client.query(`
+          SELECT total_votes
+          FROM forum_polls
+          WHERE post_id = $1
+        `, [postIdInt]);
+        
+        if (pollResult.rows.length > 0 && pollResult.rows[0].total_votes > 0) {
+          throw new Error('Cannot edit a poll that already has votes');
+        }
+      }
+      
+      // Update the post with the new data
+      const updateFields = [];
+      const updateValues = [];
+      const paramStartIndex = 3; // Starting index for parameter placeholders
+      let paramIndex = 1;
+      
+      if (updateData.title) {
+        updateFields.push(`title = $${paramIndex}`);
+        updateValues.push(updateData.title);
+        paramIndex++;
+      }
+      
+      if (updateData.content !== undefined) {
+        updateFields.push(`content = $${paramIndex}`);
+        updateValues.push(updateData.content);
+        paramIndex++;
+      }
+      
+      if (updateData.category) {
+        updateFields.push(`category = $${paramIndex}`);
+        updateValues.push(updateData.category);
+        paramIndex++;
+      }
+      
+      if (updateData.type) {
+        updateFields.push(`type = $${paramIndex}`);
+        updateValues.push(updateData.type);
+        paramIndex++;
+      }
+      
+      if (updateFields.length === 0) {
+        return post; // Nothing to update
+      }
+      
+      updateValues.push(postIdInt); // Add postId as the last parameter
+      
+      const updateQuery = `
+        UPDATE forum_posts
+        SET ${updateFields.join(', ')}
+        WHERE id = $${paramIndex}
+        RETURNING *
+      `;
+      
+      const updatedPostResult = await client.query(updateQuery, updateValues);
+      const updatedPost = updatedPostResult.rows[0];
+      
+      // If it's a poll and has poll data, update or create the poll
+      if (updateData.type === 'poll' && updateData.poll) {
+        // First, check if poll exists
+        const existingPollResult = await client.query(
+          'SELECT id FROM forum_polls WHERE post_id = $1',
+          [postIdInt]
+        );
+        
+        let pollId;
+        if (existingPollResult.rows.length > 0) {
+          // Update existing poll
+          pollId = existingPollResult.rows[0].id;
+          await client.query(
+            'UPDATE forum_polls SET question = $1 WHERE id = $2',
+            [updateData.poll.question || updatedPost.title, pollId]
+          );
+          
+          // Delete existing options
+          await client.query(
+            'DELETE FROM forum_poll_options WHERE poll_id = $1',
+            [pollId]
+          );
+        } else {
+          // Create new poll
+          const newPollResult = await client.query(
+            'INSERT INTO forum_polls (post_id, question, total_votes) VALUES ($1, $2, 0) RETURNING id',
+            [postIdInt, updateData.poll.question || updatedPost.title]
+          );
+          pollId = newPollResult.rows[0].id;
+        }
+        
+        // Add new options
+        if (updateData.poll.options && Array.isArray(updateData.poll.options)) {
+          for (const option of updateData.poll.options) {
+            await client.query(
+              'INSERT INTO forum_poll_options (poll_id, text, votes) VALUES ($1, $2, 0)',
+              [pollId, option.text]
+            );
+          }
+        }
+        
+        // Get updated poll data
+        const updatedPollResult = await client.query(`
+          SELECT 
+            p.id,
+            p.question,
+            p.total_votes as "totalVotes",
+            json_agg(
+              json_build_object(
+                'id', po.id,
+                'text', po.text,
+                'votes', po.votes
+              )
+            ) as options
+          FROM forum_polls p
+          JOIN forum_poll_options po ON p.id = po.poll_id
+          WHERE p.post_id = $1
+          GROUP BY p.id
+        `, [postIdInt]);
+        
+        if (updatedPollResult.rows.length > 0) {
+          updatedPost.poll = updatedPollResult.rows[0];
+        }
+      }
+      
+      await client.query('COMMIT');
+      return updatedPost;
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
 };
 
 module.exports = forumModel;
