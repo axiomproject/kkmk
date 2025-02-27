@@ -263,11 +263,11 @@ const ScholarProfile: React.FC = () => {
         favoriteColor: data.favorite_color,
         otherDetails: data.other_details,
         image: null,
-        imagePreview: data.image_url ? `${API_URL}${data.image_url}` : '',
+        imagePreview: data.image_url ? `${API_URL}${data.image_url}` : '', // This will be empty if no image
         status: data.status || 'active',
         assignedUserId: data.assigned_user_id,
         currentAmount: data.current_amount || 0,
-        amountNeeded: data.amount_needed || 0
+        amountNeeded: data.amount_needed || 0 
       });
       
       setSelectedScholar(data);

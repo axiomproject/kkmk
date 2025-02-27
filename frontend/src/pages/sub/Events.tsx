@@ -56,6 +56,7 @@ const EventPage: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const defaultImage = '/images/default-event.png'; // Define default image path
 
   const formatTimeForDisplay = (time24h: string) => {
     if (!time24h) return '';
@@ -79,6 +80,17 @@ const EventPage: React.FC = () => {
     return `${formattedStartTime} - ${formattedEndTime}`;
   };
 
+  const getImageUrl = (imageUrl: string | null) => {
+    // Return default image if image url is null, undefined, or empty string
+    if (!imageUrl) return defaultImage;
+    
+    // Return the image URL if it's a valid URL
+    if (imageUrl.startsWith('http')) return imageUrl;
+    
+    // Otherwise, prepend the API URL
+    return `${import.meta.env.VITE_API_URL}${imageUrl}`;
+  };
+
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
@@ -91,9 +103,8 @@ const EventPage: React.FC = () => {
         return eventDate >= currentDate;
       }).map(event => ({
         ...event,
-        image: event.image.startsWith('http') 
-          ? event.image 
-          : `${import.meta.env.VITE_API_URL}${event.image}`,
+        // Use the new function to handle image URLs properly
+        image: getImageUrl(event.image),
         // Handle both camelCase and snake_case properties
         totalVolunteers: parseInt(String(event.total_volunteers ?? event.totalVolunteers ?? 0)),
         currentVolunteers: parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0)),
@@ -193,12 +204,12 @@ const EventPage: React.FC = () => {
                 onClick={() => handleCardClick(event.id)}
               >
                 <img 
-                  src={event.image} 
+                  src={event.image || defaultImage} 
                   alt={event.title} 
                   className="event-image"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = '/images/default-event.jpg'; // Add a fallback image
+                    target.src = defaultImage; // Use our defined default image constant
                     target.onerror = null; // Prevent infinite loop
                   }} 
                 />

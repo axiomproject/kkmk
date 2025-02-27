@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import logo from '../../img/kmlogo.png';
 import { PATHS } from '../../routes/paths';
 import '../../styles/admin/AdminHomeHeader.css';
+import defaultAvatarImg from '../../../../public/images/default-avatar.jpg'; // Add this import
 
 const AdminHomeHeader = () => {
   const { user, logout } = useAuth();
@@ -11,7 +12,7 @@ const AdminHomeHeader = () => {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isStaff = user?.role === 'staff';
-  const defaultProfilePic = '/assets/default-avatar.png';  // Update default avatar path
+  const defaultProfilePic = defaultAvatarImg; // Update default avatar path
   const baseUrl = 'http://localhost:5175'; // Add base URL
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -19,6 +20,14 @@ const AdminHomeHeader = () => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     return `${import.meta.env.VITE_API_URL}${path}`;
+  };
+
+  const getProfilePhotoUrl = () => {
+    if (!user?.profilePhoto) {
+      return defaultProfilePic;
+    }
+    
+    return getImageUrl(user.profilePhoto);
   };
 
   useEffect(() => {
@@ -147,14 +156,13 @@ const AdminHomeHeader = () => {
         <div className="profile-dropdown-container" ref={dropdownRef}>
           <div className="profile-trigger" onClick={() => setShowProfileDropdown(!showProfileDropdown)}>
             <img 
-              src={user?.profilePhoto ? getImageUrl(user.profilePhoto) : defaultProfilePic}
-              alt={user?.name || 'Admin'}
-              className="admin-avatar"
+              src={getProfilePhotoUrl()}
+              alt={user?.name || 'User'}
+              className="admin-avatar" // or whatever class you're using
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.onerror = null; 
+                target.onerror = null; // Prevent infinite loop
                 target.src = defaultProfilePic;
-                console.log('Fallback to default avatar:', defaultProfilePic);
               }}
             />
             <span className="admin-name">{user?.name}</span>
