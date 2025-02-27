@@ -502,16 +502,23 @@ const handleSubmit = async (e: React.FormEvent) => {
   }
 };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      try {
-        await axios.delete(`/api/admin/events/${id}`);
-        fetchEvents();
-      } catch (error) {
-        console.error('Failed to delete event:', error);
-      }
+const handleDelete = async (id: number) => {
+  if (window.confirm('Are you sure you want to delete this event?')) {
+    try {
+      // Add authorization header to the delete request
+      await axios.delete(`/api/events/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      toast.success('Event deleted successfully');
+      fetchEvents();
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      toast.error('Failed to delete event. Please try again.');
     }
-  };
+  }
+};
 
   const fetchParticipants = async (eventId: number) => {
     try {
