@@ -22,6 +22,7 @@ const scholarDonationRoutes = require('./routes/scholarDonationRoutes'); // Add 
 const eventRoutes = require('./routes/eventRoutes'); // Add this line
 const contentRoutes = require('./routes/contentRoutes'); // Import content routes
 const userRoutes = require('./routes/userRoutes'); // Import user routes
+const geocodeRoutes = require('./routes/geocodeRoutes'); // Add this line
 
 const app = express();
 const port = 5175; // Changed port to avoid conflicts
@@ -156,6 +157,9 @@ app.use((req, res, next) => {
 });
 
 // Ensure routes are properly ordered
+
+// Add the geocode routes
+app.use('/api/geocode', geocodeRoutes); // Add this line before other routes
 
 // Important: Move staff routes before admin routes for proper matching
 app.use('/api/staff/auth', staffAuthRoutes);
