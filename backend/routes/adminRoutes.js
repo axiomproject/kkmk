@@ -127,10 +127,10 @@ router.delete('/staff/:id', roleAuth(['admin']), adminController.deleteStaffMemb
 // Scholar management routes
 router.get('/scholars', roleAuth(['admin', 'staff']), scholarController.getScholars);
 router.get('/scholars/:id', roleAuth(['admin', 'staff']), scholarController.getScholarById);
-router.post('/scholars', roleAuth(['admin']), scholarController.createScholar);
-router.put('/scholars/:id', roleAuth(['admin']), scholarController.updateScholar);
-router.delete('/scholars/:id', roleAuth(['admin']), scholarController.deleteScholar);
-router.post('/scholars/bulk-delete', roleAuth(['admin']), scholarController.bulkDeleteScholars); // Changed from delete to post
+router.post('/scholars', roleAuth(['admin', 'staff']), scholarController.createScholar);
+router.put('/scholars/:id', roleAuth(['admin', 'staff']), scholarController.updateScholar); // Change here to allow staff
+router.delete('/scholars/:id', roleAuth(['admin', 'staff']), scholarController.deleteScholar);
+router.post('/scholars/bulk-delete', roleAuth(['admin', 'staff']), scholarController.bulkDeleteScholars); // Changed from delete to post
 
 // Add this new endpoint
 router.get('/scholar-count', async (req, res) => {
