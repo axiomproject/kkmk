@@ -51,8 +51,8 @@ const upload = multer({
 
 // User management
 router.get('/users', roleAuth(['admin', 'staff']), adminController.getUsers);
-router.put('/users/:id', roleAuth(['admin']), adminController.updateUser);
-router.delete('/users/:id', roleAuth(['admin']), adminController.deleteUser);
+router.put('/users/:id', roleAuth(['admin', 'staff']), adminController.updateUser);
+router.delete('/users/:id', roleAuth(['admin', 'staff']), adminController.deleteUser);
 
 
 // Volunteer management - Update these routes
@@ -649,7 +649,7 @@ router.get('/sponsors/:id', roleAuth(['admin', 'staff']), async (req, res) => {
   }
 });
 
-router.post('/sponsors', roleAuth(['admin']), async (req, res) => {
+router.post('/sponsors', roleAuth(['admin', 'staff']), async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const sponsorData = { ...req.body, password: hashedPassword };
@@ -661,7 +661,7 @@ router.post('/sponsors', roleAuth(['admin']), async (req, res) => {
   }
 });
 
-router.put('/sponsors/:id', roleAuth(['admin']), async (req, res) => {
+router.put('/sponsors/:id', roleAuth(['admin', 'staff']), async (req, res) => {
   try {
     const updates = { ...req.body };
     if (updates.password) {
@@ -674,7 +674,7 @@ router.put('/sponsors/:id', roleAuth(['admin']), async (req, res) => {
   }
 });
 
-router.delete('/sponsors/:id', roleAuth(['admin']), async (req, res) => {
+router.delete('/sponsors/:id', roleAuth(['admin', 'staff']), async (req, res) => {
   try {
     await adminModel.deleteSponsor(req.params.id);
     res.json({ message: 'Sponsor deleted successfully' });
@@ -683,7 +683,7 @@ router.delete('/sponsors/:id', roleAuth(['admin']), async (req, res) => {
   }
 });
 
-router.post('/sponsors/bulk-delete', roleAuth(['admin']), async (req, res) => {
+router.post('/sponsors/bulk-delete', roleAuth(['admin', 'staff']), async (req, res) => {
   try {
     const { ids } = req.body;
     await adminModel.bulkDeleteSponsors(ids);
