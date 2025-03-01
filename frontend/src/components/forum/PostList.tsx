@@ -201,6 +201,18 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
     setPosts(posts);
   }, [posts]);
 
+  // Add this effect to handle highlighting
+  useEffect(() => {
+    if (highlightedPostId) {
+      const postElement = document.getElementById(`post-${highlightedPostId}`);
+      if (postElement) {
+        setTimeout(() => {
+          postElement.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, [highlightedPostId, posts]);
+
   const handleLike = async (postId: string) => {
     const userData = localStorage.getItem('user');
     const user = userData ? JSON.parse(userData) : null;
@@ -708,11 +720,12 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
               sx={{ 
                 mb: 2,
                 position: 'relative',
-                transition: 'all 0.5s ease',
+                transition: 'all 0.3s ease',
                 borderLeft: '4px solid transparent',
-                ...(isHighlighted && {
+                ...(post.id === highlightedPostId && {
                   borderLeft: '4px solid #f99407',
                   backgroundColor: 'rgba(249, 148, 7, 0.05)',
+                  boxShadow: '0 0 15px rgba(249, 148, 7, 0.2)'
                 })
               }}
             >

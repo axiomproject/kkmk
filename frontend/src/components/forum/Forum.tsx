@@ -58,7 +58,8 @@ const Forum: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const postId = urlParams.get('postId');
     
-    if (postId && !hasHighlighted && posts.length > 0) {
+    if (postId && posts.length > 0) {
+      // Always set these regardless of hasHighlighted
       setHighlightedPostId(postId);
       setHasHighlighted(true);
       
@@ -71,25 +72,27 @@ const Forum: React.FC = () => {
           setTimeout(() => {
             postElement.classList.remove('highlighted-post');
             setHighlightedPostId(null);
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, '', newUrl);
+            // Don't remove postId from URL to allow refreshing to the same post
           }, 3500);
         }
       }, 300);
     }
-  }, [posts, hasHighlighted]);
+  }, [posts]);
 
-  // Reset hasHighlighted when navigating away or when URL changes
+  // Add an additional effect to reset highlighting when the URL changes
   useEffect(() => {
-    const handlePopState = () => {
-      setHasHighlighted(false);
+    const handleUrlChange = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const postId = urlParams.get('postId');
+      
+      if (!postId) {
+        setHasHighlighted(false);
+      }
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      setHasHighlighted(false);
-    };
+    // Listen for URL changes
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
   }, []);
 
   // Add useEffect to handle body scroll
