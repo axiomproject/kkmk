@@ -321,7 +321,7 @@ const AdminModel = {
 
   async createScholar(scholarData) {
     const { 
-      username, password, email, name,
+      username, password, email = `${username}@placeholder.com`, name,
       phone, status, is_verified, date_of_birth,
       role
     } = scholarData;

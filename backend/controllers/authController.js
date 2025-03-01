@@ -34,7 +34,7 @@ const register = async (req, res) => {
     // Check if username exists for all roles
     const existingUsername = await findUserByEmailOrUsername(username);
     if (existingUsername) {
-      return res.status(400).json({ error: 'Username already exists' });
+      return res.status(400).json({ error: 'Username already taken' });
     }
 
     // Validate face data if provided
@@ -58,10 +58,16 @@ const register = async (req, res) => {
       }
     }
 
+    // Generate a placeholder email for scholars to satisfy the not-null constraint
+    // When using a placeholder, create a unique one based on username to avoid conflicts
+    const userEmail = role === 'scholar' ? 
+      `${username}@placeholder.com` : 
+      email;
+
     const { user, verificationToken } = await createUser(
       name, 
       username, 
-      email, 
+      userEmail, // Use placeholder email for scholars
       password, 
       dateOfBirth, 
       role,
@@ -109,8 +115,12 @@ const register = async (req, res) => {
     }
   } catch (error) {
     console.error('Registration error:', error);
-    if (error.message.includes('invalid input syntax for type json')) {
-      return res.status(400).json({ error: 'Invalid face data format' });
+    if (error.code === '23505') { // Postgres duplicate key error
+      if (error.constraint === 'users_username_key') {
+        return res.status(400).json({ error: 'This username is already taken. Please choose another username.' });
+      } else if (error.constraint === 'users_email_key') {
+        return res.status(400).json({ error: 'This email is already registered. Please use another email.' });
+      }
     }
     res.status(500).json({ error: 'Registration failed. Please try again.' });
   }

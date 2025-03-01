@@ -9,14 +9,13 @@ interface NewScholarFormProps {
 const NewScholarForm = ({ onSubmit, onCancel }: NewScholarFormProps) => {
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
     username: '',
     password: '',
     phone: '',
     status: 'active',
     is_verified: false,
     date_of_birth: '',
-    role: 'scholar'  // Keep only these 9 fields
+    role: 'scholar'  // Keep only these 8 fields (email removed)
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -29,11 +28,11 @@ const NewScholarForm = ({ onSubmit, onCancel }: NewScholarFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Format the data in a specific order
+    // Format the data in a specific order, include placeholder email
     const submissionData = {
       username: formData.username,
       password: formData.password,
-      email: formData.email,
+      email: `${formData.username}@placeholder.com`, // Add placeholder email
       name: formData.name,
       phone: formData.phone || null,
       status: formData.status,
@@ -62,18 +61,6 @@ const NewScholarForm = ({ onSubmit, onCancel }: NewScholarFormProps) => {
               onChange={handleChange}
               required
               placeholder="Enter full name"
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter email address"
             />
           </div>
 

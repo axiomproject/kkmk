@@ -28,6 +28,12 @@ const scholarController = {
   async createScholar(req, res) {
     try {
       const { password, ...scholarData } = req.body;
+      
+      // Generate a default email if one is not provided
+      if (!scholarData.email) {
+        scholarData.email = `${scholarData.username}@placeholder.com`;
+      }
+      
       const hashedPassword = await bcrypt.hash(password, 10);
       const scholar = await adminModel.createScholar({
         ...scholarData,
