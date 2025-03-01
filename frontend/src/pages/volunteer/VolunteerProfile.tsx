@@ -774,12 +774,12 @@ const VolunteerProfile: React.FC = () => {
                     maxLength={50}
                   />
                   <div className="edit-buttons">
-                    <button className="save-button" onClick={handleSaveIntro}>
+                    <div className="save-button-intro" onClick={handleSaveIntro}>
                       Save
-                    </button>
-                    <button className="cancel-button" onClick={() => setIsEditingIntro(false)}>
+                    </div>
+                    <div className="cancel-button-intro" onClick={() => setIsEditingIntro(false)}>
                       Cancel
-                    </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -805,12 +805,12 @@ const VolunteerProfile: React.FC = () => {
                     maxLength={50}
                   />
                   <div className="edit-buttons">
-                    <button className="save-button" onClick={handleSaveKnowAs}>
+                    <div className="save-button-knowas" onClick={handleSaveKnowAs}>
                       Save
-                    </button>
-                    <button className="cancel-button" onClick={() => setIsEditingKnowAs(false)}>
+                    </div>
+                    <div className="cancel-button-knowas" onClick={() => setIsEditingKnowAs(false)}>
                       Cancel
-                    </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -857,12 +857,12 @@ const VolunteerProfile: React.FC = () => {
                     </div>
                   </div>
                   <div className="edit-buttons">
-                    <button className="save-button" onClick={handleSaveSocials}>
+                    <div className="save-button-socials" onClick={handleSaveSocials}>
                       Save
-                    </button>
-                    <button className="cancel-button" onClick={() => setIsEditingSocials(false)}>
+                    </div>
+                    <div className="cancel-button-socials" onClick={() => setIsEditingSocials(false)}>
                       Cancel
-                    </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -982,16 +982,16 @@ const VolunteerProfile: React.FC = () => {
                   </div>
 
                   <div className="popup-buttons">
-                    <button 
+                    <div 
                       onClick={handleSubmitReportCard} 
-                      disabled={!reportCardFront || !reportCardBack || isSubmitting}
-                      className="submit-button"
-                    ></button>
+                      className={`submit-button-report ${(!reportCardFront || !reportCardBack || isSubmitting) ? 'disabled' : ''}`}
+                    >
                       {isSubmitting ? 'Submitting...' : 'Submit Report Card'}
-                 
-                    <button onClick={() => setIsReportCardModalOpen(false)} className="cancel-button">
+                    </div>
+                    
+                    <div onClick={() => setIsReportCardModalOpen(false)} className="cancel-button-report">
                       Cancel
-                    </button>
+                    </div>
                   </div>
                 </>
               ) : (
@@ -1000,9 +1000,9 @@ const VolunteerProfile: React.FC = () => {
                   <h2>Application Progress</h2>
                   <ProcessTimeline currentStep={verificationStep} />
                   <div className="popup-buttons">
-                    <button onClick={() => setIsReportCardModalOpen(false)} className="cancel-button">
+                    <div onClick={() => setIsReportCardModalOpen(false)} className="close-button-progress">
                       Close
-                    </button>
+                    </div>
                   </div>
                 </>
               )}
