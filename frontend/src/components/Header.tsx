@@ -228,8 +228,13 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
       setUnreadCount(prev => Math.max(0, prev - 1));
       
       // Navigate based on notification type
-      if (notification.type.includes('post') || notification.type.includes('comment')) {
-        // Add postId to the URL as a query parameter
+      if (notification.type === 'post_like' || 
+          notification.type === 'comment_like' || 
+          notification.type === 'new_comment') {
+        // Add postId to the URL as a query parameter for highlighting
+        onNavigate(`Forum?postId=${notification.related_id}`);
+      } else if (notification.type.includes('post') || notification.type.includes('comment')) {
+        // Handle other post or comment related notifications
         onNavigate(`Forum?postId=${notification.related_id}`);
       }
       
@@ -479,6 +484,23 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                       <div 
                         key={notification.id}
                         className={`notification-item ${!notification.read ? 'unread' : ''}`}
+                        onClick={
+                          // Make notification clickable based on type
+                          (notification.type === 'post_like' || 
+                           notification.type === 'comment_like' || 
+                           notification.type === 'new_comment' || 
+                           notification.type.includes('post') || 
+                           notification.type.includes('comment')) 
+                            ? () => handleNotificationClick(notification) 
+                            : undefined
+                        }
+                        style={{ 
+                          cursor: (notification.type === 'post_like' || 
+                                   notification.type === 'comment_like' || 
+                                   notification.type === 'new_comment' || 
+                                   notification.type.includes('post') || 
+                                   notification.type.includes('comment')) ? 'pointer' : 'default' 
+                        }}
                       >
                         <img 
                           src={notification.type === 'distribution' ? packageIcon : resolveAvatarUrl(notification.actor_avatar)}
@@ -495,13 +517,19 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                             <div className="notification-actions">
                               <div 
                                 className="event-confirm-action"
-                                onClick={() => handleEventResponse(notification, true)}
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent parent click
+                                  handleEventResponse(notification, true);
+                                }}
                               >
                                 Yes, I'll attend
                               </div>
                               <div 
                                 className="event-decline-action"
-                                onClick={() => handleEventResponse(notification, false)}
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent parent click
+                                  handleEventResponse(notification, false);
+                                }}
                               >
                                 No, remove me
                               </div>
