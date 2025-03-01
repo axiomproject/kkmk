@@ -4,6 +4,7 @@ import api from '../config/axios'; // Replace axios import
 import { PATHS } from '../routes/paths';
 import { Typography } from "@mui/material";
 import "../../styles/Layout.css";
+import "../styles/Cards.css"; // Import the new Cards CSS file
 import bannerImage from "../img/map.png";
 import happinessIcon from '../img/happiness.svg';
 import loveIcon from '../img/love.svg';
@@ -41,6 +42,8 @@ interface Fundraiser {
   amount_needed: number;
   grade_level: string;
   school: string;
+  status?: 'active' | 'inactive' | 'graduated';
+  is_active?: boolean;
 }
 
 interface HighlightCardProps {
@@ -108,7 +111,15 @@ const FundraiserSection: React.FC = () => {
       try {
         // Update to use api instance
         const response = await api.get('/scholars');
-        setStudents(response.data);
+        
+        // Filter out inactive and graduated students
+        const activeStudents = response.data.filter((student: Fundraiser) => {
+          // Keep only students with active status or where is_active is true
+          // This handles both old and new data formats
+          return (student.status === 'active' || (student.status === undefined && student.is_active !== false));
+        });
+        
+        setStudents(activeStudents);
       } catch (error) {
         // Removed console.error here
       }

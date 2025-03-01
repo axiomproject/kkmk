@@ -1,0 +1,321 @@
+
+    /* homepage-cards */
+    .firstcards{
+        display: flex;
+        justify-content: center;
+        align-items: self-end;
+        gap: 5px;
+      }
+      .firstsection-card{
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        gap:5px;
+      }
+   
+      .firstcard-text{
+        position: absolute;
+      
+        color: white;
+        font-family: "Poppins";
+        width: 18rem;
+        position-area: center;
+        bottom: 9rem;
+        text-align: left;
+      }
+      .firstcard-text h1{
+        font-size: 5rem;
+        font-weight: 600;
+        color: white;
+      }
+      .firstcard-text p{
+        font-size: 1.2rem;
+        font-weight: 300;
+        color: white;
+      }
+      .first-button-container{
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        font-family: "Poppins";
+        margin-top: 2rem;
+        position: relative;
+        font-size: 1.2rem;
+     
+      }
+      .firstcard-button{
+        margin-right: 1rem;
+        position: absolute;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 20rem;
+        background-color: #8A2A21;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50px;
+        font-family: "Poppins";
+        font-weight: 500;
+        text-align: left;
+        padding-left: 1rem;
+        color: #fff;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        height: 5rem;
+         &:focus {
+          outline: 1px dotted white;
+          outline-offset: -4px;
+         }
+      }
+  
+      .firstcard-button:hover {
+        background-color: #611c16;
+        transform: translateY(-2px);
+        color: #e0e0e0;
+        border: 2px solid rgba(255, 255, 255, 0.0);
+      }
+      
+      .firstcard-button:focus {
+        outline: 1px dotted white;
+        outline-offset: -4px;
+      }
+  
+      .first-button-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #F35243;
+        color: #80231A;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        transition: background-color 0.3s ease, stroke 0.3s ease, transform 0.2s ease;
+      }
+  
+      .first-button-arrow svg {
+        width: 35px;
+        height: 35px;
+        stroke: #80231A;
+        transition: stroke 0.3s ease;
+      }
+      .first-button-arrow:hover{
+        background-color: #891e13;
+        transform: translateY(-2px);
+      }
+      .first-button-arrow svg:hover{
+        stroke: #ff200c;
+      }
+      .secondsection-card{
+        display: flex;
+        flex-direction: column;
+        margin-left: 8px;
+        gap: 2px;
+      }
+      .thirdsection-card{
+        position: relative;
+        
+      }
+      .thirdcard-text{
+        position: absolute;
+        
+        color: white;
+        font-family: "Poppins";
+        width: 18rem;
+        position-area: center;
+       
+        text-align: left;
+      }
+      .thirdsection-card img{
+        display: block;
+      }
+  
+      .thirdcard-text h3{
+        position: absolute;
+        bottom: 10rem;
+        font-size: 1.5rem;
+      }
+      .thirdcard-text p{
+        position: absolute;
+        top: 3rem;
+        font-size: 2.5rem;
+        color: #fff;
+      }
+      .fourthcard-text{
+        position: absolute;
+        font-size: 2.5rem;
+        color: rgb(0, 0, 0);
+        font-family: "Poltawski Nowy";
+        width: 18rem;
+        position-area: center;
+        text-align: center;
+      }
+  
+      .firstcard{
+        width: 100%;
+        height: 30rem;
+    
+      }
+      .secondcard{
+        width: 100%;
+        height: 11rem;      
+     
+        left: 0;
+      }
+      .thirdcard{
+        width: auto;
+        height: 30rem;
+      }
+      .fourthcard{
+        width: auto;
+        height: 20rem;
+      }
+      .fifthcard{
+        width: auto;
+        height: 30rem;
+      }
+      .sixthcard{
+        width: 100%;
+        height: 30rem;
+      }
+      .sixth-button-container{
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        font-family: "Poppins";
+        position: relative;
+        font-size: 1.2rem;
+        bottom: 6rem;
+      }
+      .sixth-button{
+       
+        position: absolute;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 20rem;
+        background-color: #DE4A34;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 50px;
+        font-family: "Poppins";
+        font-weight: 500;
+        text-align: left;
+        padding-left: 1rem;
+        color: #242424;
+        transition: background-color 0.3s ease, color 0.5s ease, transform 0.2s ease;
+        height: 5rem;
+         &:focus {
+          outline: 1px dotted white;
+          outline-offset: -4px;
+         }
+      }
+  
+      .sixth-button:hover {
+        background-color: #97160a;
+        transform: translateY(-2px);
+        color: #aaa6a6;
+        border: 2px solid rgba(255, 255, 255, 0.0);
+      }
+      
+      .sixth-button:focus {
+        outline: 1px dotted white;
+        outline-offset: -4px;
+      }
+  
+      .sixth-button-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #5F241E;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        transition: background-color 0.3s ease, stroke 0.3s ease, transform 0.2s ease;
+      }
+  
+      .sixth-button-arrow svg {
+        width: 35px;
+        height: 35px;
+        stroke: #F35038;
+        transition: stroke 0.3s ease;
+      }
+      .sixth-button-arrow:hover{
+        background-color: #d93826;
+        transform: translateY(-2px);
+      }
+      .sixth-button-arrow svg:hover{
+        stroke: #a01104;
+      }
+      .seventhcard{
+        width: 100%;
+        height: 11rem;      
+  
+      }
+  
+      
+      .fourthcard-button-container{
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        font-family: "Poppins";
+        margin-top: 2rem;
+        position: relative;
+        font-size: 1.2rem;
+      }
+  
+      .fourthcard-button{
+        position: absolute;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 20rem;
+        background-color: #E1E1E1;
+        border-radius: 50px;
+        border-color: transparent;
+        font-weight: 500;
+        font-family: "Poppins";
+        text-align: left;
+        padding-left: 1rem;
+        color: #242424;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        height: 5rem;
+         &:focus {
+          outline: 1px dotted white;
+          outline-offset: -4px;
+         }
+      }
+  
+      .fourthcard-button:hover {
+        background-color: #9a9a9a;
+        transform: translateY(-2px);
+      }
+      
+      .fourthcard-button:focus {
+        outline: 1px dotted white;
+        outline-offset: -4px;
+      }
+      .button-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #242424;
+        color: #ffffff;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+      }
+      
+      .button-arrow svg {
+        width: 35px;
+        height: 35px;
+        stroke: #ffffff;
+        transition: stroke 0.3s ease;
+      }
+      .button-arrow:hover{
+        background-color: #3a3939;
+        color: #5c5b5b;
+        transform: translateY(-2px);
+      }
+      .button-arrow svg:hover{
+        stroke: #bfbfbf;
+      }
+      
+  

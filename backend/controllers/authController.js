@@ -12,7 +12,7 @@ const {
   updateUserSocials,
   updateLastLogin,
   updateFaceData,
-  findUserByFaceData  // Add this import
+  findUserByFaceData
 } = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -23,9 +23,18 @@ const register = async (req, res) => {
   try {
     console.log('Registration attempt:', { email, username, role });
 
-    const existingUser = await findUserByEmailOrUsername(email);
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+    // For non-scholar roles, check if email exists
+    if (role !== 'scholar' && email) {
+      const existingUser = await findUserByEmailOrUsername(email);
+      if (existingUser) {
+        return res.status(400).json({ error: 'User already exists' });
+      }
+    }
+
+    // Check if username exists for all roles
+    const existingUsername = await findUserByEmailOrUsername(username);
+    if (existingUsername) {
+      return res.status(400).json({ error: 'Username already exists' });
     }
 
     // Validate face data if provided
@@ -59,31 +68,44 @@ const register = async (req, res) => {
       faceData  // Pass face data to createUser
     );
     
-    try {
-      await sendVerificationEmail(email, verificationToken);
+    // For scholars, we don't send verification emails, admin will verify
+    if (role === 'scholar') {
       res.status(201).json({
-        message: 'Registration successful. Please check your email to verify your account.',
+        message: 'Registration successful. Please wait for admin to verify your account.',
         user: {
           id: user.id,
-          email: user.email,
-          name: user.name,
           username: user.username,
+          name: user.name,
           hasFaceVerification: user.has_face_verification
         }
       });
-    } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
-      // Still create the user but inform about email issue
-      res.status(201).json({
-        message: 'Registration successful but failed to send verification email. Please contact support.',
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          username: user.username,
-          hasFaceVerification: user.has_face_verification
-        }
-      });
+    } else {
+      try {
+        await sendVerificationEmail(email, verificationToken);
+        res.status(201).json({
+          message: 'Registration successful. Please check your email to verify your account.',
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            username: user.username,
+            hasFaceVerification: user.has_face_verification
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Still create the user but inform about email issue
+        res.status(201).json({
+          message: 'Registration successful but failed to send verification email. Please contact support.',
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            username: user.username,
+            hasFaceVerification: user.has_face_verification
+          }
+        });
+      }
     }
   } catch (error) {
     console.error('Registration error:', error);

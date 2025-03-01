@@ -37,6 +37,7 @@ const VolunteerSettings = () => {
     phone: '',
     dateOfBirth: ''
   });
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -62,6 +63,7 @@ const VolunteerSettings = () => {
       
       setInitialFormData(formattedInitialData);
       setFormData(formattedInitialData);
+      setUserRole(user.role || '');
     }
   }, []);
 
@@ -142,11 +144,13 @@ const VolunteerSettings = () => {
       newErrors.name = 'Name must be between 2 and 50 characters';
     }
 
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    // Email validation - only if not a scholar
+    if (userRole !== 'scholar') {
+      if (!formData.email.trim()) {
+        newErrors.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
     }
 
     // Username validation
@@ -229,7 +233,7 @@ const VolunteerSettings = () => {
       const { data } = await api.put('/user/details', {
         userId: user.id,
         name: formData.name,
-        email: formData.email,
+        email: userRole === 'scholar' ? '' : formData.email, // Don't send email for scholars
         username: formData.username,
         dateOfBirth: dateToSend,
         phone: formData.phone,
@@ -328,7 +332,11 @@ const VolunteerSettings = () => {
   const isPersonalInfoValid = (): boolean => {
     // Check all validations without setting error states
     const hasValidName = formData.name.trim().length >= 2 && formData.name.length <= 50;
-    const hasValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+    
+    // Email validation only applies to non-scholar users
+    const hasValidEmail = userRole === 'scholar' ? true : 
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+    
     const hasValidUsername = formData.username.length >= 3 && 
                            formData.username.length <= 20 && 
                            /^[a-zA-Z0-9_]+$/.test(formData.username);
@@ -381,18 +389,23 @@ const VolunteerSettings = () => {
           />
           {errors.name && <span className="error-text">{errors.name}</span>}
         </label>
-        <label>
-          Email
-          <input 
-            type="email" 
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleInputChange}
-            className={errors.email ? 'error-input' : ''}
-          />
-          {errors.email && <span className="error-text">{errors.email}</span>}
-        </label>
+        
+        {/* Only show email field for non-scholar users */}
+        {userRole !== 'scholar' && (
+          <label>
+            Email
+            <input 
+              type="email" 
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleInputChange}
+              className={errors.email ? 'error-input' : ''}
+            />
+            {errors.email && <span className="error-text">{errors.email}</span>}
+          </label>
+        )}
+        
         <label>
           Username
           <input 
