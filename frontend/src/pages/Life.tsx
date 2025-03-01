@@ -48,9 +48,6 @@ const Life: React.FC = () => {
   });
   const [tabKey, setTabKey] = useState(0);  // Add this to force re-render of tab content
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const [lastTap, setLastTap] = useState(0); // For double-tap detection
 
@@ -100,9 +97,8 @@ const Life: React.FC = () => {
     document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
     setModalContent(image);
     setIsModalOpen(true);
-    // Reset zoom and position when opening a new modal
+    // Reset zoom when opening a new modal
     setZoomLevel(1);
-    setPosition({ x: 0, y: 0 });
   }, []);
 
   const closeModal = useCallback(() => {
@@ -111,13 +107,12 @@ const Life: React.FC = () => {
       setIsModalOpen(false);
       setIsClosing(false);
       setModalContent(null);
-      // Reset zoom and position when closing
+      // Reset zoom when closing
       setZoomLevel(1);
-      setPosition({ x: 0, y: 0 });
     }, 300); // Match this duration with CSS animation
   }, []);
 
-  // Handle double-tap to toggle zoom
+  // Simplified double-tap/double-click to zoom in/out
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const now = new Date().getTime();
     const timeSince = now - lastTap;
@@ -127,52 +122,16 @@ const Life: React.FC = () => {
       if (zoomLevel > 1) {
         // If already zoomed in, zoom out to original size
         setZoomLevel(1);
-        setPosition({ x: 0, y: 0 });
       } else {
         // If at original size, zoom in
         setZoomLevel(2.5);
-        // Optionally zoom in to the clicked position
-        if (imageContainerRef.current) {
-          const rect = imageContainerRef.current.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          setPosition({ x: (rect.width/2 - x) * 1.5, y: (rect.height/2 - y) * 1.5 });
-        }
       }
     }
     
     setLastTap(now);
   };
 
-  // Keep existing mouse event handlers for drag functionality
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (zoomLevel > 1) {
-      setIsDragging(true);
-      setStartPosition({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging && zoomLevel > 1) {
-      setPosition({
-        x: e.clientX - startPosition.x,
-        y: e.clientY - startPosition.y
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
-
-  // Simplify - keep wheel zoom functionality
+  // Keep wheel zoom functionality
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
     
@@ -181,39 +140,8 @@ const Life: React.FC = () => {
       setZoomLevel(prev => Math.min(prev + 0.2, 4));
     } else {
       // Scroll down, zoom out
-      setZoomLevel(prev => {
-        const newZoom = Math.max(prev - 0.2, 1);
-        if (newZoom === 1) {
-          setPosition({ x: 0, y: 0 });
-        }
-        return newZoom;
-      });
+      setZoomLevel(prev => Math.max(prev - 0.2, 1));
     }
-  };
-
-  // Add touch event handling for mobile devices
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      handleMouseDown({
-        clientX: touch.clientX,
-        clientY: touch.clientY
-      } as any);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      handleMouseMove({
-        clientX: touch.clientX,
-        clientY: touch.clientY
-      } as any);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    handleMouseUp();
   };
 
   useEffect(() => {
@@ -296,37 +224,27 @@ const Life: React.FC = () => {
           >
             <span className="life-modal-close" onClick={closeModal}>&times;</span>
             <div className="life-modal-content">
+              <div className="life-modal-image-hint">
+                Double-click to zoom
+              </div>
               <div 
                 className="life-modal-image-container"
                 ref={imageContainerRef}
                 onClick={handleImageClick}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseLeave}
                 onWheel={handleWheel}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{ 
-                  cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'pointer'
-                }}
+                style={{ cursor: 'pointer' }}
               >
                 <div 
                   className="life-modal-image-wrapper"
                   style={{
                     transform: `scale(${zoomLevel})`,
-                    transition: isDragging ? 'none' : 'transform 0.2s ease',
+                    transition: 'transform 0.2s ease',
                   }}
                 >
                   <img
                     src={getImageUrl(modalContent.src)}
                     alt={modalContent.title || "Gallery image"}
                     className="life-modal-image"
-                    style={{
-                      transform: `translate(${position.x / zoomLevel}px, ${position.y / zoomLevel}px)`,
-                      transition: isDragging ? 'none' : 'transform 0.2s ease',
-                    }}
                     draggable="false"
                     onError={(e) => {
                       // Fallback if image fails to load in modal

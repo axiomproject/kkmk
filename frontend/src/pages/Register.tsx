@@ -93,11 +93,13 @@ const Register: React.FC = () => {
       newErrors.username = 'Username can only contain letters, numbers, and underscores';
     }
 
-    // Email validation
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
+    // Email validation - skip for scholar role
+    if (role !== 'scholar') {
+      if (!email.trim()) {
+        newErrors.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
     }
 
     // Password validation
@@ -138,7 +140,7 @@ const Register: React.FC = () => {
       const registrationData = {
         name,
         username,
-        email,
+        email: role === 'scholar' ? '' : email, // Empty email for scholars
         password,
         dateOfBirth,
         role,
@@ -146,7 +148,14 @@ const Register: React.FC = () => {
       };
 
       const response = await api.post('/register', registrationData);
-      setSuccess(response.data.message);
+      
+      // Different success message based on role
+      if (role === 'scholar') {
+        setSuccess('Registration successful. Please wait for admin to verify your account.');
+      } else {
+        setSuccess(response.data.message);
+      }
+      
       setShowSuccessPopup(true);
     } catch (err: any) {
       console.error('Registration error:', err);
@@ -373,18 +382,20 @@ const Register: React.FC = () => {
             {errors.username && <span className="error-text">{errors.username}</span>}
           </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className={errors.email ? 'error-input' : ''}
-          />
-          {errors.email && <span className="error-text">{errors.email}</span>}
-        </div>
+        {role !== 'scholar' && (
+          <div className="form-group">
+            <label htmlFor="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className={errors.email ? 'error-input' : ''}
+            />
+            {errors.email && <span className="error-text">{errors.email}</span>}
+          </div>
+        )}
         <div className="form-group">
           <label htmlFor="password">Password</label>
           <input

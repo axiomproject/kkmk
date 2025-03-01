@@ -10,18 +10,17 @@ interface ScholarEditFormProps {
 const ScholarEditForm = ({ scholar, onSubmit, onCancel }: ScholarEditFormProps) => {
   interface FormData {
       name: string;
-      email: string;
       username: string;
       phone: string;
       date_of_birth: string;
       status: string;
       is_verified: boolean;
       password?: string; // Optional property
+      // email field removed completely
   }
   
   const [formData, setFormData] = useState<FormData>({
       name: scholar.name || '',
-      email: scholar.email || '',
       username: scholar.username || '',
       phone: scholar.phone || '',
       date_of_birth: scholar.date_of_birth ? 
@@ -29,6 +28,7 @@ const ScholarEditForm = ({ scholar, onSubmit, onCancel }: ScholarEditFormProps) 
       status: scholar.status || 'active',
       is_verified: scholar.is_verified || false,
       password: '' // Optional for updates
+      // email field removed completely
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -73,17 +73,7 @@ const ScholarEditForm = ({ scholar, onSubmit, onCancel }: ScholarEditFormProps) 
             />
           </div>
 
-          <div className="form-group">
-            <label>Email:</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter email address"
-            />
-          </div>
+          {/* Email field completely removed */}
 
           <div className="form-group">
             <label>Password: (Leave empty to keep current)</label>

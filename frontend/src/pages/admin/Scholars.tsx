@@ -9,7 +9,6 @@ import NewScholarForm from '../../components/forms/NewScholarForm';
 interface Scholar {
   id: string;
   name: string;
-  email: string;
   username: string;
   phone?: string;
   status: string;
@@ -113,7 +112,6 @@ const ScholarManagement = () => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
       scholar.name?.toLowerCase().includes(searchLower) ||
-      scholar.email?.toLowerCase().includes(searchLower) ||
       scholar.username?.toLowerCase().includes(searchLower);
 
     if (dateFilter === 'anytime') return matchesSearch;
@@ -158,7 +156,7 @@ const ScholarManagement = () => {
   const handleExport = () => {
     const exportData = scholars.map(scholar => ({
       'Full Name': scholar.name,
-      'Email': scholar.email,
+      'Username': scholar.username,
       'Phone': scholar.phone || 'N/A',
       'Status': scholar.status,
       'Active': scholar.is_active ? 'Yes' : 'No',
@@ -355,7 +353,7 @@ const ScholarManagement = () => {
           )}
           <input 
             type="text" 
-            placeholder="Search by name, email, school..." 
+            placeholder="Search by name, username, school..." 
             className="search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -397,8 +395,8 @@ const ScholarManagement = () => {
               <th onClick={() => handleSort('name')} className="sortable-header">
                 Full Name <span className="material-icons sort-icon">{getSortIcon('name')}</span>
               </th>
-              <th onClick={() => handleSort('email')} className="sortable-header">
-                Email Address <span className="material-icons sort-icon">{getSortIcon('email')}</span>
+              <th onClick={() => handleSort('username')} className="sortable-header">
+                Username <span className="material-icons sort-icon">{getSortIcon('username')}</span>
               </th>
               <th onClick={() => handleSort('phone')} className="sortable-header">
                 Phone <span className="material-icons sort-icon">{getSortIcon('phone')}</span>
@@ -424,7 +422,7 @@ const ScholarManagement = () => {
                   />
                 </td>
                 <td>{scholar.name}</td>
-                <td>{scholar.email}</td>
+                <td>{scholar.username}</td>
                 <td>{scholar.phone || 'N/A'}</td>
                 <td>
                   
