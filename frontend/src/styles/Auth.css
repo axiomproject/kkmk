@@ -277,11 +277,15 @@
   gap: 10px;
 }
 
-.form-group {
+.form-groups {
   flex: 1;
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 15px;
+
 }
-.form-group h3 {
+.form-groups h3 {
   color: #242424;
   font-family: "Poppins";
   font-weight: 500;
@@ -442,6 +446,7 @@
   font-size: 14px;
   color: #666;
   cursor: pointer;
+  text-align: left;
 }
 
 /* Modify the role-selection and auth-form to handle animations */
@@ -450,7 +455,7 @@
   padding: 20px;
 }
 
-.form-group select{
+.form-groups select{
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
@@ -1658,3 +1663,85 @@
     margin-right: 12px;
   }
 }
+
+/* ...existing code... */
+
+.auth-form .form-groups {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.auth-form .form-groups input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: transparent;
+  font-family: "Poppins";
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.auth-form .form-groups input:focus {
+  border-color: #EE3F24;
+  outline: none;
+}
+
+.auth-form .password-input-wrapper {
+  position: relative;
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.auth-form .password-input {
+  width: 100%;
+  padding: 12px;
+  padding-right: 40px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background-color: transparent;
+  font-family: "Poppins";
+  font-size: 1rem;
+}
+
+.auth-form .form-groups .password-toggle-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+
+.auth-form .form-groups .password-toggle-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: #666;
+  transition: fill 0.3s ease;
+}
+
+.auth-form .form-groups .password-toggle-icon:hover svg {
+  fill: #333;
+}
+
+/* Mobile responsive tweaks */
+@media screen and (max-width: 480px) {
+  .auth-form .form-groups input,
+  .auth-form .password-input {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  
+  .auth-form .form-groups {
+    margin-bottom: 1rem;
+  }
+  
+  .auth-form .form-groups .password-toggle-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ...existing code... */

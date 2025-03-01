@@ -23,6 +23,9 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
       face_landmarks = JSON.stringify(parsedData.landmarks);
     }
 
+    // Make sure we never pass null to the email field
+    const emailValue = email || `${username}@placeholder.com`;
+
     // Replace pool.query with db.query for consistent connection pooling
     const result = await db.query(
       `INSERT INTO users (
@@ -33,7 +36,7 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
       RETURNING *`,
       [
-        name, username, email, hashedPassword, dateOfBirth, 
+        name, username, emailValue, hashedPassword, dateOfBirth, 
         verificationToken, false, role, new Date(),
         face_descriptors, face_landmarks, faceData !== null
       ]
