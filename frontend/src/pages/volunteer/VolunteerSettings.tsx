@@ -53,11 +53,14 @@ const VolunteerSettings = () => {
       
       console.log('Formatted date for display:', formattedDate);
       
+      // Format the phone number consistently
+      const formattedPhone = user.phone ? formatPhoneNumber(user.phone) : '';
+      
       const formattedInitialData = {
         name: user.name || '',
         email: user.email || '',
         username: user.username || '',
-        phone: user.phone || '',
+        phone: formattedPhone,
         dateOfBirth: formattedDate
       };
       
@@ -118,13 +121,21 @@ const VolunteerSettings = () => {
     return formatted;
   };
 
+  // Update handleInputChange to log changes for debugging
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     
     if (name === 'phone') {
+      const formattedValue = formatPhoneNumber(value);
+      console.log('Phone change:', { 
+        raw: value, 
+        formatted: formattedValue, 
+        initial: initialFormData.phone 
+      });
+      
       setFormData(prev => ({
         ...prev,
-        [name]: formatPhoneNumber(value)
+        [name]: formattedValue
       }));
     } else {
       setFormData(prev => ({
@@ -162,11 +173,13 @@ const VolunteerSettings = () => {
       newErrors.username = 'Username can only contain letters, numbers, and underscores';
     }
 
-    // Philippine phone number validation - must start with +639
+    // Philippine phone number validation - more flexible pattern
     if (formData.phone) {
-      // Updated regex to strictly check for +63 9XX XXX XXXX format
-      const phoneRegex = /^\+63 9\d{2} \d{3} \d{4}$/;
-      if (!phoneRegex.test(formData.phone)) {
+      // Remove all spaces and special characters for validation
+      const cleanedPhone = formData.phone.replace(/\s+/g, '');
+      
+      // Check if it starts with +63 followed by a 9 and 9 more digits (total 13 chars including +)
+      if (!/^\+639\d{9}$/.test(cleanedPhone)) {
         newErrors.phone = 'Please enter a valid Philippine phone number (+63 9XX XXX XXXX)';
       }
     }
@@ -228,6 +241,9 @@ const VolunteerSettings = () => {
       date.setDate(date.getDate() + 1);
       const dateToSend = date.toISOString();
 
+      // Normalize phone format for database
+      const normalizedPhone = formData.phone.replace(/\s+/g, '');
+
       console.log('Sending date to backend:', dateToSend);
 
       const { data } = await api.put('/user/details', {
@@ -236,7 +252,7 @@ const VolunteerSettings = () => {
         email: userRole === 'scholar' ? '' : formData.email, // Don't send email for scholars
         username: formData.username,
         dateOfBirth: dateToSend,
-        phone: formData.phone,
+        phone: normalizedPhone,
         intro: user.intro,
         knownAs: user.knownAs
       });
@@ -255,11 +271,23 @@ const VolunteerSettings = () => {
         console.log('Saving updated user to localStorage:', updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
         
+        // Format phone for display and update initial data
+        const formattedPhone = updatedUser.phone ? formatPhoneNumber(updatedUser.phone) : '';
+        
         // Update the initial form data
         setInitialFormData({
-          ...formData,
-          dateOfBirth: updatedUser.dateOfBirth
+          name: updatedUser.name || '',
+          email: updatedUser.email || '',
+          username: updatedUser.username || '',
+          phone: formattedPhone,
+          dateOfBirth: updatedUser.dateOfBirth || ''
         });
+        
+        // Also update current form data to match the formatted data
+        setFormData(prev => ({
+          ...prev,
+          phone: formattedPhone
+        }));
         
         // Dispatch custom event to notify Header component of user info change
         const userInfoUpdateEvent = new CustomEvent('userInfoUpdated', { 
@@ -320,11 +348,27 @@ const VolunteerSettings = () => {
   };
 
   const isFormChanged = (): boolean => {
+    // Normalize phone formats for comparison by removing ALL non-digit characters
+    const normalizePhone = (phone: string) => {
+      return phone ? phone.replace(/\D/g, '') : '';
+    };
+    
+    const phoneChanged = normalizePhone(formData.phone) !== normalizePhone(initialFormData.phone);
+    
+    // Debug what's happening with phone comparison
+    console.log('Form change check:', {
+      currentPhone: formData.phone,
+      initialPhone: initialFormData.phone,
+      normalizedCurrent: normalizePhone(formData.phone),
+      normalizedInitial: normalizePhone(initialFormData.phone),
+      phoneChanged: phoneChanged
+    });
+    
     return (
       formData.name !== initialFormData.name ||
       formData.email !== initialFormData.email ||
       formData.username !== initialFormData.username ||
-      formData.phone !== initialFormData.phone ||
+      phoneChanged ||
       formData.dateOfBirth !== initialFormData.dateOfBirth
     );
   };
@@ -341,12 +385,30 @@ const VolunteerSettings = () => {
                            formData.username.length <= 20 && 
                            /^[a-zA-Z0-9_]+$/.test(formData.username);
     
-    // Updated phone validation to ensure it always starts with +639
-    const hasValidPhone = !formData.phone || /^\+63 9\d{2} \d{3} \d{4}$/.test(formData.phone);
+    // More flexible phone validation - as long as it's +63 9 followed by 9 digits
+    const phoneValue = formData.phone.trim();
+    const cleanedPhone = phoneValue.replace(/\s+/g, '');
+    const hasValidPhone = !phoneValue || /^\+639\d{9}$/.test(cleanedPhone);
     
     const hasValidDate = !!formData.dateOfBirth;
 
-    return hasValidName && hasValidEmail && hasValidUsername && hasValidPhone && hasValidDate;
+    const isValid = hasValidName && hasValidEmail && hasValidUsername && hasValidPhone && hasValidDate;
+    
+    // Debug validation results
+    console.log('Form validation:', {
+      name: hasValidName,
+      email: hasValidEmail,
+      username: hasValidUsername,
+      phone: {
+        value: phoneValue,
+        cleaned: cleanedPhone,
+        valid: hasValidPhone
+      },
+      date: hasValidDate,
+      overall: isValid
+    });
+
+    return isValid;
   };
 
   const handleArchiveAccount = async () => {
@@ -449,6 +511,8 @@ const VolunteerSettings = () => {
           className={`save-changes ${isFormChanged() && isPersonalInfoValid() ? 'validated' : ''}`}
           onClick={handleSaveChanges}
           disabled={!isFormChanged() || !isPersonalInfoValid()}
+          data-changed={isFormChanged()}
+          data-valid={isPersonalInfoValid()}
         >
           Save changes
         </button>
