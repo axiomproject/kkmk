@@ -245,11 +245,14 @@ const VolunteerSettings = () => {
       const normalizedPhone = formData.phone.replace(/\s+/g, '');
 
       console.log('Sending date to backend:', dateToSend);
+      
+      // For scholars, pass their current email instead of empty string
+      const emailToSend = userRole === 'scholar' ? user.email : formData.email;
 
       const { data } = await api.put('/user/details', {
         userId: user.id,
         name: formData.name,
-        email: userRole === 'scholar' ? '' : formData.email, // Don't send email for scholars
+        email: emailToSend, // Use appropriate email value
         username: formData.username,
         dateOfBirth: dateToSend,
         phone: normalizedPhone,
@@ -293,7 +296,7 @@ const VolunteerSettings = () => {
         const userInfoUpdateEvent = new CustomEvent('userInfoUpdated', { 
           detail: { 
             name: formData.name,
-            email: formData.email
+            email: updatedUser.email // Use the updated email from the response
           }
         });
         window.dispatchEvent(userInfoUpdateEvent);

@@ -87,10 +87,22 @@ const updateUserInfo = async (userId, intro, knownAs) => {
 };
 
 const updateUserDetails = async (userId, name, email, username, dateOfBirth, phone, intro, knownAs) => {
+  // First get the current user data to ensure we don't override the email with null
+  const userResult = await db.query('SELECT email FROM users WHERE id = $1', [userId]);
+  
+  if (userResult.rows.length === 0) {
+    return null; // User not found
+  }
+  
+  const currentEmail = userResult.rows[0].email;
+  
+  // Use the current email if no new email is provided
+  const emailToUse = email || currentEmail;
+  
   const query = `
     UPDATE users 
     SET name = COALESCE($1, name),
-        email = COALESCE($2, email),
+        email = $2, 
         username = COALESCE($3, username),
         date_of_birth = COALESCE($4, date_of_birth),
         phone = COALESCE($5, phone),
@@ -99,7 +111,7 @@ const updateUserDetails = async (userId, name, email, username, dateOfBirth, pho
     WHERE id = $8 
     RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
-  const result = await db.query(query, [name, email, username, dateOfBirth, phone, intro, knownAs, userId]);
+  const result = await db.query(query, [name, emailToUse, username, dateOfBirth, phone, intro, knownAs, userId]);
   return result.rows[0];
 };
 

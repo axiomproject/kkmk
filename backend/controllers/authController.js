@@ -379,6 +379,13 @@ const updateUserDetailsHandler = async (req, res) => {
   }
 
   try {
+    // Get current user info to check role
+    const user = await findUserByEmailOrUsername(username);
+    const isScholar = user && user.role === 'scholar';
+    
+    // For scholars, we preserve their existing email rather than updating it
+    const emailToUpdate = isScholar ? user.email : email;
+    
     // Ensure UTC date handling
     let adjustedDate = null;
     if (dateOfBirth) {
@@ -392,7 +399,7 @@ const updateUserDetailsHandler = async (req, res) => {
     const updatedUser = await updateUserDetails(
       userId, 
       name, 
-      email, 
+      emailToUpdate, // Use the preserved email for scholars
       username, 
       adjustedDate,
       phone,
