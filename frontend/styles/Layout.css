@@ -2015,7 +2015,7 @@ transform: scale(1.05);
 }
 
 .information {
-  padding: 20px 40px 0px 30px;
+  padding: 20px 40px 20px 30px;
   background-color: transparent;
   border-radius: 8px;
   border: 1px solid #ccc;
@@ -2118,6 +2118,7 @@ transform: scale(1.05);
   justify-content: flex-start;
   gap: 10px;
   margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .socials img {
@@ -2187,6 +2188,7 @@ transform: scale(1.05);
   justify-content: flex-start;
   align-items: center;
   gap: 10px;
+  margin-bottom: 10px;
   position: relative;
 }
 
@@ -2248,10 +2250,13 @@ transform: scale(1.05);
 
 .popup h2 {
   margin-bottom: 20px;
-  font-size: 18px;
+  font-size: 30px;
   text-align: center;
   font-family: "Poppins";
   color: #242424;
+}
+.report-card-side h3{
+  font-size: 1.5rem;
 }
 
 .cover-photo {
@@ -3334,4 +3339,218 @@ height: auto;
   .faq-item2 h1 {
       font-size: 1.25rem;
   }
+}
+
+/* Adding styling for the converted buttons to divs */
+.save-button-intro,
+.save-button-knowas,
+.save-button-socials,
+.submit-button-report {
+  display: inline-block;
+  padding: 6px 14px; /* Reduced padding to decrease height */
+  background-color: #FF3D00; /* Changed to orange */
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-size: 0.9rem;
+  text-align: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.save-button-intro:hover,
+.save-button-knowas:hover,
+.save-button-socials:hover {
+  background-color: #E83600; /* Darker orange on hover */
+  transform: translateY(-2px);
+}
+
+.cancel-button-intro,
+.cancel-button-knowas,
+.cancel-button-socials,
+.cancel-button-report,
+.close-button-progress {
+  display: inline-block;
+  padding: 6px 14px; /* Reduced padding to decrease height */
+  background-color: #e0e0e0;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-size: 0.9rem;
+  text-align: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.submit-button-report {
+  background-color: #FF3D00; /* Orange */
+  width: 100%;
+  padding: 10px; /* Slightly reduced from 12px */
+  margin-bottom: 10px;
+}
+
+.submit-button-report:hover {
+  background-color: #E83600; /* Darker orange on hover */
+}
+
+/* Styling for converted buttons to divs - updated with orange color and reduced height */
+.save-button-intro,
+.save-button-knowas,
+.save-button-socials,
+.submit-button-report {
+  display: inline-block;
+  padding: 6px 14px; /* Reduced padding to decrease height */
+  background-color: #FF3D00; /* Changed to orange */
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-size: 0.9rem;
+  text-align: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.save-button-intro:hover,
+.save-button-knowas:hover,
+.save-button-socials:hover {
+  background-color: #E83600; /* Darker orange on hover */
+  transform: translateY(-2px);
+}
+
+.cancel-button-intro,
+.cancel-button-knowas,
+.cancel-button-socials,
+.cancel-button-report,
+.close-button-progress {
+  display: inline-block;
+  padding: 6px 14px; /* Reduced padding to decrease height */
+  background-color: #e0e0e0;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-size: 0.9rem;
+  text-align: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.submit-button-report {
+  background-color: #FF3D00; /* Orange */
+  width: 100%;
+  padding: 10px; /* Slightly reduced from 12px */
+  margin-bottom: 10px;
+}
+
+.submit-button-report:hover {
+  background-color: #E83600; /* Darker orange on hover */
+}
+
+/* Adding styling for the converted buttons to divs */
+.save-button-intro,
+.save-button-knowas,
+.save-button-socials,
+.submit-button-report {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #ffb300;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-size: 0.9rem;
+  text-align: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.save-button-intro:hover,
+.save-button-knowas:hover,
+.save-button-socials:hover {
+  background-color: #c68d08;
+  transform: translateY(-2px);
+}
+
+.cancel-button-intro,
+.cancel-button-knowas,
+.cancel-button-socials,
+.cancel-button-report,
+.close-button-progress {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #e0e0e0;
+  color: #333;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Poppins";
+  font-size: 0.9rem;
+  text-align: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.cancel-button-intro:hover,
+.cancel-button-knowas:hover,
+.cancel-button-socials:hover,
+.cancel-button-report:hover,
+.close-button-progress:hover {
+  background-color: #c0c0c0;
+  transform: translateY(-2px);
+}
+
+.submit-button-report {
+  background-color: #FF3D00;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.submit-button-report:hover {
+  background-color: #ba350d;
+}
+
+.submit-button-report.disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.cancel-button-report,
+.close-button-progress {
+  width: 100%;
+  padding: 12px;
+  background-color: #e0e0e0;
+  font-weight: 500;
+}
+
+/* Styling for edit buttons container */
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Enhance the editing container */
+.editing-container {
+  width: 100%;
+}
+
+/* Style for social inputs */
+.social-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.social-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.social-input input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: "Poppins";
+  font-size: 0.9rem;
 }

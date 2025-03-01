@@ -102,6 +102,9 @@
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     position: relative;
+    animation: fadeInScale 0.5s ease forwards;
+    opacity: 0;
+    cursor: pointer;
 }
 
 .gallery-image {
@@ -141,6 +144,7 @@
 .image-info p {
   margin: 0 0 0.5rem 0;
   font-size: 0.9rem;
+  color: #ededec;
 }
 
 .tags {
@@ -155,6 +159,168 @@
   border-radius: 4px;
   font-size: 0.8rem;
   font-family: "Poppins";
+}
+
+/* Modal styles */
+.life-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: scroll;
+    pointer-events: all;
+}
+
+.life-modal-box {
+    background: #FEF6E4;
+    width: 60%;
+    max-width: 800px;
+    padding: 35px;
+    border-radius: 8px;
+    position: relative;
+    margin: auto;
+    margin-top: calc(var(--scroll-y, 0px) + 100px);
+    pointer-events: all;
+}
+
+.life-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.life-modal-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.life-modal-image {
+    width: 80%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.life-modal-text {
+    text-align: center;
+    max-width: min(600px, 85vw);
+    margin: 0 auto;
+}
+
+.life-modal-title {
+    font-size: 24px;
+    color: #242424;
+    margin-bottom: 10px;
+    font-family: "Poppins";
+}
+
+.life-modal-description {
+    font-family: "Poppins";
+    color: #242424;
+    line-height: 1.6;
+    max-width: min(700px, 90vw);
+    margin: 0 auto;
+    margin-bottom: 15px;
+}
+
+.life-modal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* Zoomable image styles - remove buttons and simplify */
+.life-modal-image-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  height: auto;
+  overflow: hidden;
+  border-radius: 10px;
+  user-select: none;
+}
+
+.life-modal-image-wrapper {
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
+}
+
+.life-modal-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.life-modal-image-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  padding: 5px;
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity 0.3s;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 20px;
+  max-width: 220px;
+  margin: 0 auto;
+}
+
+/* Responsive modal styles */
+@media screen and (max-width: 992px) {
+    .life-modal-box {
+        width: 80%;
+        padding: 25px;
+    }
+    
+    .life-modal-image {
+        width: 90%;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .life-modal-box {
+        width: 90%;
+        padding: 20px;
+    }
+    
+    .life-modal-image {
+        width: 95%;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .life-modal-box {
+        width: 95%;
+        padding: 15px;
+    }
+    
+    .life-modal-image {
+        width: 100%;
+    }
+    
+    .life-modal-title {
+        font-size: 20px;
+    }
 }
 
 /* Responsive design */
@@ -827,4 +993,153 @@
         font-size: 28px;
         padding: 25px 45px;
     }
+}
+
+/* Modal animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+}
+
+/* Modal styles with animations */
+.life-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: scroll;
+    pointer-events: all;
+}
+
+.life-modal-opening {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.life-modal-closing {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+.life-modal-box {
+    background: #FEF6E4;
+    width: 60%;
+    max-width: 800px;
+    padding: 35px;
+    border-radius: 8px;
+    position: relative;
+    margin: auto;
+    margin-top: calc(var(--scroll-y, 0px) + 100px);
+    pointer-events: all;
+}
+
+.life-modal-box-opening {
+    animation: slideIn 0.3s ease forwards;
+}
+
+.life-modal-box-closing {
+    animation: slideOut 0.3s ease forwards;
+}
+
+.life-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.life-modal-close:hover {
+    transform: scale(1.2);
+    color: #EE3F24;
+}
+
+/* Add animation for modal content elements */
+.life-modal-image,
+.life-modal-title,
+.life-modal-description,
+.life-modal-tags {
+    animation: fadeIn 0.5s ease forwards;
+    animation-delay: 0.2s;
+    opacity: 0;
+}
+
+.life-modal-title {
+    animation-delay: 0.3s;
+}
+
+.life-modal-description {
+    animation-delay: 0.4s;
+}
+
+.life-modal-tags {
+    animation-delay: 0.5s;
+}
+
+/* Tab content animations */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Creating staggered animation delays for the grid items */
+.image-wrapper:nth-child(1) { animation-delay: 0.05s; }
+.image-wrapper:nth-child(2) { animation-delay: 0.1s; }
+.image-wrapper:nth-child(3) { animation-delay: 0.15s; }
+.image-wrapper:nth-child(4) { animation-delay: 0.2s; }
+.image-wrapper:nth-child(5) { animation-delay: 0.25s; }
+.image-wrapper:nth-child(6) { animation-delay: 0.3s; }
+.image-wrapper:nth-child(7) { animation-delay: 0.35s; }
+.image-wrapper:nth-child(8) { animation-delay: 0.4s; }
+.image-wrapper:nth-child(9) { animation-delay: 0.45s; }
+.image-wrapper:nth-child(10) { animation-delay: 0.5s; }
+.image-wrapper:nth-child(n+11) { animation-delay: 0.55s; }
+
+/* Add a subtle fade effect for the tab panels */
+.tab-panel {
+    animation: fadeIn 0.4s ease forwards;
 }

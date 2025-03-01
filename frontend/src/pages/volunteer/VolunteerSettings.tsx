@@ -490,14 +490,6 @@ const VolunteerSettings = () => {
         </div>
       </form>
 
-      <div className="notification-settings">
-        <h3>Notification Settings</h3>
-        <label>
-          <input type="checkbox" />
-          Email notifications for incoming messages
-        </label>
-        <button type="button" className="save-changes">Save changes</button>
-      </div>
       <button type="button" className="setup-facial-id">Setup Facial ID</button>
       <button 
         type="button" 
