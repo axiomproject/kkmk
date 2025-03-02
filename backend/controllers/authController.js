@@ -194,12 +194,19 @@ const login = async (req, res) => {
 
     console.log('Verification status:', user.is_verified); // Add this debug log
 
-    // Check verification status
-    if (user.is_verified !== true) {  // Changed to explicit comparison
-      return res.status(401).json({ 
-        error: 'Please verify your email before logging in',
-        needsVerification: true
-      });
+    // Check verification status with special handling for scholars
+    if (user.is_verified !== true) {
+      if (user.role === 'scholar') {
+        return res.status(401).json({ 
+          error: 'Your account is pending admin approval. Please wait for an administrator to approve your account.',
+          needsAdminApproval: true
+        });
+      } else {
+        return res.status(401).json({ 
+          error: 'Please verify your email before logging in',
+          needsVerification: true
+        });
+      }
     }
 
     // Update last login time
