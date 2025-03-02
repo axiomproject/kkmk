@@ -152,6 +152,9 @@ const Login: React.FC = () => {
       if (err.response?.data?.inactive) {
         setInactiveAccount(true);
         setError(err.response.data.error);
+      } else if (err.response?.data?.needsAdminApproval) {
+        // Special handling for scholars waiting for admin approval
+        setError(err.response.data.error);
       } else {
         setError(err.response?.data?.error || 'Login failed');
       }
