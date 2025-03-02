@@ -952,9 +952,9 @@ const forumModel = {
         throw new Error('Invalid post or user ID');
       }
       
-      // Check post exists
+      // Check post exists and get more info about it
       const postResult = await client.query(
-        'SELECT author_id FROM forum_posts WHERE id = $1',
+        'SELECT author_id, category, event_id FROM forum_posts WHERE id = $1',
         [postIdInt]
       );
       
@@ -963,8 +963,15 @@ const forumModel = {
       }
       
       const post = postResult.rows[0];
+      console.log('Attempting to delete post:', { 
+        postId: postIdInt,
+        userId: userIdInt,
+        postAuthorId: post.author_id,
+        category: post.category,
+        hasEventId: post.event_id !== null
+      });
       
-      // Check if the user is the author or has admin privileges
+      // Check if the user is the author or has admin/staff privileges
       const isAdmin = await client.query(
         'SELECT id FROM admin_users WHERE id = $1',
         [userIdInt]
@@ -988,15 +995,23 @@ const forumModel = {
       
       const authorRole = authorRoleResult.rows[0]?.role || 'user';
       
-      // Staff cannot delete admin posts
-      if (isStaff.rows.length > 0 && authorRole === 'admin' && post.author_id !== userIdInt) {
-        throw new Error('Unauthorized to delete this post');
-      }
-      
       const isAuthor = post.author_id === userIdInt;
       const isAdminUser = isAdmin.rows.length > 0;
       const isStaffUser = isStaff.rows.length > 0;
       
+      console.log('Authorization check:', {
+        isAuthor,
+        isAdminUser, 
+        isStaffUser,
+        authorRole
+      });
+      
+      // Staff cannot delete admin posts
+      if (isStaffUser && !isAdminUser && authorRole === 'admin' && !isAuthor) {
+        throw new Error('Unauthorized to delete this post');
+      }
+      
+      // Handle general authorization
       if (!isAuthor && !isAdminUser && !isStaffUser) {
         throw new Error('Unauthorized to delete this post');
       }
@@ -1034,11 +1049,14 @@ const forumModel = {
       // 7. Finally delete the post itself
       await client.query('DELETE FROM forum_posts WHERE id = $1', [postIdInt]);
       
+      console.log('Post deleted successfully:', postIdInt);
+      
       await client.query('COMMIT');
       
       return { success: true };
     } catch (error) {
       await client.query('ROLLBACK');
+      console.error('Error in deletePost:', error);
       throw error;
     } finally {
       client.release();
@@ -1317,6 +1335,92 @@ const forumModel = {
       
     } catch (error) {
       await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async deleteComment(postId, commentId, userId) {
+    const client = await db.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Convert IDs to integers
+      const postIdInt = parseInt(postId, 10);
+      const commentIdInt = parseInt(commentId, 10);
+      const userIdInt = parseInt(userId, 10);
+      
+      if (isNaN(postIdInt) || isNaN(commentIdInt) || isNaN(userIdInt)) {
+        throw new Error('Invalid post, comment or user ID');
+      }
+      
+      // Check comment exists
+      const commentResult = await client.query(
+        'SELECT author_id, author_role FROM forum_comments WHERE id = $1 AND post_id = $2',
+        [commentIdInt, postIdInt]
+      );
+      
+      if (commentResult.rows.length === 0) {
+        return { success: false, message: 'Comment not found' };
+      }
+      
+      const comment = commentResult.rows[0];
+      
+      // Check if the user is the author or has admin/staff privileges
+      const isAdmin = await client.query(
+        'SELECT id FROM admin_users WHERE id = $1',
+        [userIdInt]
+      );
+      
+      const isStaff = await client.query(
+        'SELECT id FROM staff_users WHERE id = $1',
+        [userIdInt]
+      );
+      
+      const isAuthor = comment.author_id === userIdInt;
+      const isAdminUser = isAdmin.rows.length > 0;
+      const isStaffUser = isStaff.rows.length > 0;
+
+      console.log('Authorization check for comment deletion:', {
+        isAuthor,
+        isAdminUser,
+        isStaffUser,
+        commentAuthorRole: comment.author_role
+      });
+      
+      // Staff cannot delete admin comments
+      if (isStaffUser && !isAdminUser && comment.author_role === 'admin') {
+        throw new Error('Unauthorized to delete this comment');
+      }
+      
+      // Regular users can only delete their own comments
+      if (!isAuthor && !isAdminUser && !isStaffUser) {
+        throw new Error('Unauthorized to delete this comment');
+      }
+      
+      // Delete all related data in the correct order
+      // 1. First delete comment likes
+      await client.query(
+        'DELETE FROM forum_comment_likes WHERE comment_id = $1',
+        [commentIdInt]
+      );
+      
+      // 2. Delete the comment itself
+      await client.query(
+        'DELETE FROM forum_comments WHERE id = $1 AND post_id = $2',
+        [commentIdInt, postIdInt]
+      );
+      
+      console.log('Comment deleted successfully:', commentIdInt);
+      
+      await client.query('COMMIT');
+      
+      return { success: true };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error in deleteComment:', error);
       throw error;
     } finally {
       client.release();

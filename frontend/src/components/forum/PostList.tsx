@@ -17,6 +17,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { checkProfanity } from '../../utils/profanityFilter'; // Remove showProfanityWarning
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'; // Add this import
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
 
@@ -32,6 +33,7 @@ interface PostListProps {
   onUpdatePost: (postId: string, updatedPost: Partial<Post>) => void;
   highlightedPostId?: string | null;
   onCategoryChange: (category: string) => void; // Add this prop
+  onDeleteComment?: (postId: string, commentId: string) => void; // Add this prop
   userRole: string; // Add this prop
 }
 
@@ -72,7 +74,7 @@ const authorNameStyle = {
   fontWeight: 500
 };
 
-const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddComment, onVote, onCommentLike, onDeletePost, onUpdatePost, highlightedPostId, onCategoryChange, userRole }) => {
+const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddComment, onVote, onCommentLike, onDeletePost, onUpdatePost, highlightedPostId, onCategoryChange, onDeleteComment, userRole }) => {
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [expandedPosts, setExpandedPosts] = useState<string[]>([]);
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
@@ -411,6 +413,87 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
     }
   };
 
+  const handleDeleteComment = async (postId: string, commentId: string, commentAuthorId: string, commentAuthorRole: string) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    try {
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user) {
+        alert('You must be logged in to delete comments.');
+        return;
+      }
+
+      // Check if current user has permission to delete this comment
+      const isAuthor = commentAuthorId === user.id;
+      const isAdmin = user.role === 'admin';
+      const isStaff = user.role === 'staff';
+      
+      if (!isAuthor && !isAdmin && !isStaff) {
+        alert('You do not have permission to delete this comment.');
+        return;
+      }
+
+      // Staff can't delete admin comments
+      if (isStaff && !isAdmin && commentAuthorRole === 'admin') {
+        alert('Staff cannot delete comments made by administrators.');
+        return;
+      }
+
+      console.log('Attempting to delete comment:', { 
+        postId, 
+        commentId,
+        userId: user.id,
+        userRole: user.role,
+        commentAuthorId,
+        commentAuthorRole
+      });
+
+      const response = await fetch(`${API_URL}/api/forum/posts/${postId}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId: user.id })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ 
+          error: `Server returned status: ${response.status}` 
+        }));
+        
+        console.error('Delete comment error:', errorData);
+        throw new Error(errorData.error || `Failed to delete comment (${response.status})`);
+      }
+      
+      console.log('Comment deleted successfully');
+
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              comments: post.comments.filter(comment => comment.id !== commentId)
+            };
+          }
+          return post;
+        })
+      );
+      
+      // If parent component provided a callback, call it
+      if (onDeleteComment) {
+        onDeleteComment(postId, commentId);
+      }
+    } catch (error: any) {
+      console.error('Error deleting comment:', error);
+      alert(`Failed to delete comment: ${error.message}`);
+    }
+  };
+
   const getVotePercentage = (votes: number, totalVotes: number) => {
     if (totalVotes === 0) return 0;
     return Math.round((votes / totalVotes) * 100);
@@ -476,10 +559,21 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
   const handleDeleteClick = async (postId: string) => {
     if (!confirm('Are you sure you want to delete this post?')) return;
 
-    const userData = localStorage.getItem('user');
-    const user = userData ? JSON.parse(userData) : null;
-
     try {
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+
+      if (!user) {
+        alert('You must be logged in to delete posts.');
+        return;
+      }
+
+      console.log('Attempting to delete post:', { 
+        postId, 
+        userId: user.id,
+        userRole
+      });
+
       const response = await fetch(`${API_URL}/api/forum/posts/${postId}`, {
         method: 'DELETE',
         headers: {
@@ -489,14 +583,19 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete post');
+        const errorData = await response.json().catch(() => ({ 
+          error: `Server returned status: ${response.status}` 
+        }));
+        
+        console.error('Delete post error:', errorData);
+        throw new Error(errorData.error || `Failed to delete post (${response.status})`);
       }
       
+      console.log('Post deleted successfully');
       onDeletePost(postId);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting post:', error);
-      alert('Failed to delete post. Please try again.');
+      alert(`Failed to delete post: ${error.message}`);
     }
   };
 
@@ -1039,82 +1138,113 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                   <Collapse in={expandedPosts.includes(post.id)}>
                     <div className="comments-section">
                       <div className="comments-list">
-                        {post.comments && post.comments.map(comment => (
-                          <div key={comment.id} className="comment-item">
-                            <div className="comment-header">
-                              <Avatar 
-                                src={getAvatarUrl(comment.author_avatar)}
-                                sx={{ 
-                                  width: 32, 
-                                  height: 32,
-                                  border: `2px solid ${getRoleBorderColor(comment.author_role)}`,
-                                  padding: '1px'
-                                }}
-                                imgProps={{
-                                  onError: (e) => {
-                                    console.error('Comment avatar image failed to load:', comment.author_avatar);
-                                    (e.target as HTMLImageElement).src = 'https://mui.com/static/images/avatar/1.jpg';
-                                  }
-                                }}
-                              />
-                              <div className="comment-info">
-                                <Typography 
-                                  variant="subtitle2" 
+                        {post.comments && post.comments.map(comment => {
+                          // Check if current user can delete this comment
+                          const userData = localStorage.getItem('user');
+                          const user = userData ? JSON.parse(userData) : null;
+                          const isCommentAuthor = user?.id === comment.author_id;
+                          const canDeleteComment = isCommentAuthor || 
+                                                  isAdmin || 
+                                                  (isAdminOrStaff && comment.author_role !== 'admin');
+                          
+                          return (
+                            <div key={comment.id} className="comment-item">
+                              <div className="comment-header">
+                                <Avatar 
+                                  src={getAvatarUrl(comment.author_avatar)}
                                   sx={{ 
-                                    textAlign: 'left',
-                                    fontFamily: '"Poppins", sans-serif',
-                                    fontWeight: 600
+                                    width: 32, 
+                                    height: 32,
+                                    border: `2px solid ${getRoleBorderColor(comment.author_role)}`,
+                                    padding: '1px'
                                   }}
-                                >
-                                  {comment.author_name}
-                                </Typography>
-                                <Typography 
-                                  variant="caption" 
-                                  color="text.secondary"
-                                  sx={{ 
-                                    textAlign: 'left', 
-                                    display: 'block',
-                                    fontFamily: '"Poppins", sans-serif'
+                                  imgProps={{
+                                    onError: (e) => {
+                                      console.error('Comment avatar image failed to load:', comment.author_avatar);
+                                      (e.target as HTMLImageElement).src = 'https://mui.com/static/images/avatar/1.jpg';
+                                    }
                                   }}
-                                >
-                                  {formatDate(comment.created_at)}
-                                </Typography>
+                                />
+                                <div className="comment-info">
+                                  <Typography 
+                                    variant="subtitle2" 
+                                    sx={{ 
+                                      textAlign: 'left',
+                                      fontFamily: '"Poppins", sans-serif',
+                                      fontWeight: 600
+                                    }}
+                                  >
+                                    {comment.author_name}
+                                    {comment.author_role === 'admin' && (
+                                      <span className="badge admin-badge">Admin</span>
+                                    )}
+                                    {comment.author_role === 'staff' && (
+                                      <span className="badge staff-badge">Staff</span>
+                                    )}
+                                  </Typography>
+                                  <Typography 
+                                    variant="caption" 
+                                    color="text.secondary"
+                                    sx={{ 
+                                      textAlign: 'left', 
+                                      display: 'block',
+                                      fontFamily: '"Poppins", sans-serif'
+                                    }}
+                                  >
+                                    {formatDate(comment.created_at)}
+                                  </Typography>
+                                </div>
+                                <div style={{ marginLeft: 'auto', display: 'flex' }}>
+                                  {canDeleteComment && (
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleDeleteComment(post.id, comment.id, comment.author_id, comment.author_role || 'user')}
+                                      sx={{
+                                        color: 'rgba(0,0,0,0.5)',
+                                        '&:hover': {
+                                          color: '#f44336',
+                                        }
+                                      }}
+                                    >
+                                      <DeleteOutlineIcon fontSize="small" />
+                                    </IconButton>
+                                  )}
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleCommentLike(post.id, comment.id)}
+                                    sx={{
+                                      color: likedComments.includes(comment.id) ? '#f99407' : 'inherit',
+                                      '&:hover': {
+                                        color: '#f99407',
+                                      }
+                                    }}
+                                  >
+                                    {likedComments.includes(comment.id) ? <ThumbUpIcon fontSize="small" /> : <ThumbUpOutlinedIcon fontSize="small" />}
+                                    <Typography
+                                      variant="caption"
+                                      sx={{
+                                        ml: 0.5,
+                                        color: 'inherit'
+                                      }}
+                                    >
+                                      {comment.likes}
+                                    </Typography>
+                                  </IconButton>
+                                </div>
                               </div>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleCommentLike(post.id, comment.id)}
-                                sx={{
-                                  marginLeft: 'auto',
-                                  color: likedComments.includes(comment.id) ? '#f99407' : 'inherit',
-                                  '&:hover': {
-                                    color: '#f99407',
-                                  }
+                              <Typography 
+                                variant="body2" 
+                                className="comment-content"
+                                sx={{ 
+                                  textAlign: 'left',
+                                  fontFamily: '"Poppins", sans-serif'
                                 }}
                               >
-                                {likedComments.includes(comment.id) ? <ThumbUpIcon fontSize="small" /> : <ThumbUpOutlinedIcon fontSize="small" />}
-                                <Typography
-                                  variant="caption"
-                                  sx={{
-                                    ml: 0.5,
-                                    color: 'inherit'
-                                  }}
-                                >
-                                  {comment.likes}
-                                </Typography>
-                              </IconButton>
+                                {comment.content}
+                              </Typography>
                             </div>
-                            <Typography 
-                              variant="body2" 
-                              className="comment-content"
-                              sx={{ 
-                                textAlign: 'left',
-                                fontFamily: '"Poppins", sans-serif'
-                              }}
-                            >
-                              {comment.content}
-                            </Typography>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <div className="add-comment">
                         {commentError[post.id] && (

@@ -1821,3 +1821,52 @@ body.sidebar-open {
   }
 }
 
+/* Add these styles for comment badges - add to your existing CSS file */
+
+.badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 2px 6px;
+  font-size: 0.6rem;
+  border-radius: 4px;
+  color: white;
+  font-weight: 600;
+  vertical-align: middle;
+  text-transform: uppercase;
+}
+
+.admin-badge {
+  background-color: #FF5722;
+}
+
+.staff-badge {
+  background-color: #9C27B0;
+}
+
+/* Improve comment styling */
+.comment-item {
+  position: relative;
+  padding: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.comment-item:last-child {
+  border-bottom: none;
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.comment-info {
+  margin-left: 8px;
+  flex-grow: 1;
+}
+
+.comment-content {
+  margin-left: 40px;
+  word-break: break-word;
+}
+

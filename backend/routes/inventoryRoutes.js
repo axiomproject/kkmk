@@ -432,6 +432,50 @@ router.get('/distributions-with-location', async (req, res) => {
   }
 });
 
+// Update the distributions-by-sector endpoint
+router.get('/distributions-by-sector', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        d.id,
+        d.quantity,
+        d.distributed_at,
+        d.item_type,
+        u.latitude,
+        u.longitude,
+        CASE 
+          WHEN d.item_type = 'regular' THEN rd.item
+          ELSE id.item
+        END as item_name,
+        CASE 
+          WHEN d.item_type = 'regular' THEN rd.category
+          ELSE id.category
+        END as category
+      FROM item_distributions d
+      JOIN users u ON d.recipient_id = u.id
+      LEFT JOIN regular_donations rd ON d.item_id = rd.id AND d.item_type = 'regular'
+      LEFT JOIN inkind_donations id ON d.item_id = id.id AND d.item_type = 'in-kind'
+      WHERE u.latitude IS NOT NULL 
+        AND u.longitude IS NOT NULL
+      ORDER BY d.distributed_at DESC
+    `);
+
+    res.json(result.rows.map(row => ({
+      id: row.id,
+      quantity: parseInt(row.quantity),
+      distributedAt: row.distributed_at,
+      itemType: row.item_type,
+      itemName: row.item_name,
+      category: row.category,
+      latitude: parseFloat(row.latitude),
+      longitude: parseFloat(row.longitude)
+    })));
+  } catch (error) {
+    console.error('Error fetching sector distributions:', error);
+    res.status(500).json({ error: 'Failed to fetch distribution data' });
+  }
+});
+
 // Verify regular donation
 router.post('/regular/:id/verify', authenticateToken, async (req, res) => {
   const { id } = req.params;
@@ -555,6 +599,51 @@ router.post('/inkind/:id/reject', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error rejecting in-kind donation:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Add this new endpoint to get scholar distributions
+router.get('/scholar-distributions', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT 
+        d.id,
+        d.quantity,
+        d.distributed_at,
+        d.item_type,
+        u.latitude,
+        u.longitude,
+        CASE 
+          WHEN d.item_type = 'regular' THEN rd.item
+          ELSE id.item
+        END as item_name,
+        CASE 
+          WHEN d.item_type = 'regular' THEN rd.category
+          ELSE id.category
+        END as category
+      FROM item_distributions d
+      JOIN users u ON d.recipient_id = u.id
+      LEFT JOIN regular_donations rd ON d.item_id = rd.id AND d.item_type = 'regular'
+      LEFT JOIN inkind_donations id ON d.item_id = id.id AND d.item_type = 'in-kind'
+      WHERE d.recipient_type = 'scholar'
+      AND u.latitude IS NOT NULL 
+      AND u.longitude IS NOT NULL
+      ORDER BY d.distributed_at DESC
+    `);
+
+    res.json(result.rows.map(row => ({
+      id: row.id,
+      quantity: parseInt(row.quantity),
+      distributedAt: row.distributed_at,
+      itemType: row.item_type,
+      itemName: row.item_name,
+      category: row.category,
+      latitude: parseFloat(row.latitude),
+      longitude: parseFloat(row.longitude)
+    })));
+  } catch (error) {
+    console.error('Error fetching scholar distributions:', error);
+    res.status(500).json({ error: 'Failed to fetch scholar distribution data' });
   }
 });
 

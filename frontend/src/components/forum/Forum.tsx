@@ -366,6 +366,21 @@ const Forum: React.FC = () => {
     fetchPosts();
   };
 
+  const handleDeleteComment = (postId: string, commentId: string) => {
+    // Update posts state to remove the deleted comment
+    setPosts(prevPosts => 
+      prevPosts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comments: post.comments.filter(comment => comment.id !== commentId)
+          };
+        }
+        return post;
+      })
+    );
+  };
+
   // Add this helper function
   const getHeaderTitle = () => {
     if (activeCategoryInfo.category === 'event' && activeCategoryInfo.eventTitle) {
@@ -608,6 +623,7 @@ const Forum: React.FC = () => {
               onCommentLike={handleCommentLike}
               onDeletePost={handleDeletePost}
               onUpdatePost={handleUpdatePost}
+              onDeleteComment={handleDeleteComment} // Add this prop
               userRole={userRole} // Add this prop
             />
           )}
