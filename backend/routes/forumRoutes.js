@@ -241,15 +241,46 @@ router.delete('/posts/:postId', async (req, res) => {
     const { postId } = req.params;
     const { userId } = req.body;  // Changed from req.query to req.body
 
+    console.log('Delete post request:', { postId, userId });
+
     if (!userId) {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
+    // Check if user exists and get role
+    const userCheckResult = await db.query(`
+      SELECT 'admin' as role FROM admin_users WHERE id = $1
+      UNION
+      SELECT 'staff' as role FROM staff_users WHERE id = $1
+      UNION
+      SELECT role FROM users WHERE id = $1
+    `, [userId]);
+    
+    const userRole = userCheckResult.rows[0]?.role || 'unknown';
+    console.log('User role for deletion:', userRole);
+
+    // Get post info before deletion attempt
+    const postInfoResult = await db.query(
+      'SELECT category, event_id FROM forum_posts WHERE id = $1',
+      [postId]
+    );
+    
+    const postInfo = postInfoResult.rows[0];
+    if (postInfo) {
+      console.log('Post info before deletion:', {
+        category: postInfo.category,
+        hasEventId: postInfo.event_id !== null
+      });
+    }
+
     const result = await forumModel.deletePost(postId, userId);
+    
     if (result.success) {
+      console.log('Post deletion successful');
       res.json({ success: true });
     } else {
-      res.status(404).json({ error: 'Post not found' });
+      console.log('Post deletion failed:', result.message);
+      res.status(404).json({ error: result.message || 'Post not found' });
     }
   } catch (error) {
     console.error('Error deleting post:', error);
@@ -257,6 +288,62 @@ router.delete('/posts/:postId', async (req, res) => {
       return res.status(403).json({ error: error.message });
     }
     res.status(500).json({ error: 'Failed to delete post', details: error.message });
+  }
+});
+
+// Add new route for comment deletion
+router.delete('/posts/:postId/comments/:commentId', async (req, res) => {
+  try {
+    const { postId, commentId } = req.params;
+    const { userId } = req.body;
+
+    console.log('Delete comment request:', { postId, commentId, userId });
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Check if user exists and get role
+    const userCheckResult = await db.query(`
+      SELECT 'admin' as role FROM admin_users WHERE id = $1
+      UNION
+      SELECT 'staff' as role FROM staff_users WHERE id = $1
+      UNION
+      SELECT role FROM users WHERE id = $1
+    `, [userId]);
+    
+    const userRole = userCheckResult.rows[0]?.role || 'unknown';
+    console.log('User role for comment deletion:', userRole);
+
+    // Get comment info before deletion attempt
+    const commentInfoResult = await db.query(
+      'SELECT author_id, author_role FROM forum_comments WHERE id = $1',
+      [commentId]
+    );
+    
+    const commentInfo = commentInfoResult.rows[0];
+    if (commentInfo) {
+      console.log('Comment info before deletion:', {
+        authorId: commentInfo.author_id,
+        authorRole: commentInfo.author_role
+      });
+    }
+
+    const result = await forumModel.deleteComment(postId, commentId, userId);
+    
+    if (result.success) {
+      console.log('Comment deletion successful');
+      res.json({ success: true });
+    } else {
+      console.log('Comment deletion failed:', result.message);
+      res.status(404).json({ error: result.message || 'Comment not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    if (error.message === 'Unauthorized to delete this comment') {
+      return res.status(403).json({ error: error.message });
+    }
+    res.status(500).json({ error: 'Failed to delete comment', details: error.message });
   }
 });
 

@@ -21,6 +21,7 @@
 .admin-logo {
   height: 35px;
   width: auto;
+  cursor: pointer;
 }
 
 .header-right {
@@ -72,6 +73,7 @@
   opacity: 1;
   transform: translateY(0);
   visibility: visible;
+  z-index: 9999;
 }
 
 .dropdown-header {
