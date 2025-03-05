@@ -54,7 +54,9 @@ const officeIcon = new Icon({
   className: 'office-marker'
 });
 
-const eventIcon = new Icon({
+// Remove static eventIcon since we'll create dynamic ones per event
+// We'll keep this as a fallback for when images fail to load
+const defaultEventIcon = new Icon({
   iconUrl: '/images/default-event.jpg',
   iconSize: [35, 35],
   iconAnchor: [17, 17],
@@ -759,7 +761,21 @@ const InteractiveMap: React.FC = () => {
     });
   };
   const getMarkerIcon = (marker: LocationMarker) => {
-    return marker.type === 'office' ? officeIcon : eventIcon;
+    if (marker.type === 'office') return officeIcon;
+    
+    // For events, create a custom icon using the event's image
+    if (marker.details.image) {
+      return new Icon({
+        iconUrl: marker.details.image,
+        iconSize: [35, 35],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -17],
+        className: 'event-marker'
+      });
+    }
+    
+    // Fallback to default event icon if no image is available
+    return defaultEventIcon;
   };
 
   const renderPopupContent = (marker: LocationMarker) => (
