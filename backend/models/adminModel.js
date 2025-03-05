@@ -203,6 +203,9 @@ const AdminModel = {
       try {
         await client.query('BEGIN');
         
+        // Delete dismissed_feedback records
+        await client.query('DELETE FROM dismissed_feedback WHERE user_id = $1', [id]);
+        
         // Delete notifications where volunteer is the recipient
         await client.query('DELETE FROM notifications WHERE user_id = $1', [id]);
         
@@ -261,6 +264,7 @@ const AdminModel = {
         await client.query('BEGIN');
         
         // Delete related records for all volunteers
+        await client.query('DELETE FROM dismissed_feedback WHERE user_id = ANY($1::int[])', [ids]);
         await client.query('DELETE FROM notifications WHERE user_id = ANY($1::int[])', [ids]);
         await client.query('DELETE FROM notifications WHERE actor_id = ANY($1::int[])', [ids]);
         await client.query('DELETE FROM event_participants WHERE user_id = ANY($1::int[])', [ids]);
@@ -383,6 +387,9 @@ const AdminModel = {
     try {
       await client.query('BEGIN');
       
+      // Delete dismissed_feedback records
+      await client.query('DELETE FROM dismissed_feedback WHERE user_id = $1', [id]);
+      
       // Delete related records (similar to volunteer deletion)
       await client.query('DELETE FROM notifications WHERE user_id = $1', [id]);
       await client.query('DELETE FROM notifications WHERE actor_id = $1', [id]);
@@ -421,6 +428,7 @@ const AdminModel = {
         await client.query('BEGIN');
         
         // Delete related records
+        await client.query('DELETE FROM dismissed_feedback WHERE user_id = ANY($1::integer[])', [numericIds]);
         await client.query('DELETE FROM notifications WHERE user_id = ANY($1::integer[])', [numericIds]);
         await client.query('DELETE FROM notifications WHERE actor_id = ANY($1::integer[])', [numericIds]);
         await client.query('DELETE FROM event_participants WHERE user_id = ANY($1::integer[])', [numericIds]);
@@ -541,9 +549,30 @@ const AdminModel = {
     try {
       await client.query('BEGIN');
       
+      // Check for associated donations
+      const donationsResult = await client.query(
+        'SELECT COUNT(*) FROM scholar_donations WHERE sponsor_id = $1',
+        [id]
+      );
+      
+      const donationsCount = parseInt(donationsResult.rows[0].count);
+      
+      // Handle associated donations - set sponsor_id to null
+      if (donationsCount > 0) {
+        // Option 1: Set sponsor_id to null (keeping the donations)
+        await client.query('UPDATE scholar_donations SET sponsor_id = NULL WHERE sponsor_id = $1', [id]);
+        
+        // Alternative Option 2: Delete the donations (uncomment if you want to delete instead)
+        // await client.query('DELETE FROM scholar_donations WHERE sponsor_id = $1', [id]);
+      }
+      
+      // Delete dismissed_feedback records
+      await client.query('DELETE FROM dismissed_feedback WHERE user_id = $1', [id]);
+      
       // Delete related records
       await client.query('DELETE FROM notifications WHERE user_id = $1', [id]);
       await client.query('DELETE FROM notifications WHERE actor_id = $1', [id]);
+      await client.query('DELETE FROM event_participants WHERE user_id = $1', [id]);
       
       const result = await client.query(
         'DELETE FROM users WHERE id = $1 AND role = $2 RETURNING id',
@@ -574,9 +603,14 @@ const AdminModel = {
       try {
         await client.query('BEGIN');
         
+        // Handle associated donations - set sponsor_id to null
+        await client.query('UPDATE scholar_donations SET sponsor_id = NULL WHERE sponsor_id = ANY($1::integer[])', [numericIds]);
+        
         // Delete related records
+        await client.query('DELETE FROM dismissed_feedback WHERE user_id = ANY($1::integer[])', [numericIds]);
         await client.query('DELETE FROM notifications WHERE user_id = ANY($1::integer[])', [numericIds]);
         await client.query('DELETE FROM notifications WHERE actor_id = ANY($1::integer[])', [numericIds]);
+        await client.query('DELETE FROM event_participants WHERE user_id = ANY($1::integer[])', [numericIds]);
         
         const result = await client.query(
           'DELETE FROM users WHERE id = ANY($1::integer[]) AND role = $2 RETURNING id',

@@ -896,7 +896,8 @@ router.get('/new-sponsors-count', async (req, res) => {
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role = 'sponsor'
-      AND created_at >= NOW() - INTERVAL '30 days'
+      AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
+      AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
     `);
     res.json({ count: parseInt(result.rows[0].count) });
   } catch (error) {
@@ -911,7 +912,8 @@ router.get('/new-volunteers-count', async (req, res) => {
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role = 'volunteer'
-      AND created_at >= NOW() - INTERVAL '30 days'
+      AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
+      AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
     `);
     res.json({ count: parseInt(result.rows[0].count) });
   } catch (error) {

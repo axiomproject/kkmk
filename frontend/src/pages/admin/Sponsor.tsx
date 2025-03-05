@@ -99,7 +99,7 @@ const SponsorManagement = () => {
     if (!selectedItems.length || !window.confirm(`Delete ${selectedItems.length} sponsor(s)?`)) return;
 
     try {
-      const numericIds = selectedItems.map(Number).filter(id => !isNaN(id));
+      const numericIds = selectedItems.map(id => parseInt(id)).filter(id => !isNaN(id));
       await api.post('/admin/sponsors/bulk-delete', { ids: numericIds });
       await fetchSponsors();
       setSelectedItems([]);
