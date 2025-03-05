@@ -226,11 +226,12 @@ interface SectorStatistics {
   SOUTH: SectorStats;
 }
 
-// Update the HeatmapLayer component
+// Update the HeatmapLayer component to prevent duplicate legends
 const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, number][], sectorData: Record<string, SectorData> }> = ({ polygon, sectorData }) => {
   const map = useMap();
   const layersRef = useRef<any[]>([]);
   const legendRef = useRef<any>(null);
+  const statsLegendRef = useRef<any>(null);
 
   useEffect(() => {
     if (!map) return;
@@ -238,13 +239,28 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
     try {
       // Clear existing layers
       if (layersRef.current) {
-        layersRef.current.forEach(layer => map.removeLayer(layer));
+        layersRef.current.forEach(layer => {
+          if (layer) map.removeLayer(layer);
+        });
+        layersRef.current = [];
       }
+      
+      // Remove existing legends
       if (legendRef.current) {
         legendRef.current.remove();
+        legendRef.current = null;
+      }
+      
+      if (statsLegendRef.current) {
+        statsLegendRef.current.remove();
+        statsLegendRef.current = null;
       }
 
-      layersRef.current = [];
+      // Remove any existing legends with the same class names that might be left over
+      const existingLegends = document.querySelectorAll('.sector-progress-container, .stats-legend');
+      existingLegends.forEach(element => {
+        element.parentNode?.removeChild(element);
+      });
 
       // Create sector polygons with distribution-based opacity
       Object.entries(PAYATAS_SECTORS).forEach(([sectorName, sector]) => {
@@ -330,28 +346,23 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
           
           div.innerHTML = `
             <h4>Sector Statistics</h4>
-            ${Object.entries(sectorData).map(([name, data]) => `
-              <div class="sector-legend-item">
-                <div class="sector-legend-header">
-                  <span class="color-box" style="background-color: ${PAYATAS_SECTORS[name].color}"></span>
-                  <span class="sector-name">${PAYATAS_SECTORS[name].name}</span>
-                </div>
-                <div class="sector-legend-stats">
-                  <div class="stat-item">
-                    <span>Scholars:</span>
-                    <strong>${data.scholars.length}</strong>
+            <div class="sector-summary">
+              ${Object.entries(sectorData).map(([name, data]) => `
+                <div class="sector-legend-item">
+                  <div class="sector-legend-header">
+                    <span class="color-box" style="background-color: ${PAYATAS_SECTORS[name].color}"></span>
+                    <span class="sector-name">${PAYATAS_SECTORS[name].name}</span>
                   </div>
-                  <div class="stat-item">
-                    <span>Events:</span>
-                    <strong>${data.events.length}</strong>
-                  </div>
-                  <div class="stat-item total">
-                    <span>Total:</span>
-                    <strong>${data.total}</strong>
+                  <div class="sector-legend-stats">
+                    <div class="stat-item">
+                      <span>S: ${data.scholars.length}</span>
+                      <span>E: ${data.events.length}</span>
+                      <span>L: ${data.total}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            `).join('')}
+              `).join('')}
+            </div>
             <div class="legend-totals">
               <div class="total-item">
                 <span>Total Scholars:</span>
@@ -372,19 +383,29 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
       });
 
       // Add legend to map
-      const legend = new Legend().addTo(map);
-      layersRef.current.push(legend);
+      statsLegendRef.current = new Legend().addTo(map);
+      
+      // Store the legends in the layers ref to track them
+      layersRef.current.push(legendRef.current, statsLegendRef.current);
 
     } catch (error) {
       console.error('Error setting up sector visualization:', error);
     }
 
     return () => {
+      // Proper cleanup on component unmount or update
       if (layersRef.current) {
-        layersRef.current.forEach(layer => map.removeLayer(layer));
+        layersRef.current.forEach(layer => {
+          if (layer) map.removeLayer(layer);
+        });
       }
+      
       if (legendRef.current) {
         legendRef.current.remove();
+      }
+      
+      if (statsLegendRef.current) {
+        statsLegendRef.current.remove();
       }
     };
   }, [map, polygon, sectorData]);
@@ -395,7 +416,7 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
 // Add Payatas coordinates constant at the top level
 const PAYATAS_COORDINATES: [number, number] = [14.7147, 121.1037];
 
-// Add this new component for map reset
+// Update this component to allow free navigation
 const MapReset: React.FC<{ mapType: MapType }> = ({ mapType }) => {
   const map = useMap();
 
@@ -405,25 +426,18 @@ const MapReset: React.FC<{ mapType: MapType }> = ({ mapType }) => {
     const bounds = L.latLngBounds(PAYATAS_POLYGON);
     
     const fitMapToBounds = () => {
-      // For both map types, focus on Payatas polygon
+      // Initial view centered on Payatas polygon
       map.fitBounds(bounds, {
-        padding: [30, 30],
-        maxZoom: 15,
+        padding: [35, 35],
+        maxZoom: 13.5,
         animate: true,
         duration: 1
       });
-
-      if (mapType === MapType.HEATMAP) {
-        // Tighter restrictions for heatmap
-        map.setMinZoom(13);
-        map.setMaxZoom(16);
-        map.setMaxBounds(bounds.pad(0.1)); // Smaller padding to keep focus on Payatas
-      } else {
-        // Standard map with slightly more flexibility
-        map.setMinZoom(13);
-        map.setMaxZoom(18);
-        map.setMaxBounds(bounds.pad(0.2)); // Some padding but still focused on Payatas
-      }
+      
+      // Remove restrictions for both map types
+      map.setMinZoom(3); // Allow zooming out to see the world
+      map.setMaxZoom(18); // Allow zooming in for details
+      map.setMaxBounds(undefined); // Remove bounds restriction completely
     };
 
     // Initial fit
@@ -431,7 +445,9 @@ const MapReset: React.FC<{ mapType: MapType }> = ({ mapType }) => {
 
     // Add resize handler
     const resizeObserver = new ResizeObserver(() => {
-      fitMapToBounds();
+      // Don't refit bounds on resize to allow free navigation
+      // Just ensure the map fills the container
+      map.invalidateSize();
     });
 
     resizeObserver.observe(map.getContainer());
@@ -1169,9 +1185,9 @@ const AdminMap: React.FC = () => {
     zoomControl: true,
     scrollWheelZoom: true,
     dragging: true,
-    maxBoundsViscosity: 1.0, // Add this to ensure the map stays within bounds
-    doubleClickZoom: false, // Disable double click zoom
-    bounceAtZoomLimits: true,
+    maxBoundsViscosity: 0.0, // Change to 0 to remove bounds stickiness
+    doubleClickZoom: true, // Enable double click zoom
+    bounceAtZoomLimits: false, // Disable bounce at zoom limits
     wheelDebounceTime: 100,
     wheelPxPerZoomLevel: 100,
     zoomDelta: 0.5,

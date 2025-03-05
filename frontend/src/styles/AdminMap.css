@@ -1608,4 +1608,80 @@
   pointer-events: auto;
 }
 
+/* Fix for overlapping legends */
+.info.legend.stats-legend {
+  margin-bottom: 20px !important;
+  z-index: 1000;
+  max-height: 50vh; /* Limit the height to 40% of the viewport height */
+  overflow-y: auto; /* Add scrolling for overflow content */
+  overflow-x: hidden;
+}
+
+/* Add a scrollbar style for the legend */
+.info.legend.stats-legend::-webkit-scrollbar {
+  width: 6px;
+}
+
+.info.legend.stats-legend::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.info.legend.stats-legend::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.info.legend.stats-legend::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Position the legend better */
+.leaflet-bottom.leaflet-right {
+  bottom: 10px;
+  right: 10px;
+}
+
+/* Make the legend more compact */
+.sector-legend-item {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+}
+
+.stat-item {
+  margin: 2px 0;
+  font-size: 0.85em;
+}
+
+.legend-totals {
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.total-item {
+  margin: 5px 0;
+  font-size: 0.9em;
+}
+
+/* Fix for overlapping legends */
+.info.legend.stats-legend {
+  margin-bottom: 20px !important;
+  z-index: 1000;
+}
+
+/* Add spacing between controls to prevent overlap */
+.leaflet-bottom .leaflet-control {
+  margin-bottom: 15px;
+  clear: both;
+}
+
+.leaflet-bottom.leaflet-right .leaflet-control {
+  margin-bottom: 70px; /* Add extra margin to the bottom-right controls */
+}
+
+/* Ensure controls don't have duplicate IDs */
+.leaflet-control:not(:first-child) {
+  clear: both;
+}
+
 /* ... rest of existing styles ... */
