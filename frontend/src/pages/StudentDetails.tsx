@@ -66,24 +66,24 @@ const PAYMENT_METHODS: Record<string, PaymentMethod> = {
     qrCode: '/images/payments/gcash.jpg', // Add your QR code image path
     details: {
       accountName: 'KKMK Foundation',
-      accountNumber: '0917 123 4567'
+      accountNumber: '0907 123 4906'
     }
   },
   credit_card: {
     name: 'Credit Card',
-    qrCode: '/images/payments/credit-qr.png', // Add your QR code image path
+    qrCode: '', // Removed QR code requirement
     details: {
       accountName: 'KKMK Foundation',
-      accountNumber: '1234 5678 9012 3456',
+      accountNumber: '2354 5678 9012 3456',
       additionalInfo: 'We accept Visa, Mastercard, and JCB'
     }
   },
   bank_transfer: {
     name: 'Bank Transfer',
-    qrCode: '/images/payments/bank-qr.png', // Add your QR code image path
+    qrCode: '', // Removed QR code requirement
     details: {
       accountName: 'KKMK Foundation',
-      accountNumber: '1234-5678-9012',
+      accountNumber: '5734-5678-9012',
       additionalInfo: 'BDO Savings Account'
     }
   }
@@ -350,13 +350,15 @@ const StudentDetails: React.FC = () => {
 
             {donationForm.paymentMethod && (
               <div className="payment-details">
-                <div className="qr-code-container">
-                  <img 
-                    src={PAYMENT_METHODS[donationForm.paymentMethod].qrCode} 
-                    alt={`${PAYMENT_METHODS[donationForm.paymentMethod].name} QR Code`}
-                    className="payment-qr-code"
-                  />
-                </div>
+                {PAYMENT_METHODS[donationForm.paymentMethod].qrCode && (
+                  <div className="qr-code-container">
+                    <img 
+                      src={PAYMENT_METHODS[donationForm.paymentMethod].qrCode} 
+                      alt={`${PAYMENT_METHODS[donationForm.paymentMethod].name} QR Code`}
+                      className="payment-qr-code"
+                    />
+                  </div>
+                )}
                 <div className="payment-info">
                   <h4>{PAYMENT_METHODS[donationForm.paymentMethod].name} Payment Details</h4>
                   <p><strong>Account Name:</strong> {PAYMENT_METHODS[donationForm.paymentMethod].details.accountName}</p>

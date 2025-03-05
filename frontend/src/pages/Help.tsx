@@ -226,7 +226,7 @@ const Help: React.FC = () => {
                 <div className="gcash-details">
                   <h4>GCash Information</h4>
                   <p><strong>Account Name:</strong> KM Foundation</p>
-                  <p><strong>GCash Number:</strong> 09123456789</p>
+                  <p><strong>GCash Number:</strong> +63-939-3031-767</p>
                   <p>Please send your donation to the GCash account above and upload your screenshot as proof of payment.</p>
                 </div>
               )}
@@ -234,9 +234,9 @@ const Help: React.FC = () => {
               {paymentMethod === 'bank' && (
                 <div className="bank-details">
                   <h4>Bank Information</h4>
-                  <p><strong>Bank Name:</strong> Example Bank</p>
+                  <p><strong>Bank Name:</strong> BDO</p>
                   <p><strong>Account Name:</strong> KM Foundation</p>
-                  <p><strong>Account Number:</strong> 1234-5678-9012</p>
+                  <p><strong>Account Number:</strong> 5125-7178-1234-5678</p>
                   <p><strong>Branch:</strong> Main Branch</p>
                   <p>Please transfer your donation to the bank account above and upload your receipt as proof of payment.</p>
                 </div>
