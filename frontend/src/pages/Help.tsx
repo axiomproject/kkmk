@@ -20,6 +20,7 @@ const Help: React.FC = () => {
   const [animationClass, setAnimationClass] = useState<string>("fade-in");
   const [donationType, setDonationType] = useState<string>("one-time"); // Set default value
   const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>("gcash"); // Add payment method state
 
   useEffect(() => {
       setActiveTab(initialTab);
@@ -201,10 +202,53 @@ const Help: React.FC = () => {
           </>
         )}
 
+        {/* Payment method selector for one-time donations */}
+        {donationType === 'one-time' && (
+          <div className="form-groupss">
+            <label>Payment Method:</label>
+            <div className="payment-method-tabs">
+              <div 
+                className={`payment-tab payment-tab-gcash ${paymentMethod === 'gcash' ? 'active' : ''}`}
+                onClick={() => setPaymentMethod('gcash')}
+              >
+                GCash
+              </div>
+              <div 
+                className={`payment-tab payment-tab-bank ${paymentMethod === 'bank' ? 'active' : ''}`}
+                onClick={() => setPaymentMethod('bank')}
+              >
+                Bank Transfer
+              </div>
+            </div>
+            
+            <div className="payment-detailss">
+              {paymentMethod === 'gcash' && (
+                <div className="gcash-details">
+                  <h4>GCash Information</h4>
+                  <p><strong>Account Name:</strong> KM Foundation</p>
+                  <p><strong>GCash Number:</strong> 09123456789</p>
+                  <p>Please send your donation to the GCash account above and upload your screenshot as proof of payment.</p>
+                </div>
+              )}
+              
+              {paymentMethod === 'bank' && (
+                <div className="bank-details">
+                  <h4>Bank Information</h4>
+                  <p><strong>Bank Name:</strong> Example Bank</p>
+                  <p><strong>Account Name:</strong> KM Foundation</p>
+                  <p><strong>Account Number:</strong> 1234-5678-9012</p>
+                  <p><strong>Branch:</strong> Main Branch</p>
+                  <p>Please transfer your donation to the bank account above and upload your receipt as proof of payment.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* File upload for one-time donations */}
         {donationType === 'one-time' && (
           <>
-            <div className="form-groupss">
+<div className="form-groupss" style={{ gridColumn: '1 / -1' }}>
               <label>Proof of Donation (Optional):</label>
               <div className={`file-input-container ${selectedFileName ? 'has-file' : ''}`}
                    data-file-name={selectedFileName || 'Choose File'}>
