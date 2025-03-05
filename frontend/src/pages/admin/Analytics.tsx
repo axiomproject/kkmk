@@ -713,10 +713,13 @@ const Analytics: React.FC = () => {
                     </span>
                     <span className="sta-bar-percentage">
                       {Math.abs(parseFloat(dailyTraffic.percentageChange))}%
+                   
                     </span>
+                    
                   </div>
+                  <Bar data={trafficChartData} options={trafficChartOptions} />
                 </div>
-                <Bar data={trafficChartData} options={trafficChartOptions} height={180} />
+
               </div>
         
             </div>

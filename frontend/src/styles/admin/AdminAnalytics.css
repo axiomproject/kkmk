@@ -2814,3 +2814,76 @@
 }
 /* ...rest of existing code... */
 
+/* Fix for overlapping bar chart in donations chart line container */
+.sta-donations-chart-line-container {
+  position: relative;
+  width: 90%;
+  height: auto !important; /* Change from fixed height to auto */
+  min-height: 280px; /* Minimum height to maintain structure */
+  padding: 20px;
+  margin: 0;
+  border-radius: 8px;
+  background: white;
+  overflow: hidden; /* Prevent content from spilling outside */
+  box-sizing: border-box; /* Include padding in height calculation */
+}
+
+/* Ensure the donations chart has proper spacing */
+.sta-donations-chart-line-container canvas {
+  width: 100% !important;
+  height: auto !important; /* Let height adjust automatically */
+  max-height: 250px; /* Cap the maximum height */
+  margin-top: 30px; /* Space between header metrics and chart */
+  display: block; /* Prevent inline layout issues */
+}
+
+/* Adjust the header spacing */
+.sta-donations-line-chart-header {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  position: relative; /* For absolute positioning of elements if needed */
+}
+
+/* Make container more responsive to content */
+.sta-rating-donors-donation-container {
+  display: flex;
+  gap: 10px;
+  padding: 20px 0;
+  margin: 0;
+  width: 100%;
+  align-items: stretch; /* Make all children same height */
+  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+/* Ensure each chart in the rating donors container takes appropriate space */
+.sta-rating-donors-donation-container > div {
+  flex: 1;
+  min-width: 300px; /* Minimum width before wrapping */
+  overflow: hidden; /* Contain overflowing content */
+}
+
+/* Make sure charts are fully visible inside their containers */
+.sta-donations-chart-line-container .chartjs-render-monitor,
+.sta-Revenue-container .chartjs-render-monitor {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 140px; /* Minimum height for charts */
+  max-height: 250px; /* Maximum height for charts */
+}
+
+/* Correct the size and position of Canvas elements */
+canvas.chartjs-render-monitor {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+}
+
+/* Override any chart.js inline styles that might cause overflow */
+.chartjs-size-monitor {
+  position: static !important;
+  overflow: hidden;
+  width: 100% !important;
+}
+
+/* ...existing code... */
+
