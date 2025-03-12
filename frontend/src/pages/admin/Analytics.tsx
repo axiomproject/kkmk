@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
-
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 import {
   Chart as ChartJS,
@@ -66,6 +67,8 @@ interface DailyTraffic {
   percentageChange: string;
 }
 
+  const baseURL = axios.defaults.baseURL || 'http://localhost:5175';
+
 const Analytics: React.FC = () => {
   const [scholarCount, setScholarCount] = useState<number>(0);
   const [itemsDistributed, setItemsDistributed] = useState<number>(0);
@@ -94,71 +97,100 @@ const Analytics: React.FC = () => {
     total: 0,
     percentageChange: '0'
   });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Get authentication token
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Authentication required. Please log in.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Common request options with auth header
+        const requestOptions = {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        };
+        
+        // Helper function to fetch data with error handling
+        const fetchEndpoint = async (endpoint: string) => {
+          try {
+            console.log(`Fetching from ${endpoint}...`);
+            const response = await axios.get(endpoint, requestOptions);
+            return response.data;
+          } catch (error) {
+            console.error(`Error fetching from ${endpoint}:`, error);
+            throw error;
+          }
+        };
+
         // Fetch scholar count
-        const scholarResponse = await fetch('/api/admin/scholar-count');
-        if (!scholarResponse.ok) throw new Error('Failed to fetch scholar count');
-        const scholarData = await scholarResponse.json();
+        const scholarData = await fetchEndpoint('/api/admin/scholar-count');
         setScholarCount(scholarData.count);
 
         // Fetch items distributed
-        const itemsResponse = await fetch('/api/admin/items-distributed');
-        if (!itemsResponse.ok) throw new Error('Failed to fetch items distributed');
-        const itemsData = await itemsResponse.json();
+        const itemsData = await fetchEndpoint('/api/admin/items-distributed');
         setItemsDistributed(itemsData.count);
 
         // Fetch new sponsors count
-        const sponsorsResponse = await fetch('/api/admin/new-sponsors-count');
-        if (!sponsorsResponse.ok) throw new Error('Failed to fetch new sponsors count');
-        const sponsorsData = await sponsorsResponse.json();
+        const sponsorsData = await fetchEndpoint('/api/admin/new-sponsors-count');
         setNewSponsorsCount(sponsorsData.count);
 
         // Fetch new volunteers count
-        const volunteersResponse = await fetch('/api/admin/new-volunteers-count');
-        if (!volunteersResponse.ok) throw new Error('Failed to fetch new volunteers count');
-        const volunteersData = await volunteersResponse.json();
+        const volunteersData = await fetchEndpoint('/api/admin/new-volunteers-count');
         setNewVolunteersCount(volunteersData.count);
 
         // Fetch events count
-        const eventsResponse = await fetch('/api/admin/events-count');
-        if (!eventsResponse.ok) throw new Error('Failed to fetch events count');
-        const eventsData = await eventsResponse.json();
+        const eventsData = await fetchEndpoint('/api/admin/events-count');
         setEventsCount(eventsData.count);
 
         // Fetch generous donors
-        const donorsResponse = await fetch('/api/admin/generous-donors');
-        if (!donorsResponse.ok) throw new Error('Failed to fetch generous donors');
-        const donorsData = await donorsResponse.json();
+        const donorsData = await fetchEndpoint('/api/admin/generous-donors');
         setGenerousDonors(donorsData);
 
         // Fetch donations summary
-        const donationsResponse = await fetch('/api/admin/donations-summary');
-        if (!donationsResponse.ok) throw new Error('Failed to fetch donations summary');
-        const donationsData = await donationsResponse.json();
+        const donationsData = await fetchEndpoint('/api/admin/donations-summary');
         setDonationSummary(donationsData);
 
         // Fetch donation time statistics
-        const timeResponse = await fetch('/api/admin/donation-time-stats');
-        if (!timeResponse.ok) throw new Error('Failed to fetch donation time stats');
-        const timeData = await timeResponse.json();
+        const timeData = await fetchEndpoint('/api/admin/donation-time-stats');
         setTimeStats(timeData);
 
         // Fetch donation trends
-        const trendsResponse = await fetch('/api/admin/donation-trends');
-        if (!trendsResponse.ok) throw new Error('Failed to fetch donation trends');
-        const trendsData = await trendsResponse.json();
+        const trendsData = await fetchEndpoint('/api/admin/donation-trends');
         setTrendStats(trendsData);
 
         // Fetch daily traffic
-        const trafficResponse = await fetch('/api/admin/daily-traffic');
-        if (!trafficResponse.ok) throw new Error('Failed to fetch daily traffic');
-        const trafficData = await trafficResponse.json();
+        const trafficData = await fetchEndpoint('/api/admin/daily-traffic');
         setDailyTraffic(trafficData);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching analytics data:', error);
+        
+        // Handle different error types
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 401) {
+            setError('Authentication error: Please log in again');
+            toast.error("Authentication failed. Please log in again.");
+          } else {
+            setError(`API error: ${error.response?.data?.error || error.message}`);
+            toast.error("Failed to load analytics data");
+          }
+        } else {
+          setError('An unexpected error occurred');
+          toast.error("An unexpected error occurred");
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -464,7 +496,22 @@ const Analytics: React.FC = () => {
 
   return (
     <>
-      <div className="sta-container-total">
+      {isLoading ? (
+        <div className="analytics-loading">
+          <div className="spinner"></div>
+          <p>Loading analytics data...</p>
+        </div>
+      ) : error ? (
+        <div className="analytics-error">
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()} className="retry-button">
+            Retry
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Existing JSX */}
+          <div className="sta-container-total">
              <div className="sta-earning-admin">
                <div className="sta-pic-earning">
                   <FaChild size={24} color="#FF3D00" />
@@ -756,9 +803,9 @@ const Analytics: React.FC = () => {
     <div className="sta-forum-analytics-section">
       <ForumAnalytics />
     </div>
+        </>
+      )}
     </>
-  
-
   );
 };
 

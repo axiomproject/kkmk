@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPhoneAlt, FaEnvelope } from "react-icons/fa";
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPhoneAlt, FaEnvelope, FaTimes } from "react-icons/fa";
 import api from '../../config/axios'; // Replace axios import
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import "../../styles/EventDetails.css";
 import { useAuth } from '../../hooks/useAuth';  // Add this import
 import  kmlogo1 from '../../img/kmlogo1.png'; 
@@ -23,6 +23,7 @@ interface Event {
   };
   startTime: string;
   endTime: string;
+  requirements?: string; // Add new field
 }
 
 const EventDetails: React.FC = () => {
@@ -36,24 +37,49 @@ const EventDetails: React.FC = () => {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [participantStatus, setParticipantStatus] = useState<string>('');
+  
+  // Add state for requirements modal
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false);
+  const [termsAgreed, setTermsAgreed] = useState(false);
 
-  const getImageUrl = (path: string) => {
-    if (!path) return '';
+  // Updated function to properly handle image paths
+  const getImageUrl = (path: string | null) => {
+    if (!path) return '/images/default-event.png';
+    
+    console.log('Processing event image path:', path);
+    
+    // Return the image URL if it's a data URL or starts with http
     if (path.startsWith('data:') || path.startsWith('http')) return path;
-    return `${import.meta.env.VITE_API_URL}${path}`;
+    
+    // Check if it's already an absolute path from the server (starts with /uploads)
+    if (path.startsWith('/uploads')) {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
+      console.log(`Resolving with base URL: ${baseUrl}${path}`);
+      return `${baseUrl}${path}`;
+    }
+    
+    // If it's a relative path, append API_URL and uploads path
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
+    console.log(`Resolving relative path: ${baseUrl}/uploads/events/${path}`);
+    return `${baseUrl}/uploads/events/${path}`;
   };
 
+  // Update fetchEventDetails to include requirements field
   const fetchEventDetails = async () => {
     try {
       setIsLoading(true);
       setError(null);
       const response = await api.get(`/admin/events/${eventId}`);
+      console.log('Raw event data:', response.data);
+      
+      // Process the image URL properly
+      const imagePath = response.data.image;
+      const processedImageUrl = getImageUrl(imagePath);
+      console.log('Processed image URL:', processedImageUrl);
       
       const eventData = {
         ...response.data,
-        image: response.data.image.startsWith('http') 
-          ? response.data.image 
-          : getImageUrl(response.data.image),
+        image: processedImageUrl,
         totalVolunteers: parseInt(response.data.total_volunteers) || 0,
         currentVolunteers: parseInt(response.data.current_volunteers) || 0,
         contact: {
@@ -61,7 +87,8 @@ const EventDetails: React.FC = () => {
           email: response.data.contact_email || response.data.contact?.email || ''
         },
         startTime: response.data.start_time || '',
-        endTime: response.data.end_time || ''
+        endTime: response.data.end_time || '',
+        requirements: response.data.requirements || 'No specific requirements have been set for this event.'
       };
       
       setEvent(eventData);
@@ -161,6 +188,12 @@ const EventDetails: React.FC = () => {
       return;
     }
 
+    // Instead of directly joining, show requirements modal first
+    setShowRequirementsModal(true);
+  };
+
+  // Add new function to handle the actual join process
+  const handleJoinConfirm = async () => {
     try {
       setIsJoining(true);
       setJoinError(null);
@@ -180,6 +213,10 @@ const EventDetails: React.FC = () => {
       await fetchEventDetails();
       await checkParticipation(); // Add immediate check after joining
       setHasJoined(true);
+      
+      // Reset modal state
+      setShowRequirementsModal(false);
+      setTermsAgreed(false);
       
     } catch (error: any) {
       console.error('Failed to join event:', error.response || error);
@@ -226,7 +263,7 @@ const EventDetails: React.FC = () => {
     if (event.status === 'CLOSED') return 'Event Closed';
     if (volunteersNeeded <= 0 && !hasJoined) return 'Fully Booked';
     if (hasJoined) {
-      if (participantStatus === 'PENDING') return 'Pending';
+      if (participantStatus === 'PENDING') return 'Pending Approval';
       return 'Leave Event';
     }
     if (!user) return 'Sign Up';
@@ -236,6 +273,7 @@ const EventDetails: React.FC = () => {
     return 'Join';
   };
 
+  // Update handleButtonClick to show modal instead
   const handleButtonClick = () => {
     // Add handling for sponsor and scholar roles
     if (user && (user.role === 'sponsor' || user.role === 'scholar')) {
@@ -255,12 +293,68 @@ const EventDetails: React.FC = () => {
       return;
     }
 
+    // Only allow leaving if status is not PENDING
     if (hasJoined) {
+      if (participantStatus === 'PENDING') {
+        alert('Your registration is pending approval. Please wait for admin confirmation.');
+        return;
+      }
       handleUnjoinEvent();
     } else {
+      // Show modal instead of directly joining
       handleVolunteerSignUp();
     }
   };
+
+  // Format requirements for display - improve this function
+const formatRequirements = (requirements: string) => {
+  if (!requirements) return 'No specific requirements for this event.';
+  
+  // Check if the string already contains bullet points or numbering
+  if (requirements.includes('•') || /\d+\./.test(requirements)) {
+    // If it already has formatting, respect it and split by newlines
+    const lines = requirements.split('\n').filter(line => line.trim() !== '');
+    
+    return (
+      <ul className="requirements-list">
+        {lines.map((line, index) => (
+          <li key={index}>{line.trim()}</li>
+        ))}
+      </ul>
+    );
+  }
+  
+  // If it doesn't have bullet points, check if it contains newlines
+  if (requirements.includes('\n')) {
+    // Split by newlines for items that are already on separate lines
+    const lines = requirements.split('\n').filter(line => line.trim() !== '');
+    
+    return (
+      <ul className="requirements-list">
+        {lines.map((line, index) => (
+          <li key={index}>{line.trim()}</li>
+        ))}
+      </ul>
+    );
+  }
+  
+  // If there are no newlines or bullets, check if we can split by common separators
+  if (requirements.includes(';') || requirements.includes(',')) {
+    const separator = requirements.includes(';') ? ';' : ',';
+    const items = requirements.split(separator).filter(item => item.trim() !== '');
+    
+    return (
+      <ul className="requirements-list">
+        {items.map((item, index) => (
+          <li key={index}>{item.trim()}</li>
+        ))}
+      </ul>
+    );
+  }
+  
+  // If we can't determine formatting, just return as a single paragraph
+  return <p>{requirements}</p>;
+};
 
   if (isLoading) return <div>Loading event details...</div>;
   if (error) return <div className="error-message">{error}</div>;
@@ -302,12 +396,13 @@ const EventDetails: React.FC = () => {
       <div className="event-main">
         <div className="event-image-container">
           <img 
-            src={getImageUrl(event.image)} 
-            alt={event.title} 
+            src={event?.image || '/images/default-event.png'} 
+            alt={event?.title} 
             className="event-image2"
             onError={(e) => {
+              console.error(`Failed to load image: ${event?.image}`);
               const target = e.target as HTMLImageElement;
-              target.src = '/images/default-event.jpg'; // Add a fallback image
+              target.src = '/images/default-event.png';
               target.onerror = null; // Prevent infinite loop
             }}
           />
@@ -352,8 +447,8 @@ const EventDetails: React.FC = () => {
             <p><strong>Thank you!</strong> We've reached our volunteer goal</p>
           )}
           <button 
-            className={`volunteer-button2 ${hasJoined ? 'leave-button' : ''}`}
-            disabled={event.status === 'CLOSED' || (volunteersNeeded <= 0 && !hasJoined) || isJoining}
+            className={`volunteer-button2 ${hasJoined ? (participantStatus === 'PENDING' ? 'pending-button' : 'leave-button') : ''}`}
+            disabled={event.status === 'CLOSED' || (volunteersNeeded <= 0 && !hasJoined) || isJoining || (hasJoined && participantStatus === 'PENDING')}
             onClick={handleButtonClick}
           >
             {isJoining ? (hasJoined ? 'Leaving...' : 'Joining...') : buttonText()}
@@ -366,6 +461,75 @@ const EventDetails: React.FC = () => {
         <h3>{event.title}</h3>
         <p>{event.description}</p>
       </div>
+
+      {/* Requirements Modal */}
+      <AnimatePresence>
+        {showRequirementsModal && (
+          <motion.div 
+            className="requirements-modal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div 
+              className="requirements-modal-content"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+            >
+              <div className="requirements-modal-header">
+                <h2>Event Requirements</h2>
+                <button 
+                  className="requirements-modal-close" 
+                  onClick={() => setShowRequirementsModal(false)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              
+              <div className="requirements-modal-body">
+                <p>Before joining this event, please review the following requirements:</p>
+                
+                {typeof event.requirements === 'string' ? (
+                  formatRequirements(event.requirements)
+                ) : (
+                  <p>No specific requirements for this event.</p>
+                )}
+                
+                <div className="agreement-checkbox">
+                  <input 
+                    type="checkbox" 
+                    id="terms-agreement" 
+                    checked={termsAgreed}
+                    onChange={(e) => setTermsAgreed(e.target.checked)}
+                  />
+                  <label htmlFor="terms-agreement">
+                    I agree that I meet all the requirements and will adhere to the guidelines 
+                    set for this event. I understand that if I do not meet these requirements, 
+                    my participation may be revoked.
+                  </label>
+                </div>
+              </div>
+              
+              <div className="modal-buttons">
+                <button 
+                  className="modal-button modal-button-cancel"
+                  onClick={() => setShowRequirementsModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className={`modal-button modal-button-confirm ${!termsAgreed && 'modal-button-disabled'}`}
+                  disabled={!termsAgreed || isJoining}
+                  onClick={handleJoinConfirm}
+                >
+                  {isJoining ? 'Joining...' : 'Confirm'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };

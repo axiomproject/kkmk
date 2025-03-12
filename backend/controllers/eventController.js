@@ -39,8 +39,15 @@ const eventController = {
   async getEvents(req, res) {
     try {
       const events = await EventModel.getAllEvents();
+      
+      // Add debug logging for requirements field
+      console.log('Sending events with requirements data:', 
+        events.map(e => ({ id: e.id, requirements: e.requirements }))
+      );
+      
       res.json(events);
     } catch (error) {
+      console.error('Error fetching events:', error);
       res.status(500).json({ error: 'Failed to fetch events' });
     }
   },

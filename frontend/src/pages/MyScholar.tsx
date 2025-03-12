@@ -15,6 +15,7 @@ interface ScholarDonation {
   verification_status: 'pending' | 'verified' | 'rejected';
   current_amount: number;
   amount_needed: number;
+  image_url?: string;
 }
 
 interface SponsoredScholar {
@@ -26,6 +27,7 @@ interface SponsoredScholar {
   donations: ScholarDonation[];
   currentAmount: number;
   amountNeeded: number;
+  image_url?: string;
 }
 
 interface Fundraiser {
@@ -64,22 +66,56 @@ const MyScholars: React.FC = () => {
   const { user } = useAuth();
   const [sponsoredScholars, setSponsoredScholars] = useState<SponsoredScholar[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getImageUrl = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('data:') || path.startsWith('http')) return path;
-    return `${import.meta.env.VITE_API_URL}${path}`;
+  const getImageUrl = (scholar: SponsoredScholar) => {
+    // Prioritize image_url from scholars table
+    if (scholar.image_url) {
+      if (scholar.image_url.startsWith('data:') || scholar.image_url.startsWith('http')) {
+        return scholar.image_url;
+      }
+      return `${import.meta.env.VITE_API_URL}${scholar.image_url}`;
+    }
+    
+    // Fallback to image field if available
+    if (scholar.image) {
+      if (scholar.image.startsWith('data:') || scholar.image.startsWith('http')) {
+        return scholar.image;
+      }
+      return `${import.meta.env.VITE_API_URL}${scholar.image}`;
+    }
+    
+    // Default placeholder - make sure this file exists in your public folder
+    return '/images/default-avatar.jpg';
   };
 
   useEffect(() => {
-    if (!user?.id) {
-      setLoading(false);
-      return;
-    }
-    
     const fetchSponsorDonations = async () => {
       try {
-        const response = await api.get(`/scholardonations/sponsor/${user.id}`);
+        setLoading(true);
+        setError(null);
+        
+        // Get user ID from localStorage if not available in context
+        const userId = user?.id || JSON.parse(localStorage.getItem('user') || '{}').id;
+        
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
+        
+        console.log('Fetching donations for sponsor ID:', userId);
+        
+        // Use the correct endpoint name (should match backend route)
+        const response = await api.get(`/scholardonations/sponsor/${userId}`);
+        console.log('Response data:', response.data);
+        
+        if (!response.data || !Array.isArray(response.data)) {
+          console.error('Invalid response format:', response.data);
+          setError('Received invalid data from server');
+          setLoading(false);
+          return;
+        }
+        
         const donations: ScholarDonation[] = response.data;
         
         // Group donations by scholar
@@ -90,26 +126,31 @@ const MyScholars: React.FC = () => {
             scholarMap.set(donation.scholar_id, {
               scholarId: donation.scholar_id,
               name: `${donation.scholar_first_name} ${donation.scholar_last_name}`,
-              image: donation.scholar_image,
+              image: donation.scholar_image || '',
+              image_url: donation.image_url || '',
               totalDonated: 0,
               lastDonation: donation.created_at,
               donations: [],
-              currentAmount: donation.current_amount,
-              amountNeeded: donation.amount_needed
+              currentAmount: donation.current_amount || 0,
+              amountNeeded: donation.amount_needed || 10000 // Default if not available
             });
           }
           
           const scholar = scholarMap.get(donation.scholar_id)!;
           if (donation.verification_status === 'verified') {
-            scholar.totalDonated += donation.amount;
+            scholar.totalDonated += parseFloat(donation.amount as any) || 0;
           }
           scholar.donations.push(donation);
         });
         
-        setSponsoredScholars(Array.from(scholarMap.values()));
-        setLoading(false);
+        const scholars = Array.from(scholarMap.values());
+        console.log('Processed scholars:', scholars);
+        setSponsoredScholars(scholars);
+        
       } catch (error) {
         console.error('Error fetching sponsor donations:', error);
+        setError('Failed to load sponsored scholars. Please try again later.');
+      } finally {
         setLoading(false);
       }
     };
@@ -117,7 +158,17 @@ const MyScholars: React.FC = () => {
     fetchSponsorDonations();
   }, [user?.id]);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return (
+    <div className="loading-container" style={{ 
+      display: 'flex', 
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '50vh'
+    }}>
+      <div className="loading-spinner"></div>
+      <p>Loading sponsored scholars...</p>
+    </div>
+  );
 
   return (
     <div className="student-profile-container">
@@ -130,7 +181,20 @@ const MyScholars: React.FC = () => {
       
       <div className="student-profile-main">
         <h1 className="student-profile-title">My Scholars</h1>
-        {!user ? (
+        
+        {error && (
+          <div className="error-message" style={{
+            color: 'red',
+            padding: '10px',
+            margin: '10px 0',
+            backgroundColor: '#ffeeee',
+            borderRadius: '5px'
+          }}>
+            {error}
+          </div>
+        )}
+        
+        {!user && !localStorage.getItem('user') ? (
           <div className="no-scholars-message">
             <p>Please log in to view your sponsored scholars.</p>
             <button 
@@ -153,10 +217,15 @@ const MyScholars: React.FC = () => {
                   key={scholar.scholarId}
                 >
                   <img
-                    src={getImageUrl(scholar.image)}
+                    src={getImageUrl(scholar)}
                     alt={scholar.name}
                     className="student-profile-image"
                     onClick={() => navigate(`/StudentProfile/${scholar.scholarId}`)}
+                    onError={(e) => {
+                      console.log(`Image failed to load for scholar ${scholar.scholarId}`);
+                      // Ensure the default image path is correct for your project structure
+                      (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
+                    }}
                   />
                   <h3 className="student-profile-name">{scholar.name}</h3>
                   <ProgressBar 
@@ -174,25 +243,28 @@ const MyScholars: React.FC = () => {
                   
                   <div className="donation-history">
                     <h4>Recent Donations</h4>
-                    {scholar.donations.slice(0, 3).map((donation) => (
-                      <div key={donation.id} className="donation-item">
-                        <span className="donation-amount">
-                          ₱{formatAmount(donation.amount)}
-                        </span>
-                        <span className={`donation-status ${donation.verification_status}`}>
-                          {donation.verification_status}
-                        </span>
-                        <span className="donation-date">
-                          {new Date(donation.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
+                    {scholar.donations.length > 0 ? (
+                      scholar.donations.slice(0, 3).map((donation) => (
+                        <div key={donation.id} className="donation-item">
+                          <span className="donation-amount">
+                            ₱{formatAmount(parseFloat(donation.amount as any) || 0)}
+                          </span>
+                          <span className={`donation-status ${donation.verification_status}`}>
+                            {donation.verification_status}
+                          </span>
+                          <span className="donation-date">
+                            {new Date(donation.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p>No recent donations</p>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
-
-            {sponsoredScholars.length === 0 && (
+            {sponsoredScholars.length === 0 && !error && (
               <div className="no-scholars-message">
                 <p>You haven't made any donations yet.</p>
                 <button 

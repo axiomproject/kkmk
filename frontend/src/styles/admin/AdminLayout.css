@@ -224,7 +224,6 @@
 .header-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
 }
 
 .header-right button {

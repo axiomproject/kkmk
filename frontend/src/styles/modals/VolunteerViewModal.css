@@ -1,0 +1,221 @@
+.volunteer-view-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.volunteer-view-modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 2rem;
+  position: relative;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.volunteer-view-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.volunteer-view-modal-close:hover {
+  color: #000;
+}
+
+.volunteer-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.volunteer-info-section {
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1rem;
+}
+
+.volunteer-info-section:last-child {
+  border-bottom: none;
+}
+
+.volunteer-info-section h3 {
+  margin-bottom: 0.75rem;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.info-grids {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-item label {
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+}
+
+/* Skills styling */
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.skill-badge {
+  background-color: #e9f5fd;
+  color: #0076ce;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  display: inline-block;
+}
+
+/* Disability information styling */
+.disability-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.disability-types {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.disability-types label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.disability-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.disability-badge {
+  background-color: #fff0e6;
+  color: #ff6b35;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  display: inline-block;
+}
+
+.disability-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.disability-details label {
+  font-weight: 600;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.disability-details p {
+  background-color: #f9f9f9;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Events styling */
+.events-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.event-item {
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 4px solid #4a90e2;
+}
+
+.event-item h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.event-details {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.event-date, .event-status {
+  margin-bottom: 0.25rem;
+}
+
+.event-date label, .event-status label {
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.no-events {
+  color: #888;
+  font-style: italic;
+}
+
+/* Status colors */
+.event-item[data-status="OPEN"] {
+  border-left-color: #4CAF50;
+}
+
+.event-item[data-status="CLOSED"] {
+  border-left-color: #f44336;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .volunteer-view-modal-content {
+    width: 95%;
+    padding: 1.5rem;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .events-list {
+    grid-template-columns: 1fr;
+  }
+}

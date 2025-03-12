@@ -8,12 +8,91 @@ import partnerwithus from '../img/partnerwithus.svg';
 import Ellipse from '../img/Ellipse.png';
 import KMKK from '../img/KKMK.svg';
 import KMKK2 from '../img/KKMK2.svg';
-import yellowkid from '../img/yellowkid.png'
-import DonationService from '../services/donationService';
 import api from '../config/axios'; // Replace axios import
+import { useAuth } from "../contexts/AuthContext"; // Add this import
+
+interface CartItem {
+  id: string;
+  itemName: string;
+  quantity: number;
+  unit: string;
+  category: string;
+  type: 'regular' | 'in-kind';
+  frequency?: 'monthly' | 'quarterly' | 'annually';
+  expirationDate?: string;
+}
+
+interface DonorInfo {
+  fullName: string;
+  email: string;
+  contactNumber: string;
+}
+
+interface CountryCode {
+  country: string;
+  code: string;
+  format: string;
+  regex: string;
+  placeholder: string;
+}
+
+const QUANTITY_UNITS = [
+  { value: 'Piece', label: 'Piece(s)' },
+  { value: 'Pack', label: 'Pack(s)' },
+  { value: 'Box', label: 'Box(es)' },
+  { value: 'Kilogram', label: 'Kilogram(s)' },
+  { value: 'Liter', label: 'Liter(s)' },
+  { value: 'Dozen', label: 'Dozen(s)' },
+  { value: 'Set', label: 'Set(s)' }
+] as const;
+
+type QuantityUnit = typeof QUANTITY_UNITS[number]['value'];
+
+const CATEGORIES_WITH_EXPIRATION = [
+  'Food & Nutrition',
+  'Medical Supplies & Medicines'
+];
+
+const COUNTRY_CODES: CountryCode[] = [
+  {
+    country: 'Philippines',
+    code: '+63',
+    format: '+63 XXX XXX XXXX',
+    regex: '^(\\+?63|0)[0-9]{10}$',
+    placeholder: '9XX XXX XXXX'
+  },
+  {
+    country: 'United States',
+    code: '+1',
+    format: '+1 (XXX) XXX-XXXX',
+    regex: '^\\+?1\\s?\\(?\\d{3}\\)?[-\\s]?\\d{3}[-\\s]?\\d{4}$',
+    placeholder: '(XXX) XXX-XXXX'
+  },
+  {
+    country: 'United Kingdom',
+    code: '+44',
+    format: '+44 XXXX XXXXXX',
+    regex: '^\\+?44[0-9]{10}$',
+    placeholder: 'XXXX XXXXXX'
+  },
+  {
+    country: 'Australia',
+    code: '+61',
+    format: '+61 XXX XXX XXX',
+    regex: '^\\+?61[0-9]{9}$',
+    placeholder: 'XXX XXX XXX'
+  },
+  {
+    country: 'Singapore',
+    code: '+65',
+    format: '+65 XXXX XXXX',
+    regex: '^\\+?65[0-9]{8}$',
+    placeholder: 'XXXX XXXX'
+  }
+];
 
 const Help: React.FC = () => {
-
+  const { user } = useAuth(); // Get the logged-in user from auth context
   const [SearchParams, setSearchParams] = useSearchParams();
   const initialTab = SearchParams.get("tab") || "partner";
   const [activeTab, setActiveTab] = useState<string>(initialTab);
@@ -21,10 +100,54 @@ const Help: React.FC = () => {
   const [donationType, setDonationType] = useState<string>("one-time"); // Set default value
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<string>("gcash"); // Add payment method state
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [selectedUnit, setSelectedUnit] = useState<QuantityUnit>('Piece');
+  const [donorInfo, setDonorInfo] = useState<DonorInfo | null>(null);
+  interface FormDataInterface {
+    category?: string;
+    fullName?: string;
+    email?: string;
+    contactNumber?: string;
+    item?: string;
+    amount?: number;
+    quantity?: number;
+    frequency?: string;
+    expirationDate?: string;
+    message?: string;
+    proofOfPayment?: File;
+    selectedCountry: string;
+  }
+  
+  const [formData, setFormData] = useState<FormDataInterface>({
+    fullName: '',
+    email: '',
+    contactNumber: '',
+    item: '',
+    amount: 0,
+    quantity: 0,
+    category: '',
+    frequency: 'monthly',
+    expirationDate: '',
+    message: '',
+    selectedCountry: 'Philippines'
+  });
 
   useEffect(() => {
       setActiveTab(initialTab);
   }, [initialTab]);
+
+  // Add new effect to populate form data when user is logged in
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: user.name || '',
+        email: user.email || '',
+        contactNumber: user.phone || '',
+        selectedCountry: 'Philippines' // Default country
+      }));
+    }
+  }, [user]);
 
   const handleTabChange = (tab: string) => {
     if (tab !== activeTab) {
@@ -37,75 +160,253 @@ const Help: React.FC = () => {
     }
   };
 
-  const handleDonationSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const fileInput = form.querySelector('input[name="proofOfDonation"]') as HTMLInputElement;
-    const file = fileInput?.files?.[0];
+  const validateDonorInfo = (): string | null => {
+    // Email validation - updated to match standard email format
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!formData.email) {
+      return 'Email is required';
+    }
+    if (!emailRegex.test(formData.email)) {
+      return 'Please enter a valid email address (e.g., example@domain.com)';
+    }
+
+    // Get selected country format
+    const selectedCountryFormat = COUNTRY_CODES.find(c => c.country === formData.selectedCountry);
+    if (!selectedCountryFormat) {
+      return 'Invalid country selection';
+    }
+
+    const phoneRegex = new RegExp(selectedCountryFormat.regex);
+    if (!formData.contactNumber) {
+      return 'Contact number is required';
+    }
+
+    // Clean the phone number (remove spaces and dashes)
+    const cleanPhone = formData.contactNumber.replace(/[\s-]/g, '');
     
-    try {
-      if (donationType === 'one-time') {
-        // Handle one-time monetary donation
-        const formData = new FormData();
-        formData.append('fullName', form.fullName.value);
-        formData.append('email', form.email.value);
-        formData.append('contactNumber', form.contactNumber.value);
-        formData.append('amount', form.amount.value);
-        formData.append('message', form.message.value); // Add message to FormData
-        formData.append('date', new Date().toISOString());
-        
-        if (file) {
-          formData.append('proofOfPayment', file);
-        }
+    if (!phoneRegex.test(cleanPhone)) {
+      return `Please enter a valid ${formData.selectedCountry} phone number format: ${selectedCountryFormat.format}`;
+    }
 
-        const response = await api.post('/donations', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
+    // Name validation
+    if (!formData.fullName || formData.fullName.trim().length < 2) {
+      return 'Full name is required and must be at least 2 characters';
+    }
 
-        if (response.data) {
-          alert('Donation submitted successfully!');
-          form.reset();
-          setSelectedFileName('');
+    return null;
+  };
+
+  const validateDonationItem = (): string | null => {
+    if (donationType === 'regular' || donationType === 'in-kind') {
+      // Item name validation
+      if (!formData.item || formData.item.trim().length < 2) {
+        return 'Item name is required and must be at least 2 characters';
+      }
+
+      // Category validation
+      if (!formData.category) {
+        return 'Please select a category';
+      }
+
+      // Quantity validation
+      const quantity = parseInt(formData.quantity?.toString() || '0');
+      if (!quantity || quantity <= 0 || !Number.isInteger(quantity)) {
+        return 'Quantity must be a positive integer';
+      }
+
+      // Validate expiration date for food and medical items
+      if (CATEGORIES_WITH_EXPIRATION.includes(formData.category || '')) {
+        if (!formData.expirationDate) {
+          return 'Expiration date is required for food and medical items';
         }
-      } else if (donationType === 'regular') {
-        // Handle regular donation
-        const response = await api.post('/inventory/regular', {
-          donatorName: form.fullName.value,
-          email: form.email.value,
-          contactNumber: form.contactNumber.value,
-          item: form.item.value,
-          quantity: parseInt(form.amount.value),
-          category: form.category.value,
-          frequency: form.frequency.value,
-          type: 'regular'
-        });
         
-        if (response.data) {
-          alert('Regular donation submitted successfully!');
-          form.reset();
-        }
-      } else if (donationType === 'in-kind') {
-        // Handle in-kind donation
-        const response = await api.post('/inventory/inkind', {
-          donatorName: form.fullName.value,
-          email: form.email.value,
-          contactNumber: form.contactNumber.value,
-          item: form.item.value,
-          quantity: parseInt(form.amount.value),
-          category: form.category.value,
-          type: 'in-kind'
-        });
-        
-        if (response.data) {
-          alert('In-kind donation submitted successfully!');
-          form.reset();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day
+        const expDate = new Date(formData.expirationDate);
+        if (expDate <= today) {
+          return 'Expiration date must be in the future';
         }
       }
+    }
+
+    return null;
+  };
+
+  const handleAddToCart = () => {
+    const donorValidationError = validateDonorInfo();
+    if (donorValidationError) {
+      alert(donorValidationError);
+      return;
+    }
+
+    const itemValidationError = validateDonationItem();
+    if (itemValidationError) {
+      alert(itemValidationError);
+      return;
+    }
+
+    // Store donor info if not already stored
+    if (!donorInfo) {
+      setDonorInfo({
+        fullName: formData.fullName || '',
+        email: formData.email || '',
+        contactNumber: formData.contactNumber || ''
+      });
+    }
+
+    const newItem: CartItem = {
+      id: Date.now().toString(),
+      itemName: formData.item || '',
+      quantity: parseInt(formData.quantity?.toString() || '0'),
+      unit: selectedUnit,
+      category: formData.category || '',
+      type: donationType as 'regular' | 'in-kind',
+      ...(donationType === 'regular' && { frequency: formData.frequency as 'monthly' | 'quarterly' | 'annually' }),
+      ...(formData.expirationDate && { expirationDate: formData.expirationDate })
+    };
+
+    setCartItems(prev => [...prev, newItem]);
+    
+    // Reset item-related fields but keep donor info
+    setFormData(prev => ({
+      ...prev,
+      fullName: prev.fullName,
+      email: prev.email,
+      contactNumber: prev.contactNumber,
+      item: '',
+      amount: 0,
+      quantity: 0,
+      category: '',
+      frequency: 'monthly',
+      expirationDate: '',
+      message: '',
+      selectedCountry: prev.selectedCountry
+    }));
+    setSelectedUnit('Piece');
+    
+    alert('Item added to cart!');
+  };
+
+  const handleDonationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const donorValidationError = validateDonorInfo();
+    if (donorValidationError) {
+      alert(donorValidationError);
+      return;
+    }
+
+    try {
+      if (donationType === 'one-time') {
+        // Handle one-time donation
+        if (!formData.amount || formData.amount <= 0) {
+          alert('Please enter a valid donation amount');
+          return;
+        }
+
+        // Create form data for file upload
+        const formDataToSend = new FormData();
+        formDataToSend.append('fullName', formData.fullName || '');
+        formDataToSend.append('email', formData.email || '');
+        formDataToSend.append('contactNumber', formData.contactNumber || '');
+        formDataToSend.append('amount', formData.amount.toString());
+        formDataToSend.append('message', formData.message || '');
+        formDataToSend.append('paymentMethod', paymentMethod);
+
+        // If there's a proof of payment file, append it
+        if (formData.proofOfPayment) {
+          formDataToSend.append('proofOfPayment', formData.proofOfPayment);
+        }
+
+        // Submit one-time donation
+        await api.post('/donations/monetary', formDataToSend, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+
+        alert('One-time donation submitted successfully!');
+        
+        // Reset form
+        setFormData({
+          fullName: '',
+          email: '',
+          contactNumber: '',
+          item: '',
+          amount: 0,
+          quantity: 0,
+          category: '',
+          frequency: 'monthly',
+          expirationDate: '',
+          message: '',
+          selectedCountry: 'Philippines'
+        });
+        setPaymentMethod('gcash');
+        setSelectedFileName('');
+        
+      } else if (donationType === 'regular' || donationType === 'in-kind') {
+        if (cartItems.length === 0) {
+          alert('Please add at least one item to cart before submitting');
+          return;
+        }
+
+        // Submit all cart items
+        const donorData = {
+          donatorName: formData.fullName,
+          email: formData.email,
+          contactNumber: formData.contactNumber || ''
+        };
+
+        for (const item of cartItems) {
+          const donation = {
+            ...donorData,
+            item: item.itemName,
+            quantity: item.quantity,
+            unit: item.unit,
+            category: item.category,
+            ...(item.frequency && { frequency: item.frequency }),
+            ...(item.expirationDate && { expirationDate: item.expirationDate })
+          };
+
+          const endpoint = item.type === 'regular' ? '/inventory/regular' : '/inventory/inkind';
+          await api.post(endpoint, donation);
+        }
+
+        alert('All donations submitted successfully!');
+        
+        // Reset form and cart
+        setFormData({
+          fullName: '',
+          email: '',
+          contactNumber: '',
+          item: '',
+          amount: 0,
+          quantity: 0,
+          category: '',
+          frequency: 'monthly',
+          expirationDate: '',
+          message: '',
+          selectedCountry: 'Philippines'
+        });
+        setCartItems([]);
+        setDonorInfo(null);
+        setSelectedUnit('Piece');
+        setDonationType('one-time');
+      }
     } catch (error) {
-      console.error('Donation submission error:', error);
-      alert('Error submitting donation: ' + (error as Error).message);
+      console.error('Error submitting donation:', error);
+      alert('Error submitting donation. Please try again.');
+    }
+  };
+
+  // Add onChange handler for amount input
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || Number(value) >= 0) {
+      setFormData(prev => ({
+        ...prev,
+        amount: value === '' ? undefined : Number(value)
+      }));
     }
   };
 
@@ -114,24 +415,96 @@ const Help: React.FC = () => {
       <div className="form-main-fields">
         <div className="form-groupss">
           <label>Full Name:</label>
-          <input name="fullName" type="text" required placeholder="Enter your full name" />
+          <input 
+            name="fullName" 
+            type="text" 
+            required 
+            placeholder="Enter your full name"
+            onChange={(e) => setFormData(prev => ({...prev, fullName: e.target.value}))}
+            value={formData.fullName || ''}
+          />
         </div>
         <div className="form-groupss">
           <label>Email:</label>
-          <input name="email" type="email" required placeholder="Enter your email" />
+          <input 
+            name="email" 
+            type="email" 
+            required 
+            placeholder="Enter your email"
+            onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
+            value={formData.email || ''}
+          />
+          <small className="email-caution">
+            Use a valid email address to receive feedback about your donation
+          </small>
         </div>
         
-        <div className="form-groupss">
+        <div className="form-groupss contact-number-group">
           <label>Contact Number:</label>
-          <input name="contactNumber" type="tel" required placeholder="Enter your contact number" />
+          <div className="contact-number-input">
+            <select
+              value={formData.selectedCountry}
+              onChange={(e) => setFormData(prev => ({...prev, selectedCountry: e.target.value, contactNumber: ''}))}
+              className="country-select"
+            >
+              {COUNTRY_CODES.map(country => (
+                <option key={country.code} value={country.country}>
+                  {country.country} ({country.code})
+                </option>
+              ))}
+            </select>
+            <input 
+              name="contactNumber" 
+              type="tel" 
+              required 
+              placeholder={COUNTRY_CODES.find(c => c.country === formData.selectedCountry)?.placeholder}
+              onChange={(e) => {
+                let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                const countryFormat = COUNTRY_CODES.find(c => c.country === formData.selectedCountry);
+                if (countryFormat) {
+                  // Format phone number based on country
+                  switch (formData.selectedCountry) {
+                    case 'Philippines':
+                      if (value.startsWith('0')) value = value.substring(1);
+                      if (!value.startsWith('63')) value = '63' + value;
+                      if (value.length > 12) value = value.slice(0, 12);
+                      break;
+                    case 'United States':
+                      if (value.length > 10) value = value.slice(0, 10);
+                      if (value.length >= 6) {
+                        value = `(${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6)}`;
+                      }
+                      break;
+                    // Add other country-specific formatting as needed
+                  }
+                }
+                setFormData(prev => ({...prev, contactNumber: value}));
+              }}
+              value={formData.contactNumber || ''}
+              className="phone-input"
+            />
+          </div>
+          <small className="format-hint">
+            <i className="fas fa-info-circle"></i>
+            Format: {COUNTRY_CODES.find(c => c.country === formData.selectedCountry)?.format}
+          </small>
         </div>
 
-        <div className="form-groupss">
+        {/* Make Donation Type span full width */}
+        <div className="form-groupss" style={{ gridColumn: '1 / -1' }}>
           <label>Donation Type:</label>
           <select 
             required 
             value={donationType}
-            onChange={(e) => setDonationType(e.target.value)}
+            onChange={(e) => {
+              const newType = e.target.value;
+              setDonationType(newType);
+              
+              // Clear cart items when switching to one-time donation
+              if (newType === 'one-time' && cartItems.length > 0) {
+                setCartItems([]);
+              }
+            }}
           >
             <option value="one-time">One-time Donation</option>
             <option value="regular">Regular Donation</option>
@@ -139,17 +512,50 @@ const Help: React.FC = () => {
           </select>
         </div>
 
+        {/* Add amount field for one-time donations */}
+        {donationType === 'one-time' && (
+          <div className="form-groupss">
+            <label>Donation Amount:</label>
+            <div className="form-row">
+              <div className="half-width">
+                <input
+                  type="number"
+                  name="amount"
+                  required
+                  min="1"
+                  placeholder="Enter donation amount"
+                  onChange={handleAmountChange}
+                  value={formData.amount || ''}
+                />
+                <small>Enter amount in PHP</small>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Item name and category fields only for in-kind and regular donations */}
         {(donationType === 'in-kind' || donationType === 'regular') && (
           <>
             <div className="form-groupss">
               <label>Item Name:</label>
-              <input name="item" type="text" required placeholder="Enter item name" />
+              <input 
+                name="item" 
+                type="text" 
+                required 
+                placeholder="Enter item name"
+                onChange={(e) => setFormData(prev => ({...prev, item: e.target.value}))}
+                value={formData.item || ''}
+              />
             </div>
 
             <div className="form-groupss">
               <label>Category:</label>
-              <select name="category" required>
+              <select 
+                name="category" 
+                required 
+                value={formData.category || ''}
+                onChange={(e) => setFormData(prev => ({...prev, category: e.target.value}))}
+              >
                 <option value="">Select a category</option>
                 <option value="Food & Nutrition">Food & Nutrition</option>
                 <option value="Clothing & Footwear">Clothing & Footwear</option>
@@ -164,44 +570,133 @@ const Help: React.FC = () => {
           </>
         )}
 
-        {/* Modified Amount/Quantity field - Only show for in-kind or one-time donations */}
-        {donationType !== 'regular' && (
+        {/* Add this new expiration date field */}
+        {(donationType === 'regular' || donationType === 'in-kind') && 
+         formData.category && CATEGORIES_WITH_EXPIRATION.includes(formData.category) && (
           <div className="form-groupss">
-            <label>{donationType === "in-kind" ? "Quantity:" : "Amount (PHP):"}</label>
-            <input 
-              name="amount"
-              type="number"
-              required 
-              min="1"
-              placeholder={donationType === "in-kind" ? "Enter quantity" : "Enter amount"}
+            <label>Expiration Date:</label>
+            <input
+              type="date"
+              name="expirationDate"
+              required
+              min={new Date().toISOString().split('T')[0]} // Set minimum date to today
+              value={formData.expirationDate || ''}
+              onChange={(e) => setFormData(prev => ({...prev, expirationDate: e.target.value}))}
+              className="form-control"
             />
+            <small>Required for food and medical items</small>
           </div>
         )}
 
-        {/* Regular donation specific fields */}
-        {donationType === 'regular' && (
-          <>
-            <div className="form-groupss">
-              <label>Quantity:</label>
+        {/* Modified Amount/Quantity fields */}
+        {(donationType === 'in-kind' || donationType === 'regular') && (
+          <div className="form-groupss quantity-unit-container">
+            <label>{donationType === "in-kind" ? "Quantity:" : "Quantity:"}</label>
+            <div className="quantity-input-group">
               <input 
-                name="amount"
                 type="number"
                 required 
                 min="1"
                 placeholder="Enter quantity"
+                className="quantity-input"
+                name="itemQuantity" // Added name attribute
+                onChange={(e) => setFormData(prev => ({...prev, quantity: Number(e.target.value)}))}
+                value={formData.quantity || ''}
               />
-            </div>
-            <div className="form-groupss">
-              <label>Frequency:</label>
-              <select name="frequency" required>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="annually">Annually</option>
+              <select 
+                value={selectedUnit}
+                onChange={(e) => setSelectedUnit(e.target.value as QuantityUnit)}
+                className="unit-select"
+              >
+                {QUANTITY_UNITS.map(unit => (
+                  <option key={unit.value} value={unit.value}>
+                    {unit.label}
+                  </option>
+                ))}
               </select>
+              {donationType === 'regular' && (
+                <select 
+                  name="frequency" 
+                  required
+                  className="frequency-select"
+                  value={formData.frequency || 'monthly'}
+                  onChange={(e) => setFormData(prev => ({...prev, frequency: e.target.value}))}
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="annually">Annually</option>
+                </select>
+              )}
             </div>
-          </>
+            <button 
+              type="button" 
+              onClick={handleAddToCart}
+              className="add-to-cart-btn"
+            >
+              Add to Cart
+            </button>
+          </div>
         )}
 
+        {/* Cart display */}
+        {cartItems.length > 0 && (
+          <div className="cart-summary">
+            <h3>Donation Cart</h3>
+            {cartItems.map(item => (
+              <div key={item.id} className="cart-item">
+                <div className="cart-item-details">
+                  <span className="item-name">{item.itemName}</span>
+                  <span className="item-quantity">
+                    {item.quantity} {item.unit}(s)
+                  </span>
+                  {item.frequency && (
+                    <span className="item-frequency">
+                      Frequency: {item.frequency}
+                    </span>
+                  )}
+                  <span className="item-category">{item.category}</span>
+                </div>
+                <button 
+                  type="button"  // Added type="button" to prevent form submission
+                  onClick={() => setCartItems(prev => prev.filter(i => i.id !== item.id))}
+                  className="remove-item-btn"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div className="cart-actions">
+              {donationType === 'regular' && (
+                <button 
+                  type="button"
+                  className="add-donation-btn"
+                  onClick={() => {
+                    const form = document.querySelector('.donation-form') as HTMLFormElement;
+                    const formEvent = new Event('submit', { bubbles: true, cancelable: true });
+                    form.dispatchEvent(formEvent);
+                  }}
+                >
+                  Submit Donation
+                </button>
+              )}
+              {donationType === 'in-kind' && (
+                <button 
+                  type="button"
+                  className="add-donation-btn"
+                  onClick={() => {
+                    const form = document.querySelector('.donation-form') as HTMLFormElement;
+                    const formEvent = new Event('submit', { bubbles: true, cancelable: true });
+                    form.dispatchEvent(formEvent);
+                  }}
+                >
+                  Submit Donation
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+      
         {/* Payment method selector for one-time donations */}
         {donationType === 'one-time' && (
           <div className="form-groupss">
@@ -209,13 +704,21 @@ const Help: React.FC = () => {
             <div className="payment-method-tabs">
               <div 
                 className={`payment-tab payment-tab-gcash ${paymentMethod === 'gcash' ? 'active' : ''}`}
-                onClick={() => setPaymentMethod('gcash')}
+                onClick={() => {
+                  setPaymentMethod('gcash');
+                  setSelectedFileName('');
+                  setFormData(prev => ({ ...prev, proofOfPayment: undefined }));
+                }}
               >
                 GCash
               </div>
               <div 
                 className={`payment-tab payment-tab-bank ${paymentMethod === 'bank' ? 'active' : ''}`}
-                onClick={() => setPaymentMethod('bank')}
+                onClick={() => {
+                  setPaymentMethod('bank');
+                  setSelectedFileName('');
+                  setFormData(prev => ({ ...prev, proofOfPayment: undefined }));
+                }}
               >
                 Bank Transfer
               </div>
@@ -263,11 +766,14 @@ const Help: React.FC = () => {
                         alert('File size should be less than 5MB');
                         e.target.value = '';
                         setSelectedFileName('');
+                        setFormData(prev => ({ ...prev, proofOfPayment: undefined }));
                       } else {
                         setSelectedFileName(file.name);
+                        setFormData(prev => ({ ...prev, proofOfPayment: file }));
                       }
                     } else {
                       setSelectedFileName('');
+                      setFormData(prev => ({ ...prev, proofOfPayment: undefined }));
                     }
                   }}
                 />
@@ -281,13 +787,18 @@ const Help: React.FC = () => {
                 name="message"
                 placeholder="Enter your message or special instructions"
                 rows={4}
+                onChange={(e) => setFormData(prev => ({...prev, message: e.target.value}))}
+                value={formData.message || ''}
               />
             </div>
           </>
         )}
       </div>
 
-      <button type="submit" className="submit-button">Submit Donation Form</button>
+      {/* Only show submit button for one-time donations or when cart is empty */}
+      {(donationType === 'one-time' || cartItems.length === 0) && (
+        <button type="submit" className="submit-button">Submit Donation Form</button>
+      )}
     </form>
   );
 
@@ -433,11 +944,11 @@ const Help: React.FC = () => {
                 <div className="volunteer-text">
                   <h1 className="volunteer-text">Become a Volunteer</h1>
                   <p>
-                  Volunteering is a rewarding opportunity to make a positive impact in the lives of others while contributing to meaningful projects and initiatives. Whether you’re passionate about education, the arts, digital media, or community engagement, there are various ways you can get involved and lend your skills and expertise to support our mission. 
+                    Volunteering is a rewarding opportunity to make a positive impact in the lives of others while contributing to meaningful projects and initiatives. Whether you're passionate about education, the arts, digital media, or community engagement, there are various ways you can get involved and lend your skills and expertise to support our mission. 
                   </p>
-                 <p>
-                 These volunteer activities are just a few examples of how you can get involved and contribute your time and talents to support our organization’s mission. We welcome individuals with diverse skills, backgrounds, and interests to join us in creating positive change and empowering communities in need. If you’re interested in volunteering with us or learning more about our volunteer opportunities, please contact us for further information.
-                 </p>
+                  <p>
+                    These volunteer activities are just a few examples of how you can get involved and contribute your time and talents to support our organization's mission. We welcome individuals with diverse skills, backgrounds, and interests to join us in creating positive change and empowering communities in need. If you're interested in volunteering with us or learning more about our volunteer opportunities, please contact us for further information.
+                  </p>
                 </div>
                 <div className="volunteer-picture">
                   <img src={volunteerpicture} alt="Volunteer" />
@@ -490,7 +1001,7 @@ const Help: React.FC = () => {
       default:
         return null;
     }
-  };
+  }
 
 
 

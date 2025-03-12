@@ -8,6 +8,7 @@ import {
   useMap,
   useMapEvents  // Add this import
 } from 'react-leaflet';
+import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import api from '../../config/axios'; // Replace axios import
 import L from 'leaflet';
 import { Icon, DivIcon } from 'leaflet';
@@ -262,10 +263,22 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
         element.parentNode?.removeChild(element);
       });
 
-      // Create sector polygons with distribution-based opacity
+      // Calculate total scholars and events for percentages
+      const totalScholars = Object.values(sectorData).reduce((sum, data) => 
+        sum + data.scholars.length, 0);
+      const totalEvents = Object.values(sectorData).reduce((sum, data) => 
+        sum + data.events.length, 0);
+
+      // Create sector polygons with updated labels
       Object.entries(PAYATAS_SECTORS).forEach(([sectorName, sector]) => {
         const stats = sectorData[sectorName];
-        const opacity = 0.2 + (stats.distributionPercentage / 100 * 0.6); // Scale opacity between 0.2 and 0.8
+        const scholarCount = stats.scholars.length;
+        const eventCount = stats.events.length;
+        const scholarPercentage = totalScholars > 0 ? (scholarCount / totalScholars * 100) : 0;
+        const eventPercentage = totalEvents > 0 ? (eventCount / totalEvents * 100) : 0;
+        
+        // Base opacity on combined percentage
+        const opacity = 0.2 + ((scholarCount + eventCount) / (totalScholars + totalEvents) * 0.6);
 
         const sectorPolygon = L.polygon(sector.coordinates, {
           color: sector.color,
@@ -274,14 +287,21 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
           fillColor: sector.color
         }).addTo(map);
 
-        // Add a centered label showing the percentage
         const bounds = sectorPolygon.getBounds();
         const center = bounds.getCenter();
         
+        // Enhanced label with both scholar and event stats
         const label = L.divIcon({
           className: 'sector-percentage-label',
-          html: `<div class="percentage-label-content">${stats.distributionPercentage.toFixed(1)}%</div>`,
-          iconSize: [80, 40]
+          html: `
+            <div class="percentage-label-content">
+              <div class="scholar-count">${scholarCount} Scholars (${scholarPercentage.toFixed(1)}%)</div>
+              <div class="event-count">${eventCount} Events (${eventPercentage.toFixed(1)}%)</div>
+              <div class="distribution-count">${stats.distributions} Items (${stats.distributionPercentage.toFixed(1)}%)</div>
+              <div class="total-count">Total: ${scholarCount + eventCount}</div>
+            </div>
+          `,
+          iconSize: [140, 100]
         });
 
         const labelMarker = L.marker(center, {
@@ -290,14 +310,71 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
         }).addTo(map);
 
         layersRef.current.push(sectorPolygon, labelMarker);
+
+        // Add click handler to show popup
+        sectorPolygon.on('click', () => {
+          const stats = sectorData[sectorName];
+          const totalScholars = Object.values(sectorData).reduce((sum, data) => 
+            sum + data.scholars.length, 0);
+          const totalEvents = Object.values(sectorData).reduce((sum, data) => 
+            sum + data.events.length, 0);
+          const totalDistributions = Object.values(sectorData).reduce((sum, data) => 
+            sum + data.distributions, 0);
+        
+          const scholarPercentage = totalScholars > 0 ? 
+            (stats.scholars.length / totalScholars * 100).toFixed(1) : 0;
+          const eventPercentage = totalEvents > 0 ? 
+            (stats.events.length / totalEvents * 100).toFixed(1) : 0;
+          const distributionPercentage = stats.distributionPercentage.toFixed(1);
+          
+          const total = stats.scholars.length + stats.events.length;
+          const grandTotal = totalScholars + totalEvents;
+          const totalPercentage = ((total / grandTotal) * 100).toFixed(1);
+        
+          const popupContent = L.DomUtil.create('div', 'sector-click-popup');
+          popupContent.innerHTML = `
+            <h3>${PAYATAS_SECTORS[sectorName].name} Statistics</h3>
+            <div class="sector-stats-list">
+              <div class="sector-stat-row">
+                <span>Scholars</span>
+                <span class="stat-percentage">${scholarPercentage}%</span>
+              </div>
+              <div class="sector-stat-row">
+                <span>Events</span>
+                <span class="stat-percentage">${eventPercentage}%</span>
+              </div>
+              <div class="sector-stat-row">
+                <span>Items Distributed</span>
+                <span class="stat-percentage">${distributionPercentage}%</span>
+              </div>
+              <div class="sector-stat-row total-row">
+                <span>Total Coverage</span>
+                <span class="stat-percentage">${totalPercentage}%</span>
+              </div>
+            </div>
+          `;
+        
+          const bounds = sectorPolygon.getBounds();
+          const popupLocation = bounds.getCenter();
+          
+          L.popup({
+            className: 'sector-click-popup-wrapper',
+            offset: [0, -10]
+          })
+            .setLatLng(popupLocation)
+            .setContent(popupContent)
+            .openOn(map);
+        });
       });
+
+      // Calculate total distributions at a higher scope so it's available throughout the component
+      const totalDistributions = Object.values(sectorData).reduce((sum, data) => sum + data.distributions, 0);
 
       // Create and add the progress bar control
       const ProgressBar = L.Control.extend({
         options: { position: 'bottomleft' },
         onAdd: function() {
           const div = L.DomUtil.create('div', 'sector-progress-container');
-          const totalDistributions = Object.values(sectorData).reduce((sum, data) => sum + data.distributions, 0);
           
           div.innerHTML = `
             <h4>Distribution Progress by Sector</h4>
@@ -305,7 +382,7 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
               <div class="progress-segments">
                 ${Object.entries(sectorData)
                   .sort((a, b) => b[1].distributionPercentage - a[1].distributionPercentage)
-                  .map(([name, stats], index) => `
+                  .map(([name, stats]) => `
                     <div class="progress-segment" 
                          style="width: ${stats.distributionPercentage}%; 
                                 background-color: ${PAYATAS_SECTORS[name].color};">
@@ -335,17 +412,18 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
 
       legendRef.current = new ProgressBar().addTo(map);
 
-      // Add legend for scholar and event counts
+      // Update legend content to include both scholar and event volumes
       const Legend = L.Control.extend({
         options: { position: 'bottomright' },
         onAdd: function() {
           const div = L.DomUtil.create('div', 'info legend stats-legend');
-          const totalScholars = Object.values(sectorData).reduce((sum, data) => sum + data.scholars.length, 0);
-          const totalEvents = Object.values(sectorData).reduce((sum, data) => sum + data.events.length, 0);
-          const totalLocations = totalScholars + totalEvents;
+          const totalScholars = Object.values(sectorData).reduce((sum, data) => 
+            sum + data.scholars.length, 0);
+          const totalEvents = Object.values(sectorData).reduce((sum, data) => 
+            sum + data.events.length, 0);
           
           div.innerHTML = `
-            <h4>Sector Statistics</h4>
+            <h4>Distribution by Sector</h4>
             <div class="sector-summary">
               ${Object.entries(sectorData).map(([name, data]) => `
                 <div class="sector-legend-item">
@@ -355,9 +433,23 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
                   </div>
                   <div class="sector-legend-stats">
                     <div class="stat-item">
-                      <span>S: ${data.scholars.length}</span>
-                      <span>E: ${data.events.length}</span>
-                      <span>L: ${data.total}</span>
+                      <span>Scholars:</span>
+                      <strong>${data.scholars.length}</strong>
+                      <span>(${(data.scholars.length / totalScholars * 100).toFixed(1)}%)</span>
+                    </div>
+                    <div class="stat-item">
+                      <span>Events:</span>
+                      <strong>${data.events.length}</strong>
+                      <span>(${(data.events.length / totalEvents * 100).toFixed(1)}%)</span>
+                    </div>
+                    <div class="stat-item">
+                      <span>Distributions:</span>
+                      <strong>${data.distributions}</strong>
+                      <span>(${data.distributionPercentage.toFixed(1)}%)</span>
+                    </div>
+                    <div class="stat-item total">
+                      <span>Total:</span>
+                      <strong>${data.total}</strong>
                     </div>
                   </div>
                 </div>
@@ -372,9 +464,13 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
                 <span>Total Events:</span>
                 <strong>${totalEvents}</strong>
               </div>
+              <div class="total-item">
+                <span>Total Distributions:</span>
+                <strong>${totalDistributions}</strong>
+              </div>
               <div class="total-item grand-total">
                 <span>Total Locations:</span>
-                <strong>${totalLocations}</strong>
+                <strong>${totalScholars + totalEvents}</strong>
               </div>
             </div>
           `;
@@ -468,6 +564,32 @@ interface Distribution {
   distributedAt: string;
 }
 
+interface InventoryStats {
+  id: number;
+  item: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  source: 'regular' | 'inkind';
+  threshold?: number;
+  distributions: {
+    scholar_name: string;
+    quantity: number;
+    distributed_at: string;
+  }[];
+  distributionCount: number;
+  totalDistributed: number;
+  lastDistributed?: string;
+}
+
+interface DistributionHotspot {
+  id: number;
+  location: [number, number];
+  count: number;
+  items: string[];
+  lastDistribution: string;
+}
+
 const officeIcon = new Icon({
   iconUrl: '/images/kkmk-logo.png', // Make sure to add this image to your public folder
   iconSize: [40, 40],
@@ -489,6 +611,13 @@ const OFFICE_MARKER: LocationMarker = {
   }
 };
 
+// Add new interface for scholar distribution data
+interface ScholarDistributionItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
 const AdminMap: React.FC = () => {
   const navigate = useNavigate();
   const [markers, setMarkers] = useState<LocationMarker[]>([OFFICE_MARKER]);
@@ -501,6 +630,7 @@ const AdminMap: React.FC = () => {
   const [scholars, setScholars] = useState<Scholar[]>([]);
   const [verifiedScholars, setVerifiedScholars] = useState<Scholar[]>([]);
   const [scholarDistributions, setScholarDistributions] = useState<{[key: number]: Distribution[]}>({});
+  const [scholarDistributionData, setScholarDistributionData] = useState<ScholarDistributionItem[]>([]);
 
   // Add Payatas, Quezon City coordinates
   const PAYATAS_COORDINATES: [number, number] = [14.7164, 121.1194];
@@ -601,7 +731,7 @@ const AdminMap: React.FC = () => {
   }>({
     NORTH: { scholars: [], events: [] },
     CENTRAL: { scholars: [], events: [] },
-    SOUTH: { scholars: [], events: [] }
+    SOUTH: { scholars: [] as LocationMarker[], events: [] as LocationMarker[] }
   });
 
   // Add function to determine sector
@@ -888,6 +1018,29 @@ const AdminMap: React.FC = () => {
       setLocationType(LocationType.SCHOLARS);
     }
   }, []);
+
+  // Add effect to process scholar distribution data
+  useEffect(() => {
+    if (!scholarDistributions) return;
+
+    // Count items by name
+    const itemCounts: { [key: string]: number } = {};
+    Object.values(scholarDistributions).forEach(distributions => {
+      distributions.forEach(dist => {
+        itemCounts[dist.itemName] = (itemCounts[dist.itemName] || 0) + dist.quantity;
+      });
+    });
+
+    // Convert to pie chart data format
+    const colors = ['#FF8042', '#0088FE', '#00C49F', '#FFBB28', '#8884d8', '#82ca9d'];
+    const chartData = Object.entries(itemCounts).map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length]
+    }));
+
+    setScholarDistributionData(chartData);
+  }, [scholarDistributions]);
 
   const formatAmount = (amount: number) => {
     return `₱${amount.toLocaleString()}`;
@@ -1266,14 +1419,327 @@ const AdminMap: React.FC = () => {
     setSectorData(stats);
   }, [markers, scholarDistributions]);
 
+  // Define the inventory filter interface
+  interface InventoryFilter {
+    category: string;
+    timeRange: string;
+  }
+  
+  // Add new state variables inside AdminMap component
+  const [inventoryStats, setInventoryStats] = useState<InventoryStats[]>([]);
+  const [distributionHotspots, setDistributionHotspots] = useState<DistributionHotspot[]>([]);
+  const [showInventoryPanel, setShowInventoryPanel] = useState(false);
+  const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>({
+    category: 'all',
+    timeRange: 'all'
+  });
+
+  // Add new useEffect for fetching inventory stats
+  useEffect(() => {
+    const fetchInventoryStats = async () => {
+      try {
+        const { category, timeRange } = inventoryFilter;
+        const queryParams = new URLSearchParams();
+        
+        if (category !== 'all') queryParams.append('category', category);
+        if (timeRange !== 'all') queryParams.append('timeRange', timeRange);
+        
+        const url = `/inventory/distribution-stats?${queryParams.toString()}`;
+        const response = await api.get(url);
+        
+        console.log('Inventory stats fetched:', response.data);
+        setInventoryStats(response.data);
+      } catch (error) {
+        console.error('Error fetching inventory stats:', error);
+      }
+    };
+
+    if (showInventoryPanel) {
+      fetchInventoryStats();
+    }
+  }, [showInventoryPanel, inventoryFilter]);
+
+  // Add category options
+  const categoryOptions = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'Food & Nutrition', label: 'Food & Nutrition' },
+    { value: 'Clothing & Footwear', label: 'Clothing & Footwear' },
+    { value: 'School Supplies', label: 'School Supplies' },
+    { value: 'Medical Supplies', label: 'Medical Supplies' },
+    { value: 'Hygiene Supplies', label: 'Hygiene Supplies' }
+  ];
+
+  // Add time range options
+  const timeRangeOptions = [
+    { value: 'all', label: 'All Time' },
+    { value: 'today', label: 'Today' },
+    { value: 'week', label: 'This Week' },
+    { value: 'month', label: 'This Month' },
+    { value: 'year', label: 'This Year' }
+  ];
+
+  // Format date for display
+  const formatDisplayDate = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Update renderFilterControls to include inventory filter
+  const renderFilterControls = () => (
+    mapType === MapType.HEATMAP && (
+      <div className="map-advanced-filters">
+        <select 
+          value={inventoryFilter.category} 
+          onChange={(e) => setInventoryFilter({...inventoryFilter, category: e.target.value})}
+          className="category-filter"
+        >
+          {categoryOptions.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+
+        <select 
+          value={inventoryFilter.timeRange} 
+          onChange={(e) => setInventoryFilter({...inventoryFilter, timeRange: e.target.value})}
+          className="time-filter"
+        >
+          {timeRangeOptions.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+
+        <button 
+          className={`inventory-panel-toggle ${showInventoryPanel ? 'active' : ''}`}
+          onClick={() => setShowInventoryPanel(!showInventoryPanel)}
+        >
+          {showInventoryPanel ? 'Hide Inventory' : 'Show Inventory'}
+        </button>
+      </div>
+    )
+  );
+
+  // Add inventory panel rendering function
+  const renderInventoryPanel = () => {
+    if (!showInventoryPanel) return null;
+
+    // Calculate total distributions for pie chart
+    const totalDistributions = inventoryStats.reduce((sum, item) => sum + item.totalDistributed, 0);
+    
+    // Prepare data for pie chart
+    const pieChartData = inventoryStats.map(item => ({
+      name: item.item,
+      value: item.totalDistributed,
+      category: item.category
+    }));
+
+    // Colors for pie chart segments
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+    return (
+      <div className="inventory-panel">
+        <h3>Distributed Inventory Items</h3>
+        
+        {inventoryStats.length === 0 ? (
+          <p className="no-data">No inventory data available for the selected filters.</p>
+        ) : (
+          <>
+            <div className="inventory-chart-container">
+              <h4>Distribution Breakdown</h4>
+              <div className="pie-chart-wrapper">
+                <PieChart width={280} height={280}>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => [`${value} items`, 'Distributed']}
+                    labelFormatter={(index) => pieChartData[index].name}
+                  />
+                  <Legend />
+                </PieChart>
+              </div>
+              <div className="distribution-summary">
+                <p>Total Items Distributed: <strong>{totalDistributions}</strong></p>
+              </div>
+            </div>
+
+            <div className="inventory-items-list">
+              {inventoryStats.map(item => (
+                <div key={item.id} className="inventory-item">
+                  <div className="inventory-item-header">
+                    <h4>{item.item}</h4>
+                    <span className="category-tag">{item.category}</span>
+                  </div>
+                  
+                  <div className="inventory-item-stats">
+                    <div className="stat">
+                      <span className="stat-label">Current Stock:</span>
+                      <span className="stat-value">{item.quantity} {item.unit}</span>
+                    </div>
+                    <div className="stat">
+                      <span className="stat-label">Total Distributed:</span>
+                      <span className="stat-value">{item.totalDistributed}</span>
+                    </div>
+                    <div className="stat">
+                      <span className="stat-label">Last Distributed:</span>
+                      <span className="stat-value">{formatDate(item.lastDistributed || '')}</span>
+                    </div>
+                  </div>
+                  
+                  {item.distributions && item.distributions.length > 0 && (
+                    <div className="recent-distributions">
+                      <h5>Recent Distributions</h5>
+                      <ul>
+                        {item.distributions.map((dist, idx) => (
+                          <li key={idx}>
+                            <span className="recipient">{dist.scholar_name}</span> received
+                            <span className="quantity"> {dist.quantity} {item.unit}</span> on
+                            <span className="date"> {formatDate(dist.distributed_at)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  <button 
+                    className="distribute-btn"
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent any default behavior
+                      console.log("Distribute button clicked for item:", item);
+                      handleDistribute(item.id);
+                    }}
+                  >
+                    Distribute Item
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
+  // Add new component for scholar distribution chart
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const renderScholarDistributionPanel = () => {
+    if (!scholarDistributionData.length) return null;
+  
+    const totalItems = scholarDistributionData.reduce((sum, item) => sum + item.value, 0);
+  
+    return (
+      <div className="scholar-distribution-panel">
+        <div className="scholar-distribution-header">
+          <h3>Scholar Item Distribution</h3>
+          <div style={{ position: 'relative' }}>
+            <button 
+              className={`distribution-dropdown-btn ${dropdownOpen ? 'open' : ''}`}
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              List
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+            <div className={`distribution-list-dropdown ${dropdownOpen ? 'open' : ''}`}>
+              {scholarDistributionData.map((item, index) => (
+                <div key={index} className="distribution-list-item">
+                  <span className="item-name">{item.name}</span>
+                  <span className="item-count">{item.value}</span>
+                </div>
+              ))}
+              <div className="distribution-list-item" style={{fontWeight: 'bold'}}>
+                <span className="item-name">Total</span>
+                <span className="item-count">{totalItems}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Rest of the existing chart and content */}
+        <div className="scholar-chart-wrapper">
+          <PieChart width={250} height={250}>
+            <Pie
+              data={scholarDistributionData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {scholarDistributionData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value: number) => [`${value} items (${((value/totalItems)*100).toFixed(1)}%)`, 'Distributed']}
+            />
+          </PieChart>
+        </div>
+      </div>
+    );
+  };
+
+  // Update the distribute button click handler to properly navigate with correct parameters
+const handleDistribute = (itemId: number) => {
+  console.log("Distributing item with ID:", itemId); // Debug log
+  
+  // Extract useful information from the item
+  const item = inventoryStats.find(item => item.id === itemId);
+  console.log("Found item:", item);
+  
+  // Store the data in localStorage for retrieval in Inventory page
+  localStorage.setItem('distributeItemData', JSON.stringify({
+    itemId: itemId.toString(),
+    itemName: item?.item || '',
+    category: item?.category || inventoryFilter.category,
+    openDistributeDialog: true,
+    fromMap: true,
+    timestamp: new Date().getTime() // Add timestamp to prevent stale data
+  }));
+  
+  // Use the correct path - /Inventory instead of /admin/Inventory
+  window.location.href = '/Inventory';
+}
+
   return (
-    <div className="admin-map-container">
+    <div className={`admin-map-container ${mapType === MapType.HEATMAP ? 'heatmap-mode' : ''}`}>
       <div className="map-header">
         <h1 className='location-h1'>Location Map Overview</h1>
         <div className="map-type-selector">
           <button 
             className={`map-type-btn ${mapType === MapType.STANDARD ? 'active' : ''}`}
-            onClick={() => setMapType(MapType.STANDARD)}
+            onClick={() => {
+              setMapType(MapType.STANDARD);
+            }}
           >
             Standard Map
           </button>
@@ -1296,50 +1762,66 @@ const AdminMap: React.FC = () => {
             <option value={LocationType.OFFICE}>Main Office</option>
           </select>
         </div>
-      </div>
-
-      <div className="map-stats">
-        <div className="stat-card">
-          <h3>Active Locations</h3>
-          <p>{activeMarkers}</p>
-        </div>
+        {renderFilterControls()}
       </div>
 
       {loading ? (
         <div className="loading">Loading map data...</div>
       ) : (
-        <MapContainer {...mapSettings} key={`map-${mapType}`}>
-          <MapReset mapType={mapType} />
-          {mapType === MapType.STANDARD ? (
-            <>
-              {renderStandardMap()}
-              {renderMapContent()}
-            </>
-          ) : (
-            renderHeatmap()
-          )}
-        </MapContainer>
-      )}
-
-      {/* Add sector statistics display */}
-      <div className="sector-stats">
-        {Object.entries(sectorData).map(([sectorName, data]) => (
-          <div 
-            key={sectorName} 
-            className="sector-stat-card"
-            style={{ borderLeft: `4px solid ${PAYATAS_SECTORS[sectorName].color}` }}
-          >
-            <h4>{PAYATAS_SECTORS[sectorName].name}</h4>
-            <div className="stat-details">
-              <p>Scholars: <strong>{data.scholars.length}</strong></p>
-              <p>Events: <strong>{data.events.length}</strong></p>
-              <p>Total: <strong>{data.total}</strong></p>
-              <p>Distributions: <strong>{data.distributions}</strong></p>
-              <p>Distribution Percentage: <strong>{data.distributionPercentage.toFixed(1)}%</strong></p>
+        <>
+          <div className="map-content">
+            <MapContainer {...mapSettings}>
+              <MapReset mapType={mapType} />
+              {mapType === MapType.STANDARD ? (
+                <>
+                  {renderStandardMap()}
+                  {renderMapContent()}
+                </>
+              ) : (
+                <>
+                  {renderHeatmap()}
+                </>
+              )}
+            </MapContainer>
+            
+            {/* Sector stats panel */}
+            <div className="sector-stats-panel">
+              <h3>Sector Statistics</h3>
+              {Object.entries(sectorData).map(([name, data]) => (
+                <div key={name} className="sector-stat-block">
+                  <div className="sector-stat-header">
+                    <span className="color-dot" style={{ backgroundColor: PAYATAS_SECTORS[name].color }}></span>
+                    <h4>{PAYATAS_SECTORS[name].name}</h4>
+                  </div>
+                  <div className="sector-stat-content">
+                    <div className="stat-row">
+                      <span>Scholars</span>
+                      <strong>{data.scholars.length}</strong>
+                    </div>
+                    <div className="stat-row">
+                      <span>Events</span>
+                      <strong>{data.events.length}</strong>
+                    </div>
+                    <div className="stat-row">
+                      <span>Distributions</span>
+                      <strong>{data.distributions}</strong>
+                    </div>
+                    <div className="distribution-percentage">
+                      {data.distributionPercentage.toFixed(1)}% of total distributions
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* Render inventory panel */}
+          {renderInventoryPanel()}
+
+          {/* Add the scholar distribution panel */}
+          {renderScholarDistributionPanel()}
+        </>
+      )}
     </div>
   );
 };

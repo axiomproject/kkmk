@@ -1,9 +1,10 @@
 .admin-map-container {
-  padding: 30px 20px; /* Reduced padding-top */
-  height: calc(100vh - 60px); /* Increased height by reducing the subtracted value */
+  padding: 20px;
+  min-height: calc(100vh - 60px);
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Reduced gap to give more space to map */
+  gap: 15px;
+  position: relative;
 }
 
 .location-h1{
@@ -14,10 +15,28 @@
     font-weight: 600;
 }
 
+.map-content {
+  flex: 1;
+  position: relative;
+  min-height: 800px; /* Increased from 500px */
+  width: 100%;
+  margin-bottom: 20px;
+}
+
 .admin-map {
-  height: calc(100% - 100px); /* Increased height by reducing the subtracted value */
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 800px; /* Increased from 500px */
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+}
+
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 800px; /* Increased from 500px */
+  z-index: 1;
 }
 
 .map-header {
@@ -1586,26 +1605,61 @@
 }
 
 .percentage-label-content {
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   color: white;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 16px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
   font-weight: bold;
   text-align: center;
   white-space: nowrap;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
   pointer-events: none;
+  line-height: 1.4;
 }
 
-.sector-progress-container {
-  background: white;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  margin: 10px;
-  width: 300px;
-  pointer-events: auto;
+.percentage-label-content div {
+  margin: 2px 0;
+}
+
+.percentage-label-content .scholar-count {
+  font-size: 16px;
+  margin-bottom: 4px;
+  color: #fff;
+}
+
+.percentage-label-content .scholar-percentage {
+  font-size: 14px;
+  color: #4CAF50;
+}
+
+.stats-legend .stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  color: #666;
+  margin: 4px 0;
+}
+
+.stats-legend .stat-item strong {
+  color: #2c5282;
+  margin: 0 4px;
+}
+
+/* Update sector progress container to show both percentages */
+.sector-progress-container .progress-label {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.85em;
+}
+
+.sector-progress-container .scholar-percentage {
+  color: #2c5282;
+  font-weight: 600;
 }
 
 /* Fix for overlapping legends */
@@ -1682,6 +1736,1086 @@
 /* Ensure controls don't have duplicate IDs */
 .leaflet-control:not(:first-child) {
   clear: both;
+}
+
+/* ... rest of existing styles ... */
+
+/* ...existing styles... */
+
+.map-advanced-filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+/* Show filters only in heatmap mode */
+.heatmap-mode .map-advanced-filters {
+  opacity: 1;
+  visibility: visible;
+}
+
+.category-filter,
+.time-filter {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-family: 'Poppins', sans-serif;
+}
+
+.inventory-panel-toggle {
+  padding: 0.5rem 1rem;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+}
+
+.inventory-panel-toggle.active {
+  background: #388E3C;
+}
+
+.inventory-panel {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 320px;
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(100%);
+  transition: all 0.3s ease;
+}
+
+.inventory-panel {
+  position: absolute;
+  right: 20px;
+  top: 100px; /* Adjusted to account for larger map */
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 320px;
+  max-height: calc(100vh - 120px); /* Adjusted to prevent overflow */
+  overflow-y: auto;
+  z-index: 1001;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+}
+
+.heatmap-mode .inventory-panel {
+  transform: translateX(0);
+}
+
+/* Ensure the panel is visible on top of the map */
+.leaflet-container {
+  z-index: 1;
+}
+
+.inventory-panel {
+  z-index: 1001;
+}
+
+/* Show panel only in heatmap mode */
+.heatmap-mode .inventory-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.inventory-item {
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.inventory-item h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.inventory-item p {
+  margin: 0.25rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.inventory-chart {
+  margin: 1rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* Add these new styles for inventory panel */
+.no-data-message {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.no-distributions {
+  text-align: center;
+  padding: 1rem;
+  color: #666;
+  font-style: italic;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.inventory-panel h3 {
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #eee;
+  color: #2c5282;
+}
+
+/* Add these new styles for the distributions list */
+.distributions-list {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.distributions-list h5 {
+  margin: 0 0 8px 0;
+  color: #2c5282;
+  font-size: 0.9rem;
+}
+
+.distribution-item {
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.scholar-name {
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 4px 0;
+  font-size: 0.85rem;
+}
+
+.distribution-details {
+  color: #666;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* Updated Inventory Panel Styles */
+.inventory-panel {
+  /* ...existing styles... */
+}
+
+.inventory-item {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.inventory-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.item-header h4 {
+  margin: 0;
+  color: #2c5282;
+  font-size: 1.1em;
+}
+
+.source-tag {
+  background: #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  color: #4a5568;
+  text-transform: capitalize;
+}
+
+.item-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stock-info p {
+  margin: 5px 0;
+  color: #4a5568;
+  font-size: 0.9em;
+}
+
+.low-stock {
+  color: #e53e3e;
+  font-weight: bold;
+}
+
+.distribute-btn {
+  background: #48bb78;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background 0.2s;
+}
+
+.distribute-btn:hover {
+  background: #38a169;
+}
+
+.distribute-btn:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
+
+.category-header {
+  color: #2d3748;
+  font-size: 1.2em;
+  margin: 20px 0 15px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #edf2f7;
+}
+
+/* ...rest of existing styles... */
+
+/* Inventory Panel Styles */
+.map-advanced-filters {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.category-filter,
+.time-filter {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 14px;
+  min-width: 150px;
+}
+
+.inventory-panel-toggle {
+  padding: 8px 12px;
+  border: 1px solid #2c5282;
+  border-radius: 4px;
+  background-color: white;
+  color: #2c5282;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.inventory-panel-toggle.active {
+  background-color: #2c5282;
+  color: white;
+}
+
+.inventory-panel {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.inventory-panel h3 {
+  font-size: 20px;
+  color: #2c5282;
+  margin-top: 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.no-data {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px 0;
+}
+
+.inventory-items-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.inventory-item {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+.inventory-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.inventory-item-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.category-tag {
+  background-color: #2c5282;
+  color: white;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.inventory-item-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 12px;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.recent-distributions {
+  margin-top: 15px;
+  border-top: 1px dashed #ddd;
+  padding-top: 10px;
+}
+
+.recent-distributions h5 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.recent-distributions ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.recent-distributions li {
+  font-size: 13px;
+  color: #555;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.recent-distributions .recipient {
+  font-weight: 600;
+  color: #2c5282;
+}
+
+.recent-distributions .quantity {
+  font-weight: 600;
+}
+
+.distribute-btn {
+  margin-top: 15px;
+  padding: 8px 12px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.distribute-btn:hover {
+  background-color: #43a047;
+}
+
+/* Heatmap mode modifications */
+.heatmap-mode .map-advanced-filters {
+  margin-bottom: 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .map-advanced-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .inventory-items-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.percentage-label-content {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 10px 15px;
+  border-radius: 8px;
+  min-width: 180px;
+}
+
+.percentage-label-content .scholar-count {
+  color: #4CAF50;
+  margin-bottom: 4px;
+}
+
+.percentage-label-content .event-count {
+  color: #2196F3;
+  margin-bottom: 4px;
+}
+
+.percentage-label-content .total-count {
+  color: #fff;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  padding-top: 4px;
+  margin-top: 4px;
+}
+
+.stats-legend .stat-item.total {
+  border-top: 1px solid #eee;
+  margin-top: 4px;
+  padding-top: 4px;
+  font-weight: 600;
+}
+
+.stats-legend .stat-item span:first-child {
+  min-width: 70px;
+}
+
+/* Add styles for the pie chart */
+.inventory-chart-container {
+  background: white;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.inventory-chart-container h4 {
+  color: #2c5282;
+  font-size: 1.1em;
+  margin: 0 0 15px 0;
+  text-align: center;
+}
+
+.pie-chart-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.distribution-summary {
+  text-align: center;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  margin-top: 10px;
+}
+
+.distribution-summary p {
+  margin: 0;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.distribution-summary strong {
+  color: #2c5282;
+  font-size: 1.1em;
+}
+
+/* Make the legend more readable */
+.recharts-default-legend {
+  font-size: 12px !important;
+}
+
+.recharts-legend-item {
+  margin-right: 10px !important;
+}
+
+/* Style the tooltip */
+.recharts-tooltip-wrapper {
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  font-size: 12px;
+}
+
+/* Add styles for the distribution percentage elements */
+.percentage-label-content .distribution-count {
+  color: #FF8042;
+  margin-bottom: 4px;
+}
+
+.percentage-label-content {
+  min-width: 220px;  /* Increased to accommodate distribution info */
+  padding: 12px 15px;
+}
+
+.stat-item.distribution {
+  color: #FF8042;
+  font-weight: 500;
+}
+
+.stat-item.distribution strong {
+  color: #FF8042;
+}
+
+.legend-totals .total-item.distributions {
+  color: #FF8042;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+/* Add sector stats panel styles */
+.sector-stats-panel {
+  position: absolute; 
+  top: 100px;
+  right: 10px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 220px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.sector-stats-panel h3 {
+  margin: 0 0 15px 0;
+  color: #2c5282;
+  font-size: 1.2em;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eee;
+  text-align: center;
+}
+
+.sector-stat-block {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.sector-stat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sector-stat-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.sector-stat-content {
+  padding-left: 24px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.stat-row strong {
+  color: #2c5282;
+  font-weight: 600;
+}
+
+.distribution-percentage {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+  font-size: 0.85em;
+  color: #FF8042;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Adjust for heatmap mode */
+.heatmap-mode .sector-stats-panel {
+  display: none;
+}
+
+/* Update map-content position */
+.map-content {
+  position: relative;
+}
+
+/* Adjust for heatmap mode - show panel only in heatmap mode */
+.sector-stats-panel {
+  display: none; /* Hide by default */
+}
+
+.heatmap-mode .sector-stats-panel {
+  display: block; /* Show in heatmap mode */
+}
+
+/* Position the sector stats panel to not overlap with inventory panel */
+.heatmap-mode .sector-stats-panel {
+  top: 100px;
+  right: 10px; /* Position to the left of inventory panel */
+}
+
+/* Add scholar distribution chart panel styles */
+.scholar-distribution-panel {
+  position: absolute;
+  top: 110px; /* Position below zoom controls */
+  left: 10px;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  width: 220px;
+  z-index: 1000;
+  display: none;
+  opacity: 0.95;
+}
+
+.heatmap-mode .scholar-distribution-panel {
+  display: block;
+}
+
+.scholar-distribution-panel h3 {
+  margin: 0 0 8px 0;
+  color: #2c5282;
+  font-size: 0.9em;
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+.scholar-chart-wrapper {
+  margin: 5px 0;
+  display: flex;
+  justify-content: center;
+  transform: scale(0.85); /* Slightly smaller chart */
+}
+
+.distribution-details-list {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+  font-size: 0.75em;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* Add scrollbar styling for the list */
+.distribution-details-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.distribution-details-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.distribution-details-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+.distribution-details-list .item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 2px 0;
+}
+
+.distribution-details-list .item-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.distribution-details-list .color-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.distribution-details-list .item-count {
+  font-weight: 600;
+  color: #2c5282;
+}
+
+/* Add total section styling */
+.distribution-total {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #eee;
+  font-size: 0.8em;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  color: #2c5282;
+}
+
+/* Update scholar distribution chart panel styles */
+.scholar-distribution-panel {
+  position: absolute;
+  top: 80px; /* Position below zoom controls */
+  left: 10px;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  width: 220px;
+  z-index: 500; /* Below zoom controls but above map */
+  display: none;
+  opacity: 0.95;
+}
+
+/* Add scholar distribution chart panel styles */
+.scholar-distribution-panel {
+  position: absolute;
+  top: 270px; /* Position below zoom controls */
+  left: 10px;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  width: 220px;
+  z-index: 200; /* Below zoom controls but above map */
+  display: none;
+  opacity: 0.95;
+}
+
+.heatmap-mode .scholar-distribution-panel {
+  display: block;
+}
+
+.scholar-distribution-panel h3 {
+  margin: 0 0 8px 0;
+  color: #2c5282;
+  font-size: 0.9em;
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #eee;
+}
+
+.scholar-chart-wrapper {
+  margin: 5px 0;
+  display: flex;
+  justify-content: center;
+  transform: scale(0.85); /* Slightly smaller chart */
+}
+
+.distribution-details-list {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+  font-size: 0.75em;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+/* Add scrollbar styling for the list */
+.distribution-details-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.distribution-details-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.distribution-details-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+.distribution-details-list .item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 2px 0;
+}
+
+.distribution-details-list .item-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.distribution-details-list .color-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.distribution-details-list .item-count {
+  font-weight: 600;
+  color: #2c5282;
+}
+
+/* Add total section styling */
+.distribution-total {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #eee;
+  font-size: 0.8em;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  color: #2c5282;
+}
+
+/* Adjust sector stats panel based on inventory panel visibility */
+.sector-stats-panel {
+  position: absolute;
+  top: 100px;
+  right: 10px;
+  transition: right 0.3s ease;
+}
+
+/* Move sector stats panel when inventory panel is open */
+.heatmap-mode .sector-stats-panel {
+  display: block;
+  
+  right: 340px; /* Set aside space for inventory panel */
+}
+
+/* Default right position when inventory panel is closed */
+.heatmap-mode:not(.inventory-open) .sector-stats-panel {
+  right: 10px;
+}
+
+/* Update sector stats panel positioning */
+.sector-stats-panel {
+  position: absolute;
+  top: 100px;
+  right: 10px;
+  transition: right 0.3s ease;
+  z-index: 999;
+}
+
+/* Adjust position when inventory panel is open */
+.heatmap-mode.inventory-panel-open .sector-stats-panel {
+  right: 340px;
+}
+
+/* Base position when inventory panel is closed */
+.heatmap-mode .sector-stats-panel {
+  display: block;
+  right: 10px;
+}
+
+/* Reset sector stats panel styles */
+.sector-stats-panel {
+  position: absolute;
+  top: 100px;
+  right: 340px; /* Default position to the left of inventory panel */
+  transition: right 0.3s ease;
+  z-index: 998;
+  width: 300px;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Handle inventory panel states */
+.heatmap-mode .sector-stats-panel {
+  display: block;
+}
+
+.heatmap-mode.show-inventory .sector-stats-panel {
+  right: 360px; /* Stay on left side when inventory is open */
+}
+
+.heatmap-mode:not(.show-inventory) .sector-stats-panel {
+  right: 20px; /* Move to right when inventory is closed */
+}
+
+/* Add styles for sector click popup */
+.sector-click-popup {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  min-width: 250px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.sector-click-popup h3 {
+  color: #2c5282;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+  font-size: 1.1em;
+  text-align: center;
+}
+
+.sector-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sector-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9em;
+  padding: 4px 0;
+}
+
+.stat-percentage {
+  font-weight: 600;
+  color: #2c5282;
+}
+
+.total-row {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+  font-weight: 600;
+}
+
+/* Add styles for the scholar distribution dropdown */
+.scholar-distribution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.distribution-dropdown-btn {
+  background: none;
+  border: none;
+  color: #2c5282;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.distribution-dropdown-btn:hover {
+  color: #1a365d;
+  transform: translateY(-1px);
+}
+
+.distribution-dropdown-btn svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.distribution-dropdown-btn.open svg {
+  transform: rotate(180deg);
+}
+
+.distribution-list-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  min-width: 200px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  z-index: 1000;
+}
+
+.distribution-list-dropdown.open {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.distribution-list-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+  font-size: 0.85em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.distribution-list-item:last-child {
+  border-bottom: none;
+}
+
+.distribution-list-item .item-name {
+  color: #333;
+  font-weight: 500;
+}
+
+.distribution-list-item .item-count {
+  color: #2c5282;
+  font-weight: 600;
+}
+
+/* Remove sector legend */
+.info.legend.stats-legend {
+  display: none !important;
+}
+
+.sector-legend-item,
+.sector-legend-header,
+.sector-legend-stats,
+.legend-totals,
+.sector-summary {
+  display: none !important;
+}
+
+/* Keep leaflet attribution */
+.leaflet-control-attribution {
+  display: block !important;
 }
 
 /* ... rest of existing styles ... */

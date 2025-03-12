@@ -22,6 +22,7 @@ interface Transaction {
   email: string;
   contactNumber: string;
   message?: string;
+  paymentMethod?: string; // Add payment method field
 }
 
 interface DonationResponse {
@@ -36,7 +37,11 @@ interface DonationResponse {
   verified_by?: string;
   email: string;
   contact_number: string;
+  payment_method?: string; // Add payment method field
 }
+
+// Add a base URL constant near the top of your file
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175'; 
 
 const Bank: React.FC = () => {
   const [activeView, setActiveView] = useState<'verified' | 'pending'>('verified');
@@ -60,7 +65,10 @@ const Bank: React.FC = () => {
           donor: donation.full_name,
           date: donation.date,
           verificationStatus: donation.verification_status,
-          proofOfPayment: donation.proof_of_payment, // Use the full URL directly
+          // Fix the image URL by prepending the base URL
+          proofOfPayment: donation.proof_of_payment 
+            ? `${API_BASE_URL}${donation.proof_of_payment}` 
+            : null,
           remarks: donation.message,
           verifiedAt: donation.verified_at,
           verifiedBy: donation.verified_by,
@@ -70,7 +78,8 @@ const Bank: React.FC = () => {
           fullName: donation.full_name,
           email: donation.email,
           contactNumber: donation.contact_number,
-          message: donation.message
+          message: donation.message,
+          paymentMethod: donation.payment_method // Include payment method
         }));
 
         setTransactions(transformedDonations);
@@ -192,8 +201,10 @@ const Bank: React.FC = () => {
   const handleAddDonation = async (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
-    const fileInput = form.querySelector('input[name="proofOfDonation"]') as HTMLInputElement;
+    const fileInput = form.querySelector('input[name="proofOfPayment"]') as HTMLInputElement;
     const file = fileInput?.files?.[0];
+    
+    console.log('Selected file:', file); // Debug log
     
     const formData = new FormData();
     formData.append('fullName', form.fullName.value);
@@ -201,14 +212,27 @@ const Bank: React.FC = () => {
     formData.append('contactNumber', form.contactNumber.value);
     formData.append('amount', form.amount.value);
     formData.append('message', form.message?.value || '');
+    formData.append('paymentMethod', form.paymentMethod.value);
     formData.append('date', new Date().toLocaleDateString('en-US'));
     
     if (file) {
       formData.append('proofOfPayment', file);
+      console.log('File appended to form data:', file.name); // Debug log
+    } else {
+      console.log('No file selected'); // Debug log
     }
 
     try {
-      const response: AxiosResponse<DonationResponse> = await api.post('/donations', formData);
+      // Use direct axios instead of the api instance for this specific request
+      // to ensure we have the right configuration for file uploads
+      const response: AxiosResponse<DonationResponse> = await api.post('/donations', 
+        formData, 
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
       const data = response.data;
 
       // Transform the new donation using the response data
@@ -218,12 +242,15 @@ const Bank: React.FC = () => {
         donor: data.full_name,
         date: data.date,
         verificationStatus: data.verification_status as 'pending' | 'verified' | 'rejected',
-        proofOfPayment: data.proof_of_payment,
+        proofOfPayment: data.proof_of_payment 
+          ? `${API_BASE_URL}${data.proof_of_payment}` 
+          : undefined,
         remarks: data.message,
         fullName: data.full_name,
         email: data.email,
         contactNumber: data.contact_number,
-        message: data.message
+        message: data.message,
+        paymentMethod: data.payment_method // Include payment method
       };
 
       setTransactions(prev => [...prev, newDonation]);
@@ -332,6 +359,7 @@ const Bank: React.FC = () => {
         <td>{formatDate(transaction.date)}</td>
         <td>₱{transaction.amount}</td>
         <td>{transaction.fullName}</td>
+        <td>{transaction.paymentMethod || 'N/A'}</td> {/* Add payment method column */}
         {activeView === 'verified' ? (
           <>
             <td>{transaction.proofOfPayment && (
@@ -465,6 +493,7 @@ const Bank: React.FC = () => {
                   <th>Date</th>
                   <th>Amount</th>
                   <th>Donor Name</th>
+                  <th>Payment Method</th> {/* Add payment method header */}
                   <th>Proof</th>
                   <th>Actions</th>
                 </tr>
@@ -483,6 +512,7 @@ const Bank: React.FC = () => {
                 <th>Date</th>
                 <th>Amount</th>
                 <th>Donor Name</th>
+                <th>Payment Method</th> {/* Add payment method header */}
                 <th>Proof</th>
                 <th>Actions</th>
               </tr>
@@ -551,6 +581,11 @@ const Bank: React.FC = () => {
                 <label>Amount:</label>
                 <p>₱{selectedTransaction.amount}</p>
               </div>
+              {/* Add payment method to details modal */}
+              <div className="detail-group">
+                <label>Payment Method:</label>
+                <p>{selectedTransaction.paymentMethod || 'N/A'}</p>
+              </div>
               <div className="detail-group">
                 <label>Date:</label>
                 <p>{new Date().toLocaleString('en-US', {
@@ -606,6 +641,13 @@ const Bank: React.FC = () => {
                 src={selectedProof} 
                 alt="Proof of Payment" 
                 style={{ maxWidth: '100%', height: 'auto', marginBottom: '1rem' }}
+                onError={(e) => {
+                  console.error("Error loading image:", selectedProof);
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null; // Prevent infinite loop
+                  target.src = `${API_BASE_URL}/images/placeholder-image.jpg`;
+                  target.alt = "Failed to load proof of payment";
+                }}
               />
               {selectedMessage && (
                 <div className="proof-message">
@@ -665,16 +707,29 @@ const Bank: React.FC = () => {
                   step="0.01"
                 />
               </div>
+              {/* Add payment method dropdown */}
+              <div className="donation-form-group">
+                <label>Payment Method:</label>
+                <select 
+                  name="paymentMethod"
+                  required
+                  className="payment-method-select"
+                >
+                  <option value="">Select payment method</option>
+                  <option value="gcash">GCash</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                </select>
+              </div>
               <div className="form-group">
                 <label>Proof of Payment:</label>
                 <input 
                   type="file"
-                  id="proofOfDonation"
-                  name="proofOfDonation"
+                  id="proofOfPayment"
+                  name="proofOfPayment"
                   accept="image/*"
                   onChange={(e) => {
                     const fileName = e.target.files?.[0]?.name;
-                    const label = document.querySelector('label[for="proofOfDonation"]');
+                    const label = document.querySelector('label[for="proofOfPayment"]');
                     if (label && fileName) {
                       label.innerHTML = `<i class="fa fa-upload"></i><span class="file-name-truncate">${fileName}</span>`;
                     } else if (label) {
@@ -682,7 +737,7 @@ const Bank: React.FC = () => {
                     }
                   }}
                 />
-                <label htmlFor="proofOfDonation">
+                <label htmlFor="proofOfPayment">
                   <i className="fa fa-upload"></i> Choose a file...
                 </label>
               </div>

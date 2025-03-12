@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../../config/axios'; // Replace axios import
 import Coverpphotoprofile from '../../img/volunteer/coverphoto.png';
 import defaultProfile from '../../img/volunteer/defaultProfile.png';
@@ -17,9 +17,10 @@ import {
   UserInfoUpdateResponse,
   ReportCardSubmissionResponse // Add this import
 } from '../../types/auth';
-import { FiEdit, FiUpload, FiMapPin, FiMessageSquare } from 'react-icons/fi'; // Add FiMapPin
+import { FiEdit, FiUpload, FiMapPin, FiMessageSquare, FiArrowRight } from 'react-icons/fi'; // Add FiArrowRight
 import ProcessTimeline from '../../components/ProcessTimeline';
 import { FaStar } from 'react-icons/fa';
+import { ThemeSelector } from '../../components/ThemeSelector';
 
 interface UserData {
   name: string;
@@ -37,6 +38,64 @@ interface PendingFeedbackEvent {
   id: number;
   title: string;
   date: string;
+}
+
+// Add this interface for grade level options
+interface GradeLevelOption {
+  value: string;
+  label: string;
+}
+
+// Add these interfaces for sponsored scholars
+interface ScholarDonation {
+  id: number;
+  scholar_id: number;
+  scholar_first_name: string;
+  scholar_last_name: string;
+  scholar_image: string;
+  profile_photo?: string;
+  image_url?: string;
+  amount: number;
+  created_at: string;
+  verification_status: 'pending' | 'verified' | 'rejected';
+  current_amount: number;
+  amount_needed: number;
+}
+
+interface SponsoredScholar {
+  scholarId: number;
+  name: string;
+  image: string;
+  image_url?: string;
+  profile_photo?: string;
+  totalDonated: number;
+  lastDonation: string;
+  donations: ScholarDonation[];
+  currentAmount: number;
+  amountNeeded: number;
+}
+
+// Add this interface for joined events
+interface JoinedEvent {
+  id: number;
+  title: string;
+  date: string;
+  image: string;
+  status: string; // Event status: 'OPEN', 'CLOSED', etc.
+  participation_status: string; // Participation status: 'PENDING', 'ACTIVE', etc. 
+  location: string;
+  is_past: boolean;
+}
+
+// Add this interface for distributions to a scholar
+interface ItemDistribution {
+  id: number;
+  itemName: string;
+  category: string;
+  quantity: number;
+  unit: string;
+  distributedAt: string;
+  itemType: 'regular' | 'in-kind';
 }
 
 const VolunteerProfile: React.FC = () => {
@@ -79,9 +138,129 @@ const VolunteerProfile: React.FC = () => {
   const [feedbackComment, setFeedbackComment] = useState<string>("");
   const [showFeedbackModal, setShowFeedbackModal] = useState<boolean>(false);
   const [dismissedFeedback, setDismissedFeedback] = useState<Set<number>>(new Set());
+  
+  // Add state for joined events
+  const [joinedEvents, setJoinedEvents] = useState<JoinedEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  // Add state for events tab selection
+  const [activeEventsTab, setActiveEventsTab] = useState<'upcoming' | 'past'>('upcoming');
+  
+  // Function to open the feedback modal
+  const openFeedbackModal = () => {
+    setShowFeedbackModal(true);
+  };
+  // Add grade level state
+  const [selectedGradeLevel, setSelectedGradeLevel] = useState<string>('');
+  // Add state for sponsored scholars
+  const [sponsoredScholars, setSponsoredScholars] = useState<SponsoredScholar[]>([]);
+  const [loadingScholars, setLoadingScholars] = useState(false);
+  const navigate = useNavigate();
+
+  // Add state for scholar distributions
+  const [scholarDistributions, setScholarDistributions] = useState<ItemDistribution[]>([]);
+  const [loadingDistributions, setLoadingDistributions] = useState(false);
+
+  // Add grade level options
+  const gradeLevelOptions: GradeLevelOption[] = [
+    { value: 'grade1', label: 'Grade 1' },
+    { value: 'grade2', label: 'Grade 2' },
+    { value: 'grade3', label: 'Grade 3' },
+    { value: 'grade4', label: 'Grade 4' },
+    { value: 'grade5', label: 'Grade 5' },
+    { value: 'grade6', label: 'Grade 6' },
+    { value: 'grade7', label: 'Grade 7 (Junior High)' },
+    { value: 'grade8', label: 'Grade 8 (Junior High)' },
+    { value: 'grade9', label: 'Grade 9 (Junior High)' },
+    { value: 'grade10', label: 'Grade 10 (Junior High)' },
+    { value: 'grade11', label: 'Grade 11 (Senior High)' },
+    { value: 'grade12', label: 'Grade 12 (Senior High)' },
+    { value: 'college', label: 'College' }
+  ];
+
+  // Format amount helper function - update to handle invalid values
+  const formatAmount = (amount: number | undefined | null) => {
+    // Add safety check to prevent NaN
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return '0';
+    }
+    return Math.round(amount).toLocaleString();
+  };
+
+  // Helper function to get image url - updated to match StudentProfile.tsx approach
+  const getImageUrl = (scholar: SponsoredScholar) => {
+    // First check for direct image property
+    if (scholar.image) {
+      if (scholar.image.startsWith('data:') || scholar.image.startsWith('http')) {
+        return scholar.image;
+      }
+      return `${import.meta.env.VITE_API_URL}${scholar.image}`;
+    }
+    
+    // Then check for image_url from scholars table
+    if (scholar.image_url) {
+      if (scholar.image_url.startsWith('data:') || scholar.image_url.startsWith('http')) {
+        return scholar.image_url;
+      }
+      return `${import.meta.env.VITE_API_URL}${scholar.image_url}`;
+    }
+    
+    // Then check for profile_photo from users table
+    if (scholar.profile_photo) {
+      if (scholar.profile_photo.startsWith('data:') || scholar.profile_photo.startsWith('http')) {
+        return scholar.profile_photo;
+      }
+      return `${import.meta.env.VITE_API_URL}${scholar.profile_photo}`;
+    }
+    
+    // Default placeholder
+    return '/images/default-avatar.jpg';
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
+    const fetchLatestUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        // Get the latest user profile data
+        const response = await api.get('/user/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data) {
+          // Update localStorage with the latest user data
+          localStorage.setItem('user', JSON.stringify(response.data));
+          
+          // Update state with the latest data
+          setUserName(response.data.name);
+          setUserUsername(response.data.username);
+          setUserData(response.data);
+          setUserType(response.data.role?.toLowerCase() || '');
+          if (response.data.profilePhoto) setProfilePhoto(response.data.profilePhoto);
+          if (response.data.coverPhoto) setCoverPhoto(response.data.coverPhoto);
+          if (response.data.intro) setIntro(response.data.intro);
+          if (response.data.knownAs) setKnowAs(response.data.knownAs);
+          setSocialLinks({
+            facebook: response.data.facebookUrl || '',
+            twitter: response.data.twitterUrl || '',
+            instagram: response.data.instagramUrl || ''
+          });
+          setHasSubmittedReport(response.data.hasSubmittedReport || false);
+          setVerificationStep(response.data.verificationStep || 1);
+          if (response.data.latitude && response.data.longitude) {
+            setUserLocation({
+              latitude: response.data.latitude,
+              longitude: response.data.longitude
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching latest user data:', error);
+      }
+    };
+
+    // Using the storedUser variable already declared above
     if (storedUser) {
       const user = JSON.parse(storedUser);
       setUserName(user.name);
@@ -105,6 +284,9 @@ const VolunteerProfile: React.FC = () => {
           longitude: user.longitude
         });
       }
+      
+      // After setting initial state from localStorage, fetch the latest data
+      fetchLatestUserData();
     }
   }, []);
 
@@ -142,12 +324,14 @@ const VolunteerProfile: React.FC = () => {
           `/scholars/report-card/${user.id}`
         );
 
+        const reportCard = submissionResponse.data;
+        
         setHasActiveSubmission(!!activeResponse.data);
-        setHasSubmittedReport(!!submissionResponse.data);
+        setHasSubmittedReport(!!reportCard && reportCard.status !== 'renewal_requested');
         
         // If there's a submission, set the verification step
-        if (submissionResponse.data) {
-          setVerificationStep(submissionResponse.data.verification_step || 1);
+        if (reportCard) {
+          setVerificationStep(reportCard.verification_step || 1);
         }
       } catch (error) {
         console.error('Error checking report card status:', error);
@@ -184,44 +368,77 @@ const VolunteerProfile: React.FC = () => {
     }
   }, [userType]);
 
-  // Add this function to handle modal open
-  const openFeedbackModal = () => {
-    const scrollY = window.scrollY;
-    document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
-    setShowFeedbackModal(true);
-  };
-
-  // Modify handleCloseFeedback function
-  const handleCloseFeedback = async () => {
-    if (currentFeedbackEvent) {
-      try {
-        const token = localStorage.getItem('token');
-        
-        // Call the dismiss endpoint
-        await api.post(
-          `/events/${currentFeedbackEvent.id}/dismiss-feedback`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        // Add current event ID to dismissed set
-        setDismissedFeedback(prev => new Set([...prev, currentFeedbackEvent.id]));
-        
-        // Move to next event that hasn't been dismissed
-        const nextEvent = pendingFeedbackEvents.find(event => !dismissedFeedback.has(event.id));
-        if (nextEvent) {
-          setCurrentFeedbackEvent(nextEvent);
-        } else {
-          setShowFeedbackModal(false);
-          setCurrentFeedbackEvent(null);
+  // Add this effect to fetch sponsored scholars for sponsor users
+  useEffect(() => {
+    if (userType === 'sponsor') {
+      const fetchSponsoredScholars = async () => {
+        try {
+          setLoadingScholars(true);
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const response = await api.get(`/scholardonations/sponsor/${user.id}`);
+          console.log('Raw donation data:', response.data);
+          
+          const donations: ScholarDonation[] = response.data;
+          
+          // Group donations by scholar
+          const scholarMap = new Map<number, SponsoredScholar>();
+          
+          donations.forEach(donation => {
+            if (!scholarMap.has(donation.scholar_id)) {
+              scholarMap.set(donation.scholar_id, {
+                scholarId: donation.scholar_id,
+                name: `${donation.scholar_first_name} ${donation.scholar_last_name}`,
+                image: donation.scholar_image || '',
+                profile_photo: donation.profile_photo || '',
+                image_url: donation.image_url || '',
+                totalDonated: 0, // Initialize as number
+                lastDonation: donation.created_at,
+                donations: [],
+                currentAmount: parseFloat(donation.current_amount as any) || 0,
+                amountNeeded: parseFloat(donation.amount_needed as any) || 10000
+              });
+            }
+            
+            const scholar = scholarMap.get(donation.scholar_id)!;
+            
+            // Parse donation amount as a number to avoid NaN
+            if (donation.verification_status === 'verified') {
+              const amount = typeof donation.amount === 'string' 
+                ? parseFloat(donation.amount) 
+                : (typeof donation.amount === 'number' ? donation.amount : 0);
+                
+              // Ensure we're adding a valid number
+              if (!isNaN(amount)) {
+                scholar.totalDonated += amount;
+              }
+            }
+            scholar.donations.push(donation);
+          });
+          
+          // Log for debugging
+          const scholars = Array.from(scholarMap.values());
+          console.log('Processed scholars with donation totals:', 
+            scholars.map(s => ({
+              id: s.scholarId, 
+              name: s.name, 
+              totalDonated: s.totalDonated
+            }))
+          );
+          
+          // Show up to 6 scholars
+          setSponsoredScholars(scholars.slice(0, 6)); 
+          setLoadingScholars(false);
+        } catch (error) {
+          console.error('Error fetching sponsor donations:', error);
+          setLoadingScholars(false);
         }
-      } catch (error) {
-        console.error('Error dismissing feedback:', error);
-      }
-    }
-  };
+      };
 
-  // Modify the useEffect for checking pending feedback
+      fetchSponsoredScholars();
+    }
+  }, [userType]);
+
+  // Add this effect to fetch pending feedback events
   useEffect(() => {
     const checkPendingFeedback = async () => {
       try {
@@ -252,6 +469,78 @@ const VolunteerProfile: React.FC = () => {
     // Check for pending feedback when component mounts
     checkPendingFeedback();
   }, [dismissedFeedback]);
+
+  // Add this effect to fetch joined events for volunteers
+  useEffect(() => {
+    const fetchJoinedEvents = async () => {
+      if (userType !== 'volunteer') return;
+      
+      try {
+        setLoadingEvents(true);
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        const response = await api.get(`/events/user/${user.id}/joined`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        setJoinedEvents(response.data);
+      } catch (error) {
+        console.error('Error fetching joined events:', error);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+    
+    if (userType === 'volunteer') {
+      fetchJoinedEvents();
+    }
+  }, [userType]);
+
+  // Update this effect to fetch items distributed to a scholar with better error handling
+  useEffect(() => {
+    const fetchScholarDistributions = async () => {
+      if (userType !== 'scholar') return;
+      
+      try {
+        setLoadingDistributions(true);
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const token = localStorage.getItem('token');
+        
+        // Add debugging logs
+        console.log('Fetching distributions for scholar ID:', user.id);
+        
+        if (!user.id) {
+          console.log('No user ID found, skipping distribution fetch');
+          setLoadingDistributions(false);
+          return;
+        }
+        
+        // Fetch distributions for this scholar with proper token and error handling
+        try {
+          const response = await api.get(`/inventory/recipient-distributions/${user.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          console.log('Scholar distributions data:', response.data);
+          setScholarDistributions(Array.isArray(response.data) ? response.data : []);
+        } catch (apiError) {
+          console.error('API Error:', apiError);
+          // On API error, just set empty array to avoid breaking the UI
+          setScholarDistributions([]);
+        }
+      } catch (error) {
+        console.error('Error in distribution fetch logic:', error);
+        setScholarDistributions([]);
+      } finally {
+        setLoadingDistributions(false);
+      }
+    };
+    
+    if (userType === 'scholar') {
+      fetchScholarDistributions();
+    }
+  }, [userType]);
 
   const handleChange = (index: number) => {
     setValue(index);
@@ -524,6 +813,11 @@ const VolunteerProfile: React.FC = () => {
       return;
     }
 
+    if (!selectedGradeLevel) {
+      alert('Please select your grade level');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -534,7 +828,8 @@ const VolunteerProfile: React.FC = () => {
         {
           userId: user.id,
           frontImage: reportCardFront,
-          backImage: reportCardBack
+          backImage: reportCardBack,
+          gradeLevel: selectedGradeLevel // Add grade level to the payload
         },
         {
           headers: {
@@ -558,6 +853,7 @@ const VolunteerProfile: React.FC = () => {
       setIsReportCardModalOpen(false);
       setReportCardFront(null);
       setReportCardBack(null);
+      setSelectedGradeLevel(''); // Reset grade level
 
       alert('Report card submitted successfully!');
     } catch (error) {
@@ -674,6 +970,112 @@ const VolunteerProfile: React.FC = () => {
     }
   };
 
+  const handleCloseFeedback = () => {
+    // Add current event to dismissed list
+    if (currentFeedbackEvent) {
+      setDismissedFeedback(prev => new Set([...prev, currentFeedbackEvent.id]));
+    }
+    
+    // Close the modal
+    setShowFeedbackModal(false);
+    
+    // Move to next event if available
+    const remainingEvents = pendingFeedbackEvents.filter(
+      event => event.id !== currentFeedbackEvent?.id && !dismissedFeedback.has(event.id)
+    );
+    
+    if (remainingEvents.length > 0) {
+      setCurrentFeedbackEvent(remainingEvents[0]);
+      // Reset form
+      setRating(0);
+      setFeedbackComment("");
+    } else {
+      setCurrentFeedbackEvent(null);
+    }
+  };
+
+  // Add ScholarProgressBar component
+  const ScholarProgressBar: React.FC<{ currentAmount: number; amountNeeded: number }> = ({ currentAmount, amountNeeded }) => {
+    const percentage = Math.min((currentAmount / amountNeeded) * 100, 100);
+    
+    return (
+      <div className="scholar-progress-container">
+        <div className="scholar-progress-bar">
+          <div 
+            className="scholar-progress-fill" 
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+        <div className="scholar-progress-text">
+          <span>₱{formatAmount(currentAmount)}</span>
+          <span>Goal: ₱{formatAmount(amountNeeded)}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Format date helper function
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Add this component to render the distribution items for a scholar with better styling
+  const ScholarDistributionsSection = () => {
+    if (userType !== 'scholar') return null;
+    
+    return (
+      <div className="scholar-distributions-container">
+        <h2 className="distributions-header">Items Received</h2>
+        
+        {loadingDistributions ? (
+          <div className="distributions-loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading items...</p>
+          </div>
+        ) : scholarDistributions && scholarDistributions.length > 0 ? (
+          <>
+            <div className="distributions-list">
+              {scholarDistributions.map((item) => (
+                <div key={item.id} className="distribution-item">
+                  <div className="distribution-header">
+                    <h3>{item.itemName}</h3>
+                    <span className={`distribution-category category-${item.category?.toLowerCase().replace(/\s+/g, '-') || 'other'}`}>
+                      {item.category || 'Other'}
+                    </span>
+                  </div>
+                  <div className="distribution-details">
+                    <p>
+                      <strong>Quantity:</strong> 
+                      <span>{item.quantity} {item.unit}</span>
+                    </p>
+                    <p>
+                      <strong>Received:</strong> 
+                      <span>{formatDate(item.distributedAt)}</span>
+                    </p>
+                    <div className={`distribution-type ${item.itemType}`}>
+                      {item.itemType === 'regular' ? 'Regular Donation' : 'In-kind Donation'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="no-distributions-container">
+            <p className="no-distributions-text">
+              You haven't received any items yet.
+            </p>
+          
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="page-wrapper">
       <div className="Profile-container">
@@ -712,7 +1114,14 @@ const VolunteerProfile: React.FC = () => {
             {userType === 'scholar' && (
               <>
                 <div className="report-card-section">
-                  {hasActiveSubmission || hasSubmittedReport ? (
+                  {hasActiveSubmission ? (
+                    <button 
+                      onClick={handleViewProgress}
+                      className="view-progress-button"
+                    >
+                      View Progress
+                    </button>
+                  ) : hasSubmittedReport ? (
                     <button 
                       onClick={handleViewProgress}
                       className="view-progress-button"
@@ -823,6 +1232,9 @@ const VolunteerProfile: React.FC = () => {
               )}
             </div>
 
+            <h1>Theme</h1>
+            <ThemeSelector />
+
             <h1>Socials</h1>
             <div className="socials">
               {isEditingSocials ? (
@@ -890,19 +1302,229 @@ const VolunteerProfile: React.FC = () => {
             </div>
           </div>
 
-          <div className="share-profile">
-            <h1>Share this profile</h1>
-            <p>Tell your friends about this user and help him to fulfill the dream.</p>
-            <div className="link">
-              <p>{profileLink}</p>
-              <div className="copy-icon" onClick={handleCopyLink}>
-                <img src={copyicon} alt="Copy Link" />
-              </div>
-              <div className="share-icon" onClick={handleShare}>
-                <img src={shareicon} alt="Share Profile" />
-              </div>
+          {userType === 'sponsor' && (
+            <div className="my-scholars-container">
+              <h2 className="my-scholars-header">
+                My Scholars 
+                <span 
+                  onClick={() => navigate('/MyScholar')}
+                  className="view-all-button"
+                >
+                  View All <FiArrowRight className="arrow-icon" />
+                </span>
+              </h2>
+
+              {loadingScholars ? (
+                <div className="scholars-loading-container">
+                  <div className="loading-spinner"></div>
+                  <p>Loading scholars...</p>
+                </div>
+              ) : sponsoredScholars.length > 0 ? (
+                <div className="scholars-grid">
+                  {sponsoredScholars.map((scholar) => (
+                    <div 
+                      key={scholar.scholarId}
+                      className="scholar-card"
+                      onClick={() => navigate(`/StudentProfile/${scholar.scholarId}`)}
+                    >
+                      <div className="scholar-profile">
+                        <img
+                          src={getImageUrl(scholar)}
+                          alt={scholar.name}
+                          className="scholar-avatar"
+                          onError={(e) => {
+                            console.log(`Image failed to load for scholar ${scholar.scholarId}`);
+                            (e.target as HTMLImageElement).src = '/images/default-avatar.jpg';
+                          }}
+                        />
+                        <h3 className="scholar-name">{scholar.name}</h3>
+                      </div>
+                      
+                      <ScholarProgressBar 
+                        currentAmount={scholar.currentAmount} 
+                        amountNeeded={scholar.amountNeeded}
+                      />
+                      
+                      <div className="scholar-metrics">
+                        <div className="donation-amount">
+                          ₱{formatAmount(scholar.totalDonated)}
+                        </div>
+                        <div className="last-donation">
+                          Last Donation: {new Date(scholar.lastDonation).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-scholars-container">
+                  <p className="no-scholars-text">
+                    You haven't sponsored any scholars yet.
+                  </p>
+                  <button 
+                    onClick={() => navigate('/StudentProfile')}
+                    className="browse-scholars-button"
+                  >
+                    Browse Scholars
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
+          )}
+          
+          {userType === 'volunteer' && (
+            <div className="volunteer-events-history">
+              <h2 className="events-history-header">My Events</h2>
+              
+              {loadingEvents ? (
+                <div className="events-loading-container">
+                  <div className="loading-spinner"></div>
+                  <p>Loading events...</p>
+                </div>
+              ) : joinedEvents.length > 0 ? (
+                <div>
+                  {/* Event Tabs */}
+                  <div className="events-tabs">
+                    <button 
+                      className={`event-tab-button ${activeEventsTab === 'upcoming' ? 'active' : ''}`}
+                      onClick={() => setActiveEventsTab('upcoming')}
+                    >
+                      Upcoming Events
+                      {joinedEvents.filter(event => !event.is_past).length > 0 && (
+                        <span className="event-count">{joinedEvents.filter(event => !event.is_past).length}</span>
+                      )}
+                    </button>
+                    <button 
+                      className={`event-tab-button ${activeEventsTab === 'past' ? 'active' : ''}`}
+                      onClick={() => setActiveEventsTab('past')}
+                    >
+                      Past Events
+                      {joinedEvents.filter(event => event.is_past).length > 0 && (
+                        <span className="event-count">{joinedEvents.filter(event => event.is_past).length}</span>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {/* Upcoming Events Tab Content */}
+                  {activeEventsTab === 'upcoming' && (
+                    <div className="events-tab-content">
+                      {joinedEvents.filter(event => !event.is_past).length > 0 ? (
+                        <div className="events-grid">
+                          {joinedEvents
+                            .filter(event => !event.is_past)
+                            .map((event) => (
+                              <div 
+                                key={event.id}
+                                className="event-card"
+                                onClick={() => navigate(`/event/${event.id}`)}
+                              >
+                                <img 
+                                  src={event.image || '/images/default-event.jpg'} 
+                                  alt={event.title} 
+                                  className="event-image"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/images/default-event.jpg';
+                                  }}
+                                />
+                                <div className="event-info">
+                                  <h3 className="event-title">{event.title}</h3>
+                                  <p className="event-location">{event.location}</p>
+                                  <p className="event-date">{new Date(event.date).toLocaleDateString()}</p>
+                                  <div className="status-badges">
+                                    <span className={`participation-status status-${event.participation_status.toLowerCase()}`}>
+                                      {event.participation_status}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="no-tab-events">
+                          <p>You don't have any upcoming events.</p>
+                          <button 
+                            onClick={() => navigate('/events')}
+                            className="browse-events-button small"
+                          >
+                            Browse Events
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Past Events Tab Content */}
+                  {activeEventsTab === 'past' && (
+                    <div className="events-tab-content">
+                      {joinedEvents.filter(event => event.is_past).length > 0 ? (
+                        <div className="events-grid">
+                          {joinedEvents
+                            .filter(event => event.is_past)
+                            .map((event) => (
+                              <div 
+                                key={event.id}
+                                className="event-card past-event"
+                                // Remove onClick for past events - make non-clickable
+                              >
+                                <img 
+                                  src={event.image || '/images/default-event.jpg'} 
+                                  alt={event.title} 
+                                  className="event-image"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/images/default-event.jpg';
+                                  }}
+                                />
+                                <div className="event-info">
+                                  <h3 className="event-title">{event.title}</h3>
+                                  <p className="event-location">{event.location}</p>
+                                  <p className="event-date">{new Date(event.date).toLocaleDateString()}</p>
+                                  <div className="status-badges">
+                                    {/* Always show INACTIVE status for past events */}
+                                    <span className="participation-status status-inactive">
+                                      INACTIVE
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="past-event-overlay">
+                                  <span>This event has ended</span>
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="no-tab-events">
+                          <p>You don't have any past events.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="no-events-container">
+                  <p className="no-events-text">
+                    You haven't joined any events yet.
+                  </p>
+                  <button 
+                    onClick={() => navigate('/events')}
+                    className="browse-events-button"
+                  >
+                    Browse Events
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {userType === 'scholar' && (
+            <ScholarDistributionsSection />
+          )}
+          
+          {userType !== 'sponsor' && userType !== 'scholar' && userType !== 'volunteer' && (
+            <div className="profile-empty-space">
+              <h2>Thank you for being a part of our community!</h2>
+              <p>Help us make a difference by participating in events and supporting our mission.</p>
+            </div>
+          )}
         </div>
 
         {userType === 'scholar' && <RemarksSection />}
@@ -945,6 +1567,24 @@ const VolunteerProfile: React.FC = () => {
                 // Existing report card upload UI
                 <>
                   <h2>Submit Report Card</h2>
+                  
+                  {/* Add grade level selection */}
+                  <div className="report-card-grade-level">
+                    <h3>Select Your Grade Level</h3>
+                    <select 
+                      value={selectedGradeLevel} 
+                      onChange={(e) => setSelectedGradeLevel(e.target.value)}
+                      className="grade-level-dropdown"
+                    >
+                      <option value="">Select Grade Level</option>
+                      {gradeLevelOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
                   <div className="report-card-upload-container">
                     <div className="report-card-side">
                       <h3>Front Side</h3>
@@ -984,7 +1624,7 @@ const VolunteerProfile: React.FC = () => {
                   <div className="popup-buttons">
                     <div 
                       onClick={handleSubmitReportCard} 
-                      className={`submit-button-report ${(!reportCardFront || !reportCardBack || isSubmitting) ? 'disabled' : ''}`}
+                      className={`submit-button-report ${(!reportCardFront || !reportCardBack || !selectedGradeLevel || isSubmitting) ? 'disabled' : ''}`}
                     >
                       {isSubmitting ? 'Submitting...' : 'Submit Report Card'}
                     </div>
@@ -1010,48 +1650,48 @@ const VolunteerProfile: React.FC = () => {
           </div>
         )}
 
-        {showFeedbackModal && currentFeedbackEvent && (
-          <div className="popup-overlay feedback" onClick={e => e.stopPropagation()}>
-            <div className="feedback-popup" onClick={e => e.stopPropagation()}>
-              <span 
-                className="modal-close" 
-                onClick={handleCloseFeedback}
-                title="Skip feedback"
-              >×</span>
-              
-              <h2>Event Feedback</h2>
-              <p>Please share your experience at:<br/>{currentFeedbackEvent.title}</p>
-              
-              <div className="rating-container">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <FaStar
-                    key={star}
-                    className={`star-icon ${star <= rating ? 'selected' : ''}`}
-                    size={32}
-                    onClick={() => setRating(star)}
-                    color={star <= rating ? "#ffc107" : "#e4e5e9"}
-                  />
-                ))}
-              </div>
-              
-              <textarea
-                className="feedback-textarea"
-                value={feedbackComment}
-                onChange={(e) => setFeedbackComment(e.target.value)}
-                placeholder="Tell us about your experience at this event..."
-                rows={4}
+    {showFeedbackModal && currentFeedbackEvent && (
+      <div className="popup-overlay feedback">
+        <div className="feedback-popup" onClick={e => e.stopPropagation()}>
+          <span 
+            className="modal-close" 
+            onClick={handleCloseFeedback}
+            title="Skip feedback"
+          >×</span>
+          
+          <h2>Event Feedback</h2>
+          <p>Please share your experience at:<br/>{currentFeedbackEvent.title}</p>
+          
+          <div className="rating-container">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <FaStar
+                key={star}
+                className={`star-icon ${star <= rating ? 'selected' : ''}`}
+                size={32}
+                onClick={() => setRating(star)}
+                color={star <= rating ? "#ffc107" : "#e4e5e9"}
               />
-              
-              <button 
-                onClick={handleSubmitFeedback}
-                disabled={rating === 0}
-                className="feedback-submit-button"
-              >
-                Submit Feedback
-              </button>
-            </div>
+            ))}
           </div>
-        )}
+          
+          <textarea
+            className="feedback-textarea"
+            value={feedbackComment}
+            onChange={(e) => setFeedbackComment(e.target.value)}
+            placeholder="Tell us about your experience at this event..."
+            rows={4}
+          />
+          
+          <button 
+            onClick={handleSubmitFeedback}
+            disabled={rating === 0}
+            className="feedback-submit-button"
+          >
+            Submit Feedback
+          </button>
+        </div>
+      </div>
+    )}
 
         <input
           id="profile-photo-input"
@@ -1087,3 +1727,4 @@ const VolunteerProfile: React.FC = () => {
 };
 
 export default VolunteerProfile;
+

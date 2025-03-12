@@ -1,0 +1,42 @@
+:root {
+  --primary-color: #4CAF50;
+  --primary-color-rgb: 76, 175, 80;
+  --secondary-color: #2c5282;
+  --secondary-color-rgb: 44, 82, 130;
+  --primary-hover: #45a049;
+  --secondary-hover: #234676;
+  --text-primary: #333;
+  --text-secondary: #666;
+  --background-light: #f8f9fa;
+  --background-dark: #242424;
+  --border-color: #eee;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-lg: 0 4px 6px rgba(0,0,0,0.1);
+
+  /* Add theme-specific background colors */
+  --theme-green-bg: #f0f7f0;
+  --theme-blue-bg: #f0f4f8;
+  --theme-purple-bg: #f6f0f8;
+  --theme-orange-bg: #fff7eb;
+  --theme-red-bg: #fff0f0;
+  --theme-teal-bg: #e6f7f7;
+}
+
+/* Theme color presets */
+.theme-colors {
+  --theme-green: #4CAF50;
+  --theme-blue: #2196F3;
+  --theme-purple: #9C27B0;
+  --theme-orange: #FF9800;
+  --theme-red: #f44336;
+  --theme-teal: #009688;
+}
+
+/* Dark theme variables - for future use */
+[data-theme="dark"] {
+  --background-light: #242424;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --border-color: #444444;
+}

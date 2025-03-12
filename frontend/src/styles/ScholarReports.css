@@ -289,3 +289,444 @@
   background-color: #c53030;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* Add these print-related styles to your existing CSS file */
+
+.print-btn {
+  background-color: #4267b2;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.print-btn:hover {
+  background-color: #365899;
+}
+
+/* Completely revised print styles */
+.print-container {
+  display: none;
+  padding: 20px;
+  max-width: 100%;
+}
+
+.print-header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #333;
+  padding-bottom: 15px;
+}
+
+.print-report-details {
+  margin: 20px 0 30px;
+}
+
+.print-report-details h2 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.print-report-details p {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.print-images {
+  display: block;
+}
+
+.print-image-page {
+  page-break-before: always;
+  page-break-after: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 20px;
+}
+
+.print-image-page.front-image {
+  page-break-before: always;
+}
+
+.print-image-page.back-image {
+  page-break-before: always;
+}
+
+/* Remove this class as it's causing the extra blank page */
+.print-page-break {
+  display: none;
+}
+
+.print-image-container {
+  width: 100%;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.print-image-container img {
+  max-width: 90%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+  border: 1px solid #ddd;
+  display: inline-block;
+}
+
+.print-page-break {
+  page-break-after: always;
+  height: 0;
+  display: none;
+}
+
+.print-footer {
+  margin-top: 30px;
+  border-top: 1px solid #ddd;
+  padding-top: 15px;
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.print-loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  z-index: 9999;
+}
+
+/* Updated print styles for side-by-side images on one page */
+.print-images-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin: 10px 0;
+  width: 100%;
+  gap: 15px;
+}
+
+.print-images-title {
+  margin: 10px 0 5px;
+  text-align: center;
+  font-size: 16px;
+}
+
+.print-image-container {
+  width: 48%;
+  text-align: center;
+}
+
+.print-image-container h4 {
+  margin: 0 0 5px;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+/* Media query for print */
+@media print {
+  @page {
+    size: portrait;
+    margin: 0.25in;  /* Reduced margin */
+  }
+  
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible !important;
+  }
+  
+  body.printing-report {
+    background-color: white;
+  }
+  
+  body * {
+    visibility: hidden;
+    background-color: white;
+  }
+  
+  .print-container,
+  .print-container * {
+    visibility: visible;
+  }
+  
+  .print-container {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background-color: white;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .print-header {
+    margin-bottom: 10px;  /* Reduced margin */
+    padding-bottom: 10px;
+  }
+  
+  .print-report-details {
+    margin: 10px 0;  /* Reduced margin */
+  }
+  
+  .print-report-details h2 {
+    margin-bottom: 5px;  /* Reduced margin */
+    font-size: 16px;
+  }
+  
+  .print-report-details p {
+    margin: 3px 0;  /* Reduced margin */
+    line-height: 1.3;
+  }
+  
+  .print-image-page {
+    page-break-before: always;
+    page-break-after: auto;
+    page-break-inside: avoid;
+    margin: 0;
+    padding: 5px 0;  /* Reduced padding */
+  }
+  
+  .print-image-page h3 {
+    margin: 5px 0 10px;  /* Reduced margin */
+    font-size: 14px;
+  }
+  
+  /* Optimize image size for print */
+  .print-image-container {
+    height: auto;
+    margin: 0 auto;
+    text-align: center;
+  }
+  
+  .print-image-container img {
+    max-width: 100%;
+    height: auto;
+    max-height: 9.5in;  /* Adjusted to match typical page height */
+    display: block;
+    margin: 0 auto;
+    border: none;  /* Remove border to save space */
+  }
+  
+  .print-footer {
+    margin-top: 10px;  /* Reduced margin */
+    padding-top: 5px;  /* Reduced padding */
+    font-size: 9px;
+  }
+  
+  /* Force the first image page to be fully utilized */
+  .print-image-page.front-image {
+    page-break-before: auto;  /* Don't force a page break for the first image */
+    page-break-after: always;
+  }
+  
+  /* Make sure the back image starts on its own page */
+  .print-image-page.back-image {
+    page-break-before: always;
+    page-break-after: auto;
+  }
+  
+  /* Remove explicit page break that's causing the blank page */
+  .print-page-break {
+    display: none !important;
+  }
+  
+  /* Force background colors to be printed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Side-by-side image styling for print */
+  .print-images-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 10px;
+    page-break-inside: avoid;
+  }
+  
+  .print-images-title {
+    margin: 5px 0;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  
+  .print-image-container {
+    width: 48%;
+    margin-bottom: 10px;
+  }
+  
+  .print-image-container h4 {
+    margin: 0 0 3px;
+    font-size: 12px;
+  }
+  
+  .print-image-container img {
+    max-width: 100%; 
+    max-height: 4in; /* Smaller height to fit both on one page */
+    display: inline-block;
+  }
+  
+  /* Remove all the page break rules that were causing images to be on different pages */
+  .print-image-page.front-image,
+  .print-image-page.back-image {
+    page-break-before: auto;
+    page-break-after: auto;
+  }
+}
+
+/* Grade level sections */
+.grade-level-container {
+  margin-top: 20px;
+}
+
+.grade-level-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.grade-level-title {
+  background-color: #EE3F24;
+  color: white;
+  padding: 15px 20px;
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+.grade-level-content {
+  padding: 0;
+}
+
+.grade-level-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.grade-level-content th,
+.grade-level-content td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+  font-family: 'Poppins';
+}
+
+.grade-level-content th {
+  background-color: #f7f7f7;
+  font-weight: 600;
+}
+
+.no-reports-message {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  font-family: 'Poppins', sans-serif;
+}
+
+.grade-level-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.status-button.grade-level {
+  background-color: #6B7280;
+  color: white;
+}
+
+.status-button.grade-level:hover:not(.active) {
+  background-color: #4B5563;
+}
+
+.status-button.grade-level.active {
+  background-color: #EE3F24 !important;
+  color: white !important;
+}
+
+/* ...existing code... */
+
+.renew-btn {
+  background-color: #2ecc71;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Poppins';
+  transition: all 0.3s ease;
+}
+
+.renew-btn:hover {
+  background-color: #27ae60;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ...existing code... */
+
+.history-btn {
+  background-color: #4b5563;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Poppins';
+  transition: all 0.3s ease;
+  margin-right: 4px;
+}
+
+.history-btn:hover {
+  background-color: #374151;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.history-modal {
+  min-width: 700px;
+  max-height: 80vh;
+}
+
+.history-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.history-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-list th,
+.history-list td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.history-list th {
+  background-color: #f7f7f7;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+/* ...existing code... */

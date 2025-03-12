@@ -45,6 +45,8 @@ app.use('/api/staff', staffRoutes);
 // Add static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-
+// Add donation routes
+const donationRoutes = require('./routes/donationRoutes');
+app.use('/donations', donationRoutes);
 
 

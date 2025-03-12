@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { scholarApi } from '../services/api';
-import { useAuth } from '../hooks/useAuth';  // Add this import
+import { useAuth } from '../hooks/useAuth'; 
 import '../styles/StudentProfile.css';
 import { formatDate } from '../utils/dateUtils';
-import { FaTimes } from 'react-icons/fa';
-import { FiUpload } from 'react-icons/fi'; // Add this import
+import { FaTimes, FaBookOpen, FaGraduationCap } from 'react-icons/fa';
+import { FiUpload } from 'react-icons/fi';
 import api from '../config/axios';
 
 interface StudentDetails {
@@ -18,7 +18,7 @@ interface StudentDetails {
   favorite_activity: string;
   favorite_color: string;
   image_url: string;
-  grade_level: string;
+  education_level: string;
   school: string;
   guardian_name: string;
   guardian_phone: string;
@@ -130,8 +130,8 @@ interface DonationUpdate {
 const StudentDetails: React.FC = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth(); // Add this hook
-  const [activeTab, setActiveTab] = useState<'details' | 'updates'>('details');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'story' | 'updates'>('story');
   const [student, setStudent] = useState<StudentDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,10 +145,17 @@ const StudentDetails: React.FC = () => {
     phone: '',
     message: '',
     paymentMethod: '',
-    proof: null, // Initialize as null instead of undefined
-    proofPreview: '' // Add initial value
+    proof: null,
+    proofPreview: ''
   });
   const [donationUpdates, setDonationUpdates] = useState<DonationUpdate[]>([]);
+
+  const handleFormInputChange = (field: keyof DonationSubmission, value: string | number) => {
+    setDonationForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   const handleDonateClick = () => {
     if (!user) {
@@ -166,10 +173,28 @@ const StudentDetails: React.FC = () => {
       return;
     }
     
+    // Reset to step 1 when opening the donation modal
+    setCurrentStep(1);
+    
+    // Pre-populate form with sponsor information when modal is opened
+    if (user && user.role === 'sponsor') {
+      // Create a fresh form state to avoid any stale data
+      setDonationForm({
+        scholarId: studentId || '',
+        amount: 0,
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        message: '',
+        paymentMethod: '',
+        proof: null,
+        proofPreview: ''
+      });
+    }
+    
     const scrollY = window.scrollY;
     document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
     setShowDonationModal(true);
-    // Remove the fixed positioning of body
   };
 
   const handleCloseModal = () => {
@@ -183,12 +208,15 @@ const StudentDetails: React.FC = () => {
     try {
       const formData = new FormData();
       
+      // Log form data being submitted for debugging
+      console.log('Submitting donation form with data:', donationForm);
+      
       // Add sponsor ID if user is logged in and is a sponsor
       if (user && user.role === 'sponsor') {
         formData.append('sponsorId', user.id.toString());
       }
       
-      // Add all form fields to FormData
+      // Add all form fields to FormData - ensure we're using the current state values
       formData.append('scholarId', donationForm.scholarId);
       formData.append('amount', donationForm.amount.toString());
       formData.append('name', donationForm.name);
@@ -215,7 +243,7 @@ const StudentDetails: React.FC = () => {
         alert('Thank you for your donation! We will verify your payment shortly.');
         setShowDonationModal(false);
         
-        // Reset form
+        // Reset form and step counter for next time
         setDonationForm({
           scholarId: studentId || '',
           amount: 0,
@@ -227,6 +255,7 @@ const StudentDetails: React.FC = () => {
           proof: null,
           proofPreview: ''
         });
+        setCurrentStep(1);
       }
     } catch (error) {
       console.error('Error submitting donation:', error);
@@ -256,6 +285,19 @@ const StudentDetails: React.FC = () => {
       proofPreview: ''
     }));
   };
+
+  // Add a useEffect to update form data when user data changes
+  useEffect(() => {
+    // Pre-populate form when user data changes and modal is open
+    if (user && user.role === 'sponsor' && showDonationModal) {
+      setDonationForm(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone
+      }));
+    }
+  }, [user, showDonationModal]);
 
   const renderDonationStep = () => {
     switch (currentStep) {
@@ -300,29 +342,34 @@ const StudentDetails: React.FC = () => {
         return (
           <div className="donation-step">
             <h3>Your Details</h3>
+            {user && user.role === 'sponsor' && (
+              <p className="autofill-notice" style={{ color: '#4CAF50', fontSize: '0.9rem', marginBottom: '10px' }}>
+                ✓ Your profile information has been autofilled
+              </p>
+            )}
             <div className="donation-form">
               <input
                 type="text"
                 placeholder="Your Name"
                 value={donationForm.name}
-                onChange={(e) => setDonationForm(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => handleFormInputChange('name', e.target.value)}
               />
               <input
                 type="email"
                 placeholder="Email Address"
                 value={donationForm.email}
-                onChange={(e) => setDonationForm(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(e) => handleFormInputChange('email', e.target.value)}
               />
               <input
                 type="tel"
                 placeholder="Phone Number"
                 value={donationForm.phone}
-                onChange={(e) => setDonationForm(prev => ({ ...prev, phone: e.target.value }))}
+                onChange={(e) => handleFormInputChange('phone', e.target.value)}
               />
               <textarea
                 placeholder="Leave a message (optional)"
                 value={donationForm.message}
-                onChange={(e) => setDonationForm(prev => ({ ...prev, message: e.target.value }))}
+                onChange={(e) => handleFormInputChange('message', e.target.value)}
                 rows={4}
               />
             </div>
@@ -338,10 +385,7 @@ const StudentDetails: React.FC = () => {
                 <button
                   key={method}
                   className={`payment-btn ${donationForm.paymentMethod === method ? 'selected' : ''}`}
-                  onClick={() => setDonationForm(prev => ({ 
-                    ...prev, 
-                    paymentMethod: method as 'gcash' | 'credit_card' | 'bank_transfer' // Explicitly type the method
-                  }))}
+                  onClick={() => handleFormInputChange('paymentMethod', method as 'gcash' | 'credit_card' | 'bank_transfer')}
                 >
                   {PAYMENT_METHODS[method].name}
                 </button>
@@ -534,9 +578,27 @@ const StudentDetails: React.FC = () => {
     return `${import.meta.env.VITE_API_URL}${path}`;
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!student) return <div>No student found</div>;
+  // Helper function to get highlighted information - enhanced with better information
+  const getHighlights = (student: StudentDetails) => {
+    return [
+      {
+        icon: <FaGraduationCap />,
+        label: "Education",
+        value: `${student.school}${student.education_level ? `, ${student.education_level}` : ''}`
+      },
+      {
+        icon: <FaBookOpen />,
+        label: "Interest",
+        value: student.favorite_subject || student.favorite_activity || "Learning"
+      }
+    ];
+  };
+
+  if (loading) return <div className="student-loading">Loading student story...</div>;
+  if (error) return <div className="student-error">Error: {error}</div>;
+  if (!student) return <div className="student-not-found">No student found</div>;
+
+  const highlights = getHighlights(student);
 
   return (
     <div className="student-profile-container">
@@ -546,100 +608,107 @@ const StudentDetails: React.FC = () => {
         </button>
       </div>
       
-      <div className="student-profile-main">
-        <div className="student-details-content">
-          <div className="student-details-header">
-            <div className="student-details-image-container">
-              <img 
-                src={getImageUrl(student.image_url)}
-                alt={`${student.first_name} ${student.last_name}`}
-                className="student-details-image"
-              />
-              <ProgressBar 
-                currentAmount={student.current_amount} 
-                amountNeeded={student.amount_needed}
-              />
-              <button 
-                className="student-profile-donate-btn"
-                onClick={handleDonateClick}
-              >
-                {getButtonText()}
-              </button>
-            </div>
-            <div className="student-details-info">
-              <h1>{`${student.first_name} ${student.last_name}`}</h1>
-              
-              <div className="student-details-tabs">
-                <button 
-                  className={`tab-btn ${activeTab === 'details' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('details')}
-                >
-                  Details
-                </button>
-                <button 
-                  className={`tab-btn ${activeTab === 'updates' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('updates')}
-                >
-                  Updates
-                </button>
-              </div>
-
-              <div className="student-details-tab-content">
-                {activeTab === 'details' ? (
-                  <div className="details-tab">
-                  
-                      <p><strong>Name:</strong> {`${student.first_name} ${student.last_name}`}</p>
-                      <p><strong>Date of Birth:</strong> {formatDate(student.date_of_birth)}</p>
-                      <p><strong>Gender:</strong> {student.gender}</p>
-                      <p><strong>School:</strong> {student.school}</p>
-                      <p><strong>Education Level:</strong> {student.grade_level}</p>
-           
-                 
-                    
+      <div className="student-profile-main student-story-main">
+        <div className="student-story-header">
+          <div className="student-portrait-container">
+            <img 
+              src={getImageUrl(student.image_url)}
+              alt={`${student.first_name}`}
+              className="student-portrait"
+            />
+            <ProgressBar 
+              currentAmount={student.current_amount} 
+              amountNeeded={student.amount_needed}
+            />
+            <button 
+              className="student-profile-donate-btn"
+              onClick={handleDonateClick}
+            >
+              {getButtonText()}
+            </button>
+          </div>
           
-                      <p><strong>Guardian Name:</strong> {student.guardian_name}</p>
-                      <p><strong>Guardian Phone:</strong> {student.guardian_phone}</p>
-                
-
-              
-                      <p><strong>Favorite Subject:</strong> {student.favorite_subject}</p>
-                      <p><strong>Favorite Activity:</strong> {student.favorite_activity}</p>
-                      <p><strong>Favorite Color:</strong> {student.favorite_color}</p>
-              
-
-                    {student.other_details && (
-                      <div className="other-details">
-                        <h3>Additional Information</h3>
-                        <p>{student.other_details}</p>
-                      </div>
-                    )}
+          <div className="student-story-intro">
+            <h1 className="student-name">{`${student.first_name} ${student.last_name}`}</h1>
+            
+            <div className="student-highlights">
+              {highlights.map((item, index) => (
+                <div key={index} className="highlight-item">
+                  <div className="highlight-icon">{item.icon}</div>
+                  <div className="highlight-content">
+                    <span className="highlight-label">{item.label}</span>
+                    <span className="highlight-value">{item.value}</span>
                   </div>
-                ) : (
-                  <div className="updates-tab">
-                    {donationUpdates.length > 0 ? (
-                      <div className="donation-updates">
-                        {donationUpdates.map((update, index) => (
-                          <div key={index} className="update-item">
-                            <div className="update-icon">💝</div>
-                            <div className="update-content">
-                              <p className="update-text">
-                                Received a donation of <span className="amount">₱{update.amount.toLocaleString()}</span>
-                              </p>
-                              <p className="update-date">{formatUpdateDate(update.created_at)}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="no-updates">No donation updates yet.</p>
-                    )}
-                  </div>
-                )}
-              </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="student-tabs">
+              <button 
+                className={`tab-btn ${activeTab === 'story' ? 'active' : ''}`}
+                onClick={() => setActiveTab('story')}
+              >
+                Story
+              </button>
+              <button 
+                className={`tab-btn ${activeTab === 'updates' ? 'active' : ''}`}
+                onClick={() => setActiveTab('updates')}
+              >
+                Updates
+              </button>
             </div>
           </div>
         </div>
+        
+        <div className="student-content-area">
+          {activeTab === 'story' ? (
+            <div className="student-story">
+              {student.other_details ? (
+                <>
+                  <div className="story-quote-mark start-quote">"</div>
+                  <div className="story-content">
+                    {student.other_details}
+                  </div>
+                  <div className="story-quote-mark end-quote">"</div>
+                </>
+              ) : (
+                <div className="no-story-message">
+                  <p>We're still writing {student.first_name}'s story. This young dreamer has great potential and needs your support to achieve their educational goals.</p>
+                  <button className="student-support-cta" onClick={handleDonateClick}>
+                    Support {student.first_name} Now
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="updates-tab">
+              {donationUpdates.length > 0 ? (
+                <div className="donation-updates">
+                  {donationUpdates.map((update, index) => (
+                    <div key={index} className="update-item">
+                      <div className="update-icon">💝</div>
+                      <div className="update-content">
+                        <p className="update-text">
+                          Received a donation of <span className="amount">₱{update.amount.toLocaleString()}</span>
+                        </p>
+                        <p className="update-date">{formatUpdateDate(update.created_at)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-updates">
+                  <p>No donation updates yet. Be the first to support {student.first_name}!</p>
+                  <button className="student-support-cta" onClick={handleDonateClick}>
+                    Support Now
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+      
       {showDonationModal && renderDonationModal()}
     </div>
   );

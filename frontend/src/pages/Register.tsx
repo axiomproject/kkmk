@@ -7,7 +7,11 @@ import { RegistrationResponse } from '../types/auth';
 import FaceVerification from '../components/FaceVerification';
 
 interface ValidationErrors {
-  name?: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  extension?: string;
+  gender?: string;
   username?: string;
   email?: string;
   password?: string;
@@ -15,13 +19,33 @@ interface ValidationErrors {
   role?: string;
   terms?: string;
   face?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  address?: string;
+  educationLevel?: string;
+  school?: string;
+  skills?: string;
+  phone?: string;
+  parentsIncome?: string;
+  disability?: string;
+  disabilityDetails?: string;
+}
+
+interface SkillOption {
+  value: string;
+  label: string;
+  examples: string;
 }
 
 const Register: React.FC = () => {
   const location = useLocation();
   const [step, setStep] = useState<'role' | 'form'>('role');
   const [role, setRole] = useState<'volunteer' | 'scholar' | 'sponsor'>();
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [extension, setExtension] = useState('');
+  const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,7 +62,56 @@ const Register: React.FC = () => {
   const [faceVerified, setFaceVerified] = useState(false);
   const [faceData, setFaceData] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const [phone, setPhone] = useState('');
+  
+  // Scholar specific fields
+  const [guardianName, setGuardianName] = useState('');
+  const [guardianPhone, setGuardianPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [educationLevel, setEducationLevel] = useState('');
+  const [school, setSchool] = useState('');
+  const [parentsIncome, setParentsIncome] = useState('');
+  
+  // Volunteer specific fields
+  const [skills, setSkills] = useState<string[]>([]);
+  const [hasDisability, setHasDisability] = useState<boolean | null>(null);
+  const [disabilityType, setDisabilityType] = useState<string[]>([]);
+  const [otherDisabilityDetails, setOtherDisabilityDetails] = useState('');
+  
   const navigate = useNavigate();
+
+  // Available education levels
+  const educationLevels = [
+    'Elementary',
+    'Junior High School',
+    'Senior High School',
+    'Vocational',
+    'College',
+    'Graduate School'
+  ];
+  
+  // Volunteer skills options with examples
+  const skillOptions: SkillOption[] = [
+    { value: 'teaching', label: 'Teaching', examples: 'Tutoring, mentoring, curriculum development' },
+    { value: 'programming', label: 'Programming', examples: 'Web development, mobile apps, data analysis' },
+    { value: 'writing', label: 'Writing', examples: 'Content creation, grant writing, editing' },
+    { value: 'design', label: 'Design', examples: 'Graphic design, UI/UX, illustration' },
+    { value: 'fundraising', label: 'Fundraising', examples: 'Event organization, donor relations, crowdfunding' },
+    { value: 'counseling', label: 'Counseling', examples: 'Emotional support, career guidance, conflict resolution' },
+    { value: 'logistics', label: 'Logistics', examples: 'Event planning, transportation coordination, resource management' },
+    { value: 'medical', label: 'Medical', examples: 'First aid, health education, medical assistance' },
+    { value: 'social_media', label: 'Social Media', examples: 'Content strategy, community management, analytics' },
+    { value: 'photography', label: 'Photography/Videography', examples: 'Event documentation, promotional material creation' },
+  ];
+
+  // Available disability types
+  const disabilityTypes = [
+    'Physical',
+    'Mental',
+    'Psychological',
+    'Learning',
+    'Other'
+  ];
 
   useEffect(() => {
     // Check if there's a preselectedRole
@@ -69,7 +142,11 @@ const Register: React.FC = () => {
   const handleBack = () => {
     if (step === 'form') {
       // Reset form data when going back to role selection
-      setName('');
+      setFirstName('');
+      setMiddleName('');
+      setLastName('');
+      setExtension('');
+      setGender('male');
       setUsername('');
       setEmail('');
       setPassword('');
@@ -79,6 +156,17 @@ const Register: React.FC = () => {
       setAcceptedTerms(false);
       setFaceVerified(false);
       setFaceData('');
+      setGuardianName('');
+      setGuardianPhone('');
+      setAddress('');
+      setEducationLevel('');
+      setSchool('');
+      setSkills([]);
+      setPhone('');
+      setParentsIncome('');
+      setHasDisability(null);
+      setDisabilityType([]);
+      setOtherDisabilityDetails('');
       
       // Go back to role selection
       setStep('role');
@@ -91,11 +179,23 @@ const Register: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
 
-    // Name validation
-    if (!name.trim()) {
-      newErrors.name = 'Name is required';
-    } else if (name.length < 2 || name.length > 50) {
-      newErrors.name = 'Name must be between 2 and 50 characters';
+    // First name validation
+    if (!firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (firstName.length < 2 || firstName.length > 50) {
+      newErrors.firstName = 'First name must be between 2 and 50 characters';
+    }
+
+    // Last name validation
+    if (!lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (lastName.length < 2 || lastName.length > 50) {
+      newErrors.lastName = 'Last name must be between 2 and 50 characters';
+    }
+
+    // Gender validation
+    if (!gender) {
+      newErrors.gender = 'Gender is required';
     }
 
     // Username validation
@@ -107,13 +207,11 @@ const Register: React.FC = () => {
       newErrors.username = 'Username can only contain letters, numbers, and underscores';
     }
 
-    // Email validation - skip for scholar role
-    if (role !== 'scholar') {
-      if (!email.trim()) {
-        newErrors.email = 'Email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        newErrors.email = 'Please enter a valid email address';
-      }
+    // Email validation - required for all roles
+    if (!email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
     // Password validation
@@ -125,14 +223,78 @@ const Register: React.FC = () => {
       newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
 
-    // Date of Birth validation
+    // Date of Birth validation - minimum age of 5 years
     if (!dateOfBirth.trim()) {
       newErrors.dateOfBirth = 'Date of Birth is required';
+    } else {
+      const dobDate = new Date(dateOfBirth);
+      const today = new Date();
+      const minAgeDate = new Date();
+      minAgeDate.setFullYear(today.getFullYear() - 5);
+      
+      if (dobDate > minAgeDate) {
+        newErrors.dateOfBirth = 'You must be at least 5 years old to register';
+      }
     }
 
-    // Add role validation
+    // Role validation
     if (!role) {
       newErrors.role = 'Role is required';
+    }
+
+    // Scholar specific validations
+    if (role === 'scholar') {
+      if (!guardianName.trim()) {
+        newErrors.guardianName = 'Guardian name is required';
+      }
+      
+      if (!guardianPhone.trim()) {
+        newErrors.guardianPhone = 'Guardian phone is required';
+      } else if (!/^\d{10,15}$/.test(guardianPhone.replace(/\D/g, ''))) {
+        newErrors.guardianPhone = 'Please enter a valid phone number';
+      }
+      
+      if (!address.trim()) {
+        newErrors.address = 'Address is required';
+      }
+      
+      if (!educationLevel) {
+        newErrors.educationLevel = 'Education level is required';
+      }
+      
+      if (!school.trim()) {
+        newErrors.school = 'School is required';
+      }
+
+      if (!parentsIncome) {
+        newErrors.parentsIncome = 'Parents\' income is required';
+      }
+    }
+    
+    // Volunteer specific validations
+    if (role === 'volunteer') {
+      if (skills.length === 0) {
+        newErrors.skills = 'Please select at least one skill';
+      }
+      
+      if (hasDisability === null) {
+        newErrors.disability = 'Please specify if you have any disability';
+      }
+      
+      if (hasDisability === true && disabilityType.length === 0) {
+        newErrors.disability = 'Please select at least one disability type';
+      }
+      
+      if (hasDisability === true && disabilityType.length > 0 && !otherDisabilityDetails.trim()) {
+        newErrors.disabilityDetails = 'Please provide details about your disability';
+      }
+    }
+
+    // Phone validation for all roles
+    if (!phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\d{10,15}$/.test(phone.replace(/\D/g, ''))) {
+      newErrors.phone = 'Please enter a valid phone number';
     }
 
     if (!acceptedTerms) {
@@ -151,16 +313,49 @@ const Register: React.FC = () => {
     if (!validateForm()) return;
 
     try {
+      const fullName = [firstName, middleName, lastName, extension].filter(Boolean).join(' ');
+      
+      // Prepare disability information for volunteers
+      let disabilityInfo = null;
+      if (role === 'volunteer' && hasDisability === true) {
+        disabilityInfo = {
+          types: disabilityType,
+          details: otherDisabilityDetails
+        };
+      }
+      
+      // Add console.log to debug
+      console.log('Submitting registration with role:', role);
+      
       const registrationData = {
-        name,
+        firstName,
+        middleName,
+        lastName, 
+        extension,
+        gender,
+        name: fullName, // Keep the name field for now for backward compatibility
         username,
-        email: role === 'scholar' ? '' : email, // Empty email for scholars
+        email, // Include email for all roles
+        phone, // Add phone to registration data for all roles
         password,
         dateOfBirth,
-        role,
-        faceData: faceVerified ? faceData : null
+        role, // Make sure role is properly sent to the backend
+        faceData: faceVerified ? faceData : null,
+        // Scholar specific fields
+        guardianName: role === 'scholar' ? guardianName : undefined,
+        guardianPhone: role === 'scholar' ? guardianPhone : undefined, 
+        address: role === 'scholar' ? address : undefined,
+        educationLevel: role === 'scholar' ? educationLevel : undefined,
+        school: role === 'scholar' ? school : undefined,
+        parentsIncome: role === 'scholar' ? parentsIncome : undefined,
+        // Volunteer specific fields
+        skills: role === 'volunteer' ? skills : undefined,
+        disability: role === 'volunteer' ? (hasDisability ? disabilityInfo : null) : undefined
       };
 
+      // Log data to debug
+      console.log('Registration data sent to server:', JSON.stringify(registrationData));
+      
       const response = await api.post('/register', registrationData);
       
       // Different success message based on role
@@ -205,7 +400,11 @@ const Register: React.FC = () => {
 
   const handleRoleSelect = (selectedRole: 'volunteer' | 'scholar' | 'sponsor') => {
     // Reset form fields when changing roles
-    setName('');
+    setFirstName('');
+    setMiddleName('');
+    setLastName('');
+    setExtension('');
+    setGender('male');
     setUsername('');
     setEmail('');
     setPassword('');
@@ -215,12 +414,44 @@ const Register: React.FC = () => {
     setAcceptedTerms(false);
     setFaceVerified(false);
     setFaceData('');
+    setGuardianName('');
+    setGuardianPhone('');
+    setAddress('');
+    setEducationLevel('');
+    setSchool('');
+    setSkills([]);
+    setPhone('');
+    setParentsIncome('');
+    setHasDisability(null);
+    setDisabilityType([]);
+    setOtherDisabilityDetails('');
     
-    // Set the new role
+    // Set the new role - add console.log to debug
+    console.log('Selected role:', selectedRole);
     setRole(selectedRole);
     
     // Add a small delay before transition to make it smoother
     setTimeout(() => setStep('form'), 50);
+  };
+
+  const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    if (e.target.checked) {
+      setSkills(prev => [...prev, value]);
+    } else {
+      setSkills(prev => prev.filter(skill => skill !== value));
+    }
+  };
+
+  const handleDisabilityTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    if (e.target.checked) {
+      setDisabilityType(prev => [...prev, value]);
+    } else {
+      setDisabilityType(prev => prev.filter(type => type !== value));
+    }
   };
 
   const closeModal = (setter: (value: boolean) => void) => {
@@ -252,7 +483,7 @@ const Register: React.FC = () => {
   const renderRoleSelection = () => (
     <div className="role-selection">
       <h4>Choose your role</h4>
-      <p>Select how you want to join Kmkk</p>
+      <p>Select how you want to join KMFI</p>
       <div className="role-buttons">
         <button 
           className={`role-button ${role === 'volunteer' ? 'selected' : ''}`}
@@ -410,21 +641,106 @@ const Register: React.FC = () => {
       <p>Please fill in your details</p>
       {error && <p className="error-message">{error}</p>}
       <form onSubmit={handleSubmit} className="auth-form">
-        <div className="form-group-row">
-          <div className="form-group">
-            <label htmlFor="name">Full Name</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your full name"
-              className={errors.name ? 'error-input' : ''}
-            />
-            {errors.name && <span className="error-text">{errors.name}</span>}
+        <div className="form-section">
+          <h5>Personal Information</h5>
+          <div className="form-group-row">
+            <div className="form-group">
+              <label htmlFor="firstName">First Name *</label>
+              <input
+                type="text"
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+                className={errors.firstName ? 'error-input' : ''}
+              />
+              {errors.firstName && <span className="error-text">{errors.firstName}</span>}
+            </div>
+            <div className="form-group">
+              <label htmlFor="middleName">Middle Name</label>
+              <input
+                type="text"
+                id="middleName"
+                value={middleName}
+                onChange={(e) => setMiddleName(e.target.value)}
+                placeholder="Middle name (optional)"
+              />
+            </div>
           </div>
+          <div className="form-group-row">
+            <div className="form-group">
+              <label htmlFor="lastName">Last Name *</label>
+              <input
+                type="text"
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name"
+                className={errors.lastName ? 'error-input' : ''}
+              />
+              {errors.lastName && <span className="error-text">{errors.lastName}</span>}
+            </div>
+            <div className="form-group">
+              <label htmlFor="extension">Extension</label>
+              <input
+                type="text"
+                id="extension"
+                value={extension}
+                onChange={(e) => setExtension(e.target.value)}
+                placeholder="Jr., Sr., III, etc. (optional)"
+              />
+            </div>
+          </div>
+          
+          <div className="form-group-row">
+            <div className="form-group">
+              <label htmlFor="gender">Gender *</label>
+              <select
+                id="gender"
+                value={gender}
+                onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
+                className={errors.gender ? 'error-input' : ''}
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+              {errors.gender && <span className="error-text">{errors.gender}</span>}
+            </div>
+            <div className="form-group">
+              <label htmlFor="dateOfBirth">Date of Birth *</label>
+              <input
+                type="date"
+                id="dateOfBirth"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                placeholder="Date of Birth"
+                max={new Date().toISOString().split('T')[0]}
+                className={errors.dateOfBirth ? 'error-input' : ''}
+              />
+              {errors.dateOfBirth && <span className="error-text">{errors.dateOfBirth}</span>}
+            </div>
+          </div>
+          
+          {/* Add phone number field for all roles */}
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="phone">Phone Number *</label>
+            <input
+              type="tel"
+              id="phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone number"
+              className={errors.phone ? 'error-input' : ''}
+            />
+            {errors.phone && <span className="error-text">{errors.phone}</span>}
+          </div>
+        </div>
+        
+        <div className="form-section">
+          <h5>Account Information</h5>
+          <div className="form-group">
+            <label htmlFor="username">Username *</label>
             <input
               type="text"
               id="username"
@@ -435,10 +751,10 @@ const Register: React.FC = () => {
             />
             {errors.username && <span className="error-text">{errors.username}</span>}
           </div>
-        </div>
-        {role !== 'scholar' && (
+          
+          {/* Include email field for all roles, including scholars */}
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">Email *</label>
             <input
               type="email"
               id="email"
@@ -449,63 +765,228 @@ const Register: React.FC = () => {
             />
             {errors.email && <span className="error-text">{errors.email}</span>}
           </div>
-        )}
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <div className="password-input-wrapper">
-            <input
-              type={showPassword ? "text" : "password"}
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className={`password-input ${errors.password ? 'error-input' : ''}`}
-            />
-            {password.length > 0 && (
-              <span 
-                className="password-toggle-icon" 
-                onClick={() => setShowPassword(!showPassword)}
+          
+          <div className="form-group">
+            <label htmlFor="password">Password *</label>
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className={`password-input ${errors.password ? 'error-input' : ''}`}
+              />
+              {password.length > 0 && (
+                <span 
+                  className="password-toggle-icon" 
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <svg viewBox="0 0 24 24">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24">
+                      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
+                    </svg>
+                  )}
+                </span>
+              )}
+            </div>
+            {errors.password && <span className="error-text">{errors.password}</span>}
+          </div>
+        </div>
+        
+        {/* Scholar specific fields */}
+        {role === 'scholar' && (
+          <div className="form-section">
+            <h5>Scholar Information</h5>
+            <div className="form-group">
+              <label htmlFor="guardianName">Guardian Name *</label>
+              <input
+                type="text"
+                id="guardianName"
+                value={guardianName}
+                onChange={(e) => setGuardianName(e.target.value)}
+                placeholder="Guardian's full name"
+                className={errors.guardianName ? 'error-input' : ''}
+              />
+              {errors.guardianName && <span className="error-text">{errors.guardianName}</span>}
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="guardianPhone">Guardian Phone *</label>
+              <input
+                type="tel"
+                id="guardianPhone"
+                value={guardianPhone}
+                onChange={(e) => setGuardianPhone(e.target.value)}
+                placeholder="Guardian's phone number"
+                className={errors.guardianPhone ? 'error-input' : ''}
+              />
+              {errors.guardianPhone && <span className="error-text">{errors.guardianPhone}</span>}
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="address">Address *</label>
+              <textarea
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Complete address"
+                rows={3}
+                className={errors.address ? 'error-input' : ''}
+              />
+              {errors.address && <span className="error-text">{errors.address}</span>}
+            </div>
+
+            {/* Parents' Income Field - Add it before the education fields */}
+            <div className="form-group">
+              <label htmlFor="parentsIncome">Parents' total monthly income *</label>
+              <select
+                id="parentsIncome"
+                value={parentsIncome}
+                onChange={(e) => setParentsIncome(e.target.value)}
+                className={errors.parentsIncome ? 'error-input' : ''}
               >
-                {showPassword ? (
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24">
-                    <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/>
-                  </svg>
+                <option value="">Select income range</option>
+                <option value="below P10,000">below P10,000</option>
+                <option value="P10,001 - P15,000">P10,001 - P15,000</option>
+                <option value="P15,001 - P20,000">P15,001 - P20,000</option>
+                <option value="P20,001 - P25,000">P20,001 - P25,000</option>
+                <option value="P25,001 - P30,000">P25,001 - P30,000</option>
+                <option value="P30,001 and above">P30,001 and above</option>
+              </select>
+              {errors.parentsIncome && <span className="error-text">{errors.parentsIncome}</span>}
+            </div>
+            
+            <div className="form-group-row">
+              <div className="form-group">
+                <label htmlFor="educationLevel">Education Level *</label>
+                <select
+                  id="educationLevel"
+                  value={educationLevel}
+                  onChange={(e) => setEducationLevel(e.target.value)}
+                  className={errors.educationLevel ? 'error-input' : ''}
+                >
+                  <option value="">Select Education Level</option>
+                  {educationLevels.map((level) => (
+                    <option key={level} value={level}>{level}</option>
+                  ))}
+                </select>
+                {errors.educationLevel && <span className="error-text">{errors.educationLevel}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="school">School *</label>
+                <input
+                  type="text"
+                  id="school"
+                  value={school}
+                  onChange={(e) => setSchool(e.target.value)}
+                  placeholder="School name"
+                  className={errors.school ? 'error-input' : ''}
+                />
+                {errors.school && <span className="error-text">{errors.school}</span>}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Volunteer specific fields */}
+        {role === 'volunteer' && (
+          <div className="form-section">
+            <h5>Volunteer Skills</h5>
+            <p className="skills-info">Select all the skills that you would like to volunteer:</p>
+            
+            <div className="skills-grid">
+              {skillOptions.map((skill) => (
+                <div key={skill.value} className="skill-checkbox-container">
+                  <div className="skill-checkbox">
+                    <input
+                      type="checkbox"
+                      id={`skill-${skill.value}`}
+                      value={skill.value}
+                      checked={skills.includes(skill.value)}
+                      onChange={handleSkillChange}
+                    />
+                    <label htmlFor={`skill-${skill.value}`}>{skill.label}</label>
+                  </div>
+                  <p className="skill-examples">{skill.examples}</p>
+                </div>
+              ))}
+            </div>
+            {errors.skills && <span className="error-text skills-error">{errors.skills}</span>}
+            
+            {/* Disability section for volunteers */}
+            <h5 className="mt-4">Disability Information</h5>
+            <p className="disability-info">As an inclusive organization, we welcome volunteers of all abilities. This information helps us provide appropriate support.</p>
+            
+            <div className="disability-question">
+              <label>Do you have any disability?</label>
+              <div className="radio-group">
+                <div className="radio-option">
+                  <input
+                    type="radio"
+                    id="disability-yes"
+                    name="hasDisability"
+                    checked={hasDisability === true}
+                    onChange={() => setHasDisability(true)}
+                  />
+                  <label htmlFor="disability-yes">Yes</label>
+                </div>
+                <div className="radio-option">
+                  <input
+                    type="radio"
+                    id="disability-no"
+                    name="hasDisability"
+                    checked={hasDisability === false}
+                    onChange={() => setHasDisability(false)}
+                  />
+                  <label htmlFor="disability-no">No</label>
+                </div>
+              </div>
+              {errors.disability && <span className="error-text">{errors.disability}</span>}
+            </div>
+            
+            {hasDisability === true && (
+              <div className="disability-types">
+                <label>Type of disability (select all that apply):</label>
+                <div className="disability-checkbox-grid">
+                  {disabilityTypes.map((type) => (
+                    <div key={type} className="disability-checkbox">
+                      <input
+                        type="checkbox"
+                        id={`disability-${type}`}
+                        value={type}
+                        checked={disabilityType.includes(type)}
+                        onChange={handleDisabilityTypeChange}
+                      />
+                      <label htmlFor={`disability-${type}`}>{type}</label>
+                    </div>
+                  ))}
+                </div>
+                
+                {disabilityType.length > 0 && (
+                  <div className="form-group mt-2">
+                    <label htmlFor="otherDisabilityDetails">Please specify details about your disability:</label>
+                    <textarea
+                      id="otherDisabilityDetails"
+                      value={otherDisabilityDetails}
+                      onChange={(e) => setOtherDisabilityDetails(e.target.value)}
+                      placeholder="Please provide details about your disability (nature, accommodations needed, etc.)"
+                      rows={3}
+                      className={errors.disabilityDetails ? 'error-input' : ''}
+                    />
+                    {errors.disabilityDetails && <span className="error-text">{errors.disabilityDetails}</span>}
+                  </div>
                 )}
-              </span>
+              </div>
             )}
           </div>
-          {errors.password && <span className="error-text">{errors.password}</span>}
-        </div>
-        <div className="form-group">
-          <label htmlFor="dateOfBirth">Date of Birth</label>
-          <input
-            type="date"
-            id="dateOfBirth"
-            value={dateOfBirth}
-            onChange={(e) => setDateOfBirth(e.target.value)}
-            placeholder="Date of Birth"
-            className={errors.dateOfBirth ? 'error-input' : ''}
-          />
-          {errors.dateOfBirth && <span className="error-text">{errors.dateOfBirth}</span>}
-        </div>
-        <div className="form-group">
-          <label htmlFor="role">Role</label>
-          <select
-            id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as 'volunteer' | 'scholar' | 'sponsor')}
-            className={errors.role ? 'error-input' : ''}
-          >
-            <option value="volunteer">Volunteer</option>
-            <option value="scholar">Scholar</option>
-            <option value="sponsor">Sponsor</option>
-          </select>
-          {errors.role && <span className="error-text">{errors.role}</span>}
-        </div>
+        )}
+        
         <div className="terms-checkbox">
           <input
             type="checkbox"
@@ -515,7 +996,7 @@ const Register: React.FC = () => {
             className={errors.terms ? 'error-input' : ''}
           />
           <label htmlFor="terms">
-            I agree with kmkk's{' '}
+            I agree with KMFI's{' '}
             <span className="terms-link" onClick={handleTermsClick}>
               Terms of Service
             </span>
@@ -527,6 +1008,7 @@ const Register: React.FC = () => {
           </label>
           {errors.terms && <span className="error-text">{errors.terms}</span>}
         </div>
+        
         <div className="face-verification-section">
           <button
             type="button"
@@ -579,7 +1061,6 @@ const Register: React.FC = () => {
           </motion.div>
         </AnimatePresence>
         
-        {/* Success Popup - Updated animation with AnimatePresence handled directly in renderSuccessPopup */}
         <AnimatePresence>
           {showSuccessPopup && renderSuccessPopup()}
         </AnimatePresence>

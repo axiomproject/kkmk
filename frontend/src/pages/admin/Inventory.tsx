@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../../styles/Inventory.css';
 import api from '../../config/axios'; // Replace axios import
 import * as XLSX from 'xlsx'; // Add this import
+import { useLocation } from 'react-router-dom'; // Add this import
 
 interface BaseDonation {
   id: number;
@@ -18,6 +19,8 @@ interface BaseDonation {
   rejectedAt?: string;
   rejectedBy?: string;
   rejectionReason?: string;
+  expirationDate?: string;
+  unit: QuantityUnit;
 }
 
 interface RegularDonation extends BaseDonation {
@@ -58,6 +61,19 @@ interface DistributeModalProps {
 
 type FrequencyType = 'monthly' | 'quarterly' | 'annually';
 
+type QuantityUnit = 'Piece' | 'Box' | 'Pack' | 'Kilogram' | 'Liter' | 'Set';
+
+const QUANTITY_UNITS = [
+  { value: 'Piece', label: 'Piece' },
+  { value: 'Box', label: 'Box' },
+  { value: 'Pack', label: 'Pack' },
+  { value: 'Kilogram', label: 'Kilogram' },
+  { value: 'Liter', label: 'Liter' },
+  { value: 'Set', label: 'Set' }
+];
+
+const CATEGORIES_WITH_EXPIRATION = ['Food & Nutrition', 'Medical Supplies & Medicines'];
+
 const ItemModal: React.FC<ModalProps> = ({ isOpen, onClose, item, type, onSubmit }) => {
   const [formData, setFormData] = useState({
     donatorName: '',
@@ -67,7 +83,9 @@ const ItemModal: React.FC<ModalProps> = ({ isOpen, onClose, item, type, onSubmit
     quantity: 0,
     category: '',
     frequency: 'monthly' as FrequencyType,
-    type: type // Add type field
+    type: type, // Add type field
+    unit: 'Piece' as QuantityUnit,
+    expirationDate: '',
   });
 
   // Reset form when modal opens or type/item changes
@@ -81,15 +99,58 @@ const ItemModal: React.FC<ModalProps> = ({ isOpen, onClose, item, type, onSubmit
         quantity: item?.quantity || 0,
         category: item?.category || '',
         frequency: (item as RegularDonation)?.frequency || 'monthly',
-        type: item?.type || type // Ensure type is always set
+        type: item?.type || type, // Ensure type is always set
+        unit: item?.unit || 'Piece',
+        expirationDate: item?.expirationDate || ''
       });
     }
   }, [isOpen, item, type]);
 
   if (!isOpen) return null;
 
+  const validateForm = (): string | null => {
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      return 'Invalid email format';
+    }
+
+    // Contact number validation (Philippine format)
+    const phoneRegex = /^(\+63|0)[0-9]{10}$/;
+    if (!phoneRegex.test(formData.contactNumber)) {
+      return 'Invalid contact number format. Use +63 or 0 followed by 10 digits';
+    }
+
+    // Quantity validation
+    if (formData.quantity <= 0 || !Number.isInteger(formData.quantity)) {
+      return 'Quantity must be a positive integer';
+    }
+
+    // Validate expiration date for food and medical items
+    if (CATEGORIES_WITH_EXPIRATION.includes(formData.category)) {
+      if (!formData.expirationDate) {
+        return 'Expiration date is required for food and medical items';
+      }
+      
+      const today = new Date();
+      const expDate = new Date(formData.expirationDate);
+      if (expDate <= today) {
+        return 'Expiration date must be in the future';
+      }
+    }
+
+    return null;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const validationError = validateForm();
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     // Create the correct type of item based on formData.type
     const submitData = formData.type === 'regular' 
       ? {
@@ -101,7 +162,9 @@ const ItemModal: React.FC<ModalProps> = ({ isOpen, onClose, item, type, onSubmit
           category: formData.category,
           frequency: formData.frequency,
           type: 'regular' as const,
-          verificationStatus: 'pending' as const
+          verificationStatus: 'pending' as const,
+          unit: formData.unit,
+          expirationDate: formData.expirationDate
         }
       : {
           donatorName: formData.donatorName,
@@ -111,7 +174,9 @@ const ItemModal: React.FC<ModalProps> = ({ isOpen, onClose, item, type, onSubmit
           quantity: formData.quantity,
           category: formData.category,
           type: 'in-kind' as const,
-          verificationStatus: 'pending' as const
+          verificationStatus: 'pending' as const,
+          unit: formData.unit,
+          expirationDate: formData.expirationDate
         };
 
     onSubmit(submitData);
@@ -124,7 +189,9 @@ const ItemModal: React.FC<ModalProps> = ({ isOpen, onClose, item, type, onSubmit
       quantity: 0,
       category: '',
       frequency: 'monthly',
-      type: type
+      type: type,
+      unit: 'Piece',
+      expirationDate: ''
     });
     onClose();
   };
@@ -215,6 +282,36 @@ const ItemModal: React.FC<ModalProps> = ({ isOpen, onClose, item, type, onSubmit
               <option value="annually">Annually</option>
             </select>
           )}
+          <div className="form-group">
+            <label>Unit:</label>
+            <select
+              value={formData.unit}
+              onChange={e => setFormData({...formData, unit: e.target.value as QuantityUnit})}
+              required
+              className="inventory-form-select"
+            >
+              {QUANTITY_UNITS.map(unit => (
+                <option key={unit.value} value={unit.value}>
+                  {unit.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {CATEGORIES_WITH_EXPIRATION.includes(formData.category) && (
+            <div className="form-group">
+              <label>Expiration Date:</label>
+              <input
+                type="date"
+                value={formData.expirationDate}
+                onChange={e => setFormData({...formData, expirationDate: e.target.value})}
+                min={new Date().toISOString().split('T')[0]}
+                required
+                className="inventory-form-input"
+              />
+              <small>Required for food and medical items</small>
+            </div>
+          )}
           <div className="inventory-modal-buttons">
             <button type="button" onClick={onClose} className="inventory-modal-cancel">
               Cancel
@@ -264,13 +361,6 @@ const DistributeModal: React.FC<DistributeModalProps> = ({ isOpen, onClose, item
     fetchUsers();
   }, [isOpen]);
 
-  const getScholarInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase();
-  };
 
   const handleScholarSelect = (scholarId: number) => {
     setSelectedScholarIds(prev => {
@@ -313,11 +403,44 @@ const DistributeModal: React.FC<DistributeModalProps> = ({ isOpen, onClose, item
     };
   };
 
-  if (!isOpen) return null;
+  const validateDistribution = (): string | null => {
+    if (quantity <= 0 || !Number.isInteger(quantity)) {
+      return 'Quantity must be a positive integer';
+    }
 
-  const filteredScholars = scholars.filter(scholar =>
-    scholar.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    if (selectedScholarIds.length === 0) {
+      return 'Please select at least one recipient';
+    }
+
+    const totalNeeded = selectedScholarIds.length * quantity;
+    if (totalNeeded > item.quantity) {
+      return `Not enough items. Need ${totalNeeded} but only have ${item.quantity} available.`;
+    }
+
+    return null;
+  };
+
+  const handleDistribute = () => {
+    const validationError = validateDistribution();
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
+    if (selectedScholarIds.length > 0) {
+      if (validateQuantity().isValid) {
+        selectedScholarIds.forEach(scholarId => {
+          onSubmit(item.id, quantity, scholarId, 'scholar');
+        });
+      } else {
+        alert(validateQuantity().message);
+      }
+    } else {
+      alert('Please select at least one user');
+    }
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">
@@ -433,19 +556,7 @@ const DistributeModal: React.FC<DistributeModalProps> = ({ isOpen, onClose, item
             </button>
             <button 
               type="button" 
-              onClick={() => {
-                if (selectedScholarIds.length > 0) {
-                  if (validateQuantity().isValid) {
-                    selectedScholarIds.forEach(scholarId => {
-                      onSubmit(item.id, quantity, scholarId, 'scholar');
-                    });
-                  } else {
-                    alert(validateQuantity().message);
-                  }
-                } else {
-                  alert('Please select at least one user');
-                }
-              }}
+              onClick={handleDistribute}
               disabled={
                 selectedScholarIds.length === 0 || 
                 quantity <= 0 || 
@@ -493,6 +604,11 @@ const formatDateTime = (timestamp: string) => {
   });
 };
 
+type ExpiringItem = (RegularDonation | InKindDonation) & {
+  daysUntilExpiration: number;
+  isExpired: boolean; // Add this field
+};
+
 const AdminInventory: React.FC = () => {
   // Update state types and API calls
   const [regularItems, setRegularItems] = useState<RegularDonation[]>([]);
@@ -502,13 +618,13 @@ const AdminInventory: React.FC = () => {
   const [distributeItem, setDistributeItem] = useState<RegularDonation | InKindDonation | null>(null);
   const [addingType, setAddingType] = useState<'regular' | 'in-kind'>('regular');
   const [activeView, setActiveView] = useState<'pending' | 'regular' | 'in-kind'>('pending');
-  const [selectedScholarId, setSelectedScholarId] = useState<number | null>(null);
   const [distributions, setDistributions] = useState<Distribution[]>([]);
   const [inventoryPage, setInventoryPage] = useState(1);
   const [queuePage, setQueuePage] = useState(1);
   const [distributionPage, setDistributionPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [viewItem, setViewItem] = useState<DonationItem | null>(null); // Add this state
+  const [expiringItems, setExpiringItems] = useState<ExpiringItem[]>([]);
 
   // Add sort config state
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: null });
@@ -643,25 +759,17 @@ const AdminInventory: React.FC = () => {
   };
 
   // Update the fetchItems function to use fetchAll
-  const fetchItems = () => fetchAll();
+  const fetchItems = useCallback(() => fetchAll(), []);
 
-  // Fetch items on component mount
+  // Fetch items on component mount - fixed to prevent infinite loop
   useEffect(() => {
-    const fetchDistributions = async () => {
-      try {
-        const response = await api.get(
-          '/inventory/distributions',
-          getAuthHeaders()
-        );
-        setDistributions(response.data);
-      } catch (error) {
-        console.error('Error fetching distributions:', error);
-      }
-    };
-
     fetchItems();
-    fetchDistributions();
-  }, []);
+  }, []); // Remove dependencies that cause re-renders
+
+  // Update useEffect to calculate expiring items without causing infinite loops
+  useEffect(() => {
+    calculateExpiringItems();
+  }, [regularItems.length, inkindItems.length]); // Only recalculate when arrays change length
 
   const handleAddItem = async (newItem: Omit<DonationItem, 'id' | 'lastUpdated'>) => {
     try {
@@ -681,14 +789,37 @@ const AdminInventory: React.FC = () => {
     if (!editingItem) return;
     try {
       const type = editingItem.type === 'regular' ? 'regular' : 'inkind';
-      const response = await api.put(`/inventory/${type}/${editingItem.id}`, updatedItem);
-      if (editingItem.type === 'regular') {
-        setRegularItems(regularItems.map(item => item.id === editingItem.id ? response.data : item));
+      const response = await api.put(`/inventory/${type}/${editingItem.id}`, {
+        donatorName: updatedItem.donatorName,
+        email: updatedItem.email, 
+        contactNumber: updatedItem.contactNumber,
+        item: updatedItem.item,
+        quantity: updatedItem.quantity,
+        category: updatedItem.category,
+        unit: updatedItem.unit,
+        expirationDate: updatedItem.expirationDate,
+        ...(type === 'regular' && { frequency: (updatedItem as RegularDonation).frequency })
+      });
+
+      // Update the correct state based on type
+      if (type === 'regular') {
+        setRegularItems(regularItems.map(item => 
+          item.id === editingItem.id ? response.data : item
+        ));
       } else {
-        setInkindItems(inkindItems.map(item => item.id === editingItem.id ? response.data : item));
+        setInkindItems(inkindItems.map(item => 
+          item.id === editingItem.id ? response.data : item
+        ));
       }
+
+      setIsModalOpen(false);
+      setEditingItem(undefined);
+      
+      // Refresh data
+      fetchItems();
     } catch (error) {
       console.error('Error updating item:', error);
+      alert('Failed to update item. Please try again.');
     }
   };
 
@@ -736,10 +867,12 @@ const AdminInventory: React.FC = () => {
       const endpoint = type === 'regular' ? 'regular' : 'inkind';
       const response = await api.post(
         `/inventory/${endpoint}/${id}/verify`,
-        {},
+        { 
+          expirationDate: new Date().toISOString().split('T')[0] // Set today as default date
+        },
         getAuthHeaders()
       );
-
+  
       // Update local state
       if (type === 'regular') {
         setRegularItems(regularItems.map(item => 
@@ -750,7 +883,7 @@ const AdminInventory: React.FC = () => {
           item.id === id ? response.data : item
         ));
       }
-
+  
       alert('Item verified successfully!');
     } catch (error) {
       console.error('Error verifying item:', error);
@@ -920,6 +1053,12 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
               <th onClick={() => handleSort('quantity')} className="sortable-header">
                 Quantity <span className="material-icons sort-icon">{getSortIcon('quantity')}</span>
               </th>
+              <th onClick={() => handleSort('unit')} className="sortable-header">
+                Unit <span className="material-icons sort-icon">{getSortIcon('unit')}</span>
+              </th>
+              <th onClick={() => handleSort('expirationDate')} className="sortable-header">
+                Expiration Date <span className="material-icons sort-icon">{getSortIcon('expirationDate')}</span>
+              </th>
               {view === 'regular' && (
                 <th onClick={() => handleSort('frequency')} className="sortable-header">
                   Frequency <span className="material-icons sort-icon">{getSortIcon('frequency')}</span>
@@ -940,13 +1079,15 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
                 <td>{item.item}</td>
                 <td>{item.category}</td>
                 <td>{item.quantity}</td>
+                <td>{item.unit}</td>
+                <td>{item.expirationDate ? new Date(item.expirationDate).toLocaleDateString() : 'N/A'}</td>
                 {view === 'regular' && (
                   <td>{(item as RegularDonation).frequency}</td>
                 )}
                 <td>{item.lastUpdated ? formatDateTime(item.lastUpdated) : 'N/A'}</td>
                 <td>
                   <div className="action-buttons">
-                  <button 
+                    <button 
                       className="viewsss-button"
                       onClick={() => handleView(item)}
                     >
@@ -1031,6 +1172,11 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
         <div className="table-header">
           <div className="header-left">
             <h2 className="table-title">Verification Queue</h2>
+          </div>
+          <div className="header-actions">
+            <button className="export-btn" onClick={handleExportQueue}>
+              Export
+            </button>
           </div>
         </div>
         <div className="inventory-table">
@@ -1124,7 +1270,7 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
   // Update distribution history table
   const renderDistributionHistory = () => {
     // Filter distributions based on search term with null checks
-    let sortedDistributions = [...distributions].filter(dist =>
+    const sortedDistributions = [...distributions].filter(dist =>
       (dist.recipientName?.toLowerCase() || '').includes(distributionSearchTerm.toLowerCase()) ||
       (dist.recipientEmail?.toLowerCase() || '').includes(distributionSearchTerm.toLowerCase()) ||
       (dist.itemName?.toLowerCase() || '').includes(distributionSearchTerm.toLowerCase()) ||
@@ -1251,6 +1397,326 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
     setViewItem(item);
   };
 
+  // Add this new function to calculate expiring items
+  const calculateExpiringItems = () => {
+    const today = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+    const expiring = [...regularItems, ...inkindItems]
+      .filter(item => 
+        item.verificationStatus === 'verified' && 
+        item.expirationDate 
+      )
+      .map(item => ({
+        ...item,
+        daysUntilExpiration: Math.ceil(
+          (new Date(item.expirationDate || '').getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        ),
+        isExpired: new Date(item.expirationDate || '') <= today
+      }))
+      .sort((a, b) => a.daysUntilExpiration - b.daysUntilExpiration);
+
+    setExpiringItems(expiring);
+  };
+
+  // Update useEffect to include expiring items calculation
+  useEffect(() => {
+    fetchItems();
+    calculateExpiringItems();
+  }, [regularItems, inkindItems]);
+
+  // Add this new function to render expiring items
+  const renderExpiringItems = () => {
+    if (expiringItems.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="inventory-section expiring-items-section">
+        <div className="table-header">
+          <div className="header-left">
+            <h2 className="table-title">Items Nearing Expiration or Expired</h2>
+          </div>
+        </div>
+        <div className="inventory-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Item Name</th>
+                <th>Category</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Type</th>
+                <th>Expiration Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expiringItems.map((item) => (
+                <tr 
+                  key={`${item.type}-${item.id}`} 
+                  className={item.isExpired ? 'expired-row' : item.daysUntilExpiration <= 7 ? 'urgent-expiration' : ''}
+                >
+                  <td>{item.item}</td>
+                  <td>{item.category}</td>
+                  <td>{item.quantity}</td>
+                  <td>{item.unit}</td>
+                  <td>{item.type}</td>
+                  <td>{new Date(item.expirationDate || '').toLocaleDateString()}</td>
+                  <td>
+                    {item.isExpired ? (
+                      <span className="expiration-badge expired">Expired</span>
+                    ) : (
+                      <span className={`expiration-badge ${
+                        item.daysUntilExpiration <= 7 ? 'urgent' : 
+                        item.daysUntilExpiration <= 14 ? 'warning' : 'notice'
+                      }`}>
+                        {item.daysUntilExpiration} days left
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {item.isExpired ? (
+                      <button
+                        className="delete-button"
+                        onClick={() => handleDeleteItem(item.id, item.type)}
+                      >
+                        Delete
+                      </button>
+                    ) : (
+                      <div className="action-buttons">
+                        <button
+                          className="edit-button"
+                          onClick={() => {
+                            setEditingItem(item);
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="delete-button"
+                          onClick={() => handleDeleteItem(item.id, item.type)}
+                        >
+                          Delete
+                        </button>
+                        <button
+                          className="distribute-button"
+                          onClick={() => setDistributeItem(item)}
+                        >
+                          Distribute
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // Get location state for redirection from Maps page with proper typing
+  const location = useLocation();
+  const navigateState = location.state as { 
+    selectedItemId?: string;
+    itemType?: 'regular' | 'in-kind';
+    openDistributeDialog?: boolean;
+    fromMap?: boolean;
+    category?: string; // Add category to help find items
+  } | null;
+
+  // Improved useEffect to handle redirection from the Maps page
+  useEffect(() => {
+    if (navigateState && navigateState.selectedItemId && navigateState.openDistributeDialog) {
+      console.log("Navigate state received:", navigateState);
+      
+      // Find the item based on the ID passed from Maps
+      if (navigateState.fromMap) {
+        // Improved function to find item from map ID
+        const findItemFromMapId = (id: string) => {
+          console.log("Looking for item with ID:", id);
+          
+          // The ID format from Maps is like "category-item-name"
+          const idParts = id.split('-');
+          const categoryFromId = idParts[0];
+          
+          // Log all items for debugging
+          console.log("Available regular items:", regularItems);
+          console.log("Available in-kind items:", inkindItems);
+          
+          // Try looking through all items to find the best match
+          let bestMatch: RegularDonation | InKindDonation | undefined;
+          
+          // First try to find an exact match
+          const allItems = [...regularItems, ...inkindItems];
+          
+          // If we have a category from the Maps component, prioritize it
+          if (navigateState.category && navigateState.category !== 'all') {
+            const categoryItems = allItems.filter(item => 
+              item.category.toLowerCase() === navigateState.category?.toLowerCase()
+            );
+            
+            if (categoryItems.length > 0) {
+              console.log("Found items matching category:", navigateState.category);
+              bestMatch = categoryItems[0]; // Select first item of correct category
+            }
+          }
+          
+          // If no match by category, try to match by item name parts
+          if (!bestMatch) {
+            for (const item of allItems) {
+              // Create a slugified version of the item name for comparison
+              const itemSlug = item.item.toLowerCase().replace(/\s+/g, '-');
+              
+              // Check if any part of the ID matches the item slug
+              for (const part of idParts) {
+                if (itemSlug.includes(part) || part.includes(itemSlug)) {
+                  console.log("Found matching item by name part:", item);
+                  bestMatch = item;
+                  break;
+                }
+              }
+              
+              if (bestMatch) break;
+            }
+          }
+          
+          // If we still can't find a match, just pick the first verified item
+          if (!bestMatch) {
+            bestMatch = allItems.find(item => item.verificationStatus === 'verified');
+            console.log("Using first verified item as fallback:", bestMatch);
+          }
+          
+          return bestMatch;
+        };
+
+        const matchedItem = findItemFromMapId(navigateState.selectedItemId);
+        
+        if (matchedItem) {
+          console.log("Setting distribute item:", matchedItem);
+          setDistributeItem(matchedItem);
+          
+          // Switch to the appropriate view tab
+          setActiveView(matchedItem.type === 'regular' ? 'regular' : 'in-kind');
+        } else {
+          console.log("No matching item found for ID:", navigateState.selectedItemId);
+        }
+      } else {
+        // Handle standard redirection (not from map)
+        try {
+          const itemId = parseInt(navigateState.selectedItemId);
+          const itemType = navigateState.itemType || 'regular';
+          const items = itemType === 'regular' ? regularItems : inkindItems;
+          const item = items.find(i => i.id === itemId);
+          
+          if (item) {
+            console.log("Setting distribute item by direct ID:", item);
+            setDistributeItem(item);
+          }
+        } catch (error) {
+          console.error("Error parsing item ID:", error);
+        }
+      }
+    }
+  }, [navigateState, regularItems.length, inkindItems.length]); // Depend on array lengths, not contents
+
+  // Make sure this effect runs with the needed dependencies
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  // Add a direct check for localStorage data
+  useEffect(() => {
+    // Check if we have distribute item data in localStorage
+    const distributeDataString = localStorage.getItem('distributeItemData');
+    if (distributeDataString) {
+      try {
+        const distributeData = JSON.parse(distributeDataString);
+        console.log("Found distribute data in localStorage:", distributeData);
+        
+        // Only use data that is less than 10 seconds old to prevent stale data issues
+        const now = new Date().getTime();
+        if (distributeData.timestamp && (now - distributeData.timestamp < 10000)) {
+          // Remove the data from localStorage to prevent it being used again
+          localStorage.removeItem('distributeItemData');
+          
+          // Find the matching item
+          const findMatchingItem = () => {
+            // Try to find by numeric ID first
+            if (distributeData.itemId) {
+              const numericId = parseInt(distributeData.itemId);
+              if (!isNaN(numericId)) {
+                const regularItem = regularItems.find(item => item.id === numericId);
+                if (regularItem) return regularItem;
+                
+                const inkindItem = inkindItems.find(item => item.id === numericId);
+                if (inkindItem) return inkindItem;
+              }
+            }
+            
+            // If no match by ID, try to find by name and category
+            if (distributeData.itemName) {
+              // First try exact name match
+              const allItems = [...regularItems, ...inkindItems];
+              const exactNameMatch = allItems.find(
+                item => item.item.toLowerCase() === distributeData.itemName.toLowerCase()
+              );
+              if (exactNameMatch) return exactNameMatch;
+              
+              // If no exact match, try category + partial name match
+              if (distributeData.category && distributeData.category !== 'all') {
+                const categoryItems = allItems.filter(
+                  item => item.category.toLowerCase().includes(distributeData.category.toLowerCase())
+                );
+                
+                if (categoryItems.length > 0) {
+                  // Try to find a name that contains the item name
+                  const nameMatch = categoryItems.find(
+                    item => item.item.toLowerCase().includes(distributeData.itemName.toLowerCase())
+                  );
+                  if (nameMatch) return nameMatch;
+                  
+                  // If still no match, just return the first item in the category
+                  return categoryItems[0];
+                }
+              }
+              
+              // If still no match, just pick any item with matching name part
+              const partialNameMatch = allItems.find(
+                item => item.item.toLowerCase().includes(distributeData.itemName.toLowerCase()) ||
+                       distributeData.itemName.toLowerCase().includes(item.item.toLowerCase())
+              );
+              if (partialNameMatch) return partialNameMatch;
+            }
+            
+            // Last resort: just pick the first verified item
+            return [...regularItems, ...inkindItems].find(
+              item => item.verificationStatus === 'verified'
+            );
+          };
+          
+          const matchedItem = findMatchingItem();
+          if (matchedItem) {
+            console.log("Found matching item:", matchedItem);
+            setDistributeItem(matchedItem);
+            setActiveView(matchedItem.type === 'regular' ? 'regular' : 'in-kind');
+          }
+        } else {
+          console.log("Distribute data is too old, ignoring");
+          localStorage.removeItem('distributeItemData');
+        }
+      } catch (error) {
+        console.error("Error parsing distribute data from localStorage:", error);
+        localStorage.removeItem('distributeItemData');
+      }
+    }
+  }, [regularItems.length, inkindItems.length]); // Only depend on these two state variables
+
   return (
     <div className="inventory-container">
       <div className="inventory-header">
@@ -1281,6 +1747,7 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
       </div>
 
       <div className="inventory-tables-container">
+        {renderExpiringItems()} {/* Add this line before other tables */}
         {activeView === 'pending' ? (
           renderVerificationQueue()
         ) : (
@@ -1339,6 +1806,9 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
               )}
               {viewItem.rejectionReason && (
                 <p><strong>Rejection Reason:</strong> {viewItem.rejectionReason}</p>
+              )}
+              {viewItem.expirationDate && (
+                <p><strong>Expiration Date:</strong> {new Date(viewItem.expirationDate).toLocaleDateString()}</p>
               )}
             </div>
            

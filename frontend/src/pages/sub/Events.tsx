@@ -87,32 +87,49 @@ const EventPage: React.FC = () => {
     // Return the image URL if it's a valid URL
     if (imageUrl.startsWith('http')) return imageUrl;
     
-    // Otherwise, prepend the API URL
-    return `${import.meta.env.VITE_API_URL}${imageUrl}`;
-  };
+    // For debugging
+    console.log(`Processing image path: ${imageUrl}`);
+
+    // Check if it's already an absolute path from the server
+    if (imageUrl.startsWith('/uploads')) {
+      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
+      console.log(`Resolving with base URL: ${baseUrl}${imageUrl}`);
+      return `${baseUrl}${imageUrl}`;
+    }
+    
+    // If it's a relative path, append API_URL and event uploads path
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
+    console.log(`Resolving relative path: ${baseUrl}/uploads/events/${imageUrl}`);
+    return `${baseUrl}/uploads/events/${imageUrl}`;
+  }
 
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
       const response = await api.get<BackendEvent[]>('/admin/events');
-      console.log('Raw response:', response.data);
+      console.log('Raw event data:', response.data);
 
       const currentDate = new Date();
-      const futureEvents = response.data.filter(event => {
-        const eventDate = new Date(event.date);
-        return eventDate >= currentDate;
-      }).map(event => ({
-        ...event,
-        // Use the new function to handle image URLs properly
-        image: getImageUrl(event.image),
-        // Handle both camelCase and snake_case properties
-        totalVolunteers: parseInt(String(event.total_volunteers ?? event.totalVolunteers ?? 0)),
-        currentVolunteers: parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0)),
-        startTime: event.start_time ?? event.startTime ?? '',
-        endTime: event.end_time ?? event.endTime ?? ''
-      }));
+      const futureEvents = response.data
+        .filter(event => {
+          const eventDate = new Date(event.date);
+          return eventDate >= currentDate;
+        })
+        .map(event => {
+          console.log(`Processing event ${event.id}, image: ${event.image}`);
+          return {
+            ...event,
+            // Use the updated function to handle image URLs properly
+            image: getImageUrl(event.image),
+            // Handle both camelCase and snake_case properties
+            totalVolunteers: parseInt(String(event.total_volunteers ?? event.totalVolunteers ?? 0)),
+            currentVolunteers: parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0)),
+            startTime: event.start_time ?? event.startTime ?? '',
+            endTime: event.end_time ?? event.endTime ?? ''
+          };
+        });
 
-      console.log('Transformed events:', futureEvents);
+      console.log('Transformed events with resolved images:', futureEvents);
       setEvents(futureEvents);
     } catch (error) {
       console.error('Failed to fetch events:', error);
@@ -208,6 +225,7 @@ const EventPage: React.FC = () => {
                   alt={event.title} 
                   className="event-image"
                   onError={(e) => {
+                    console.error(`Failed to load image: ${event.image}`);
                     const target = e.target as HTMLImageElement;
                     target.src = defaultImage; // Use our defined default image constant
                     target.onerror = null; // Prevent infinite loop

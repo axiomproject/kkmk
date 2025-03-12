@@ -23,6 +23,7 @@ const eventRoutes = require('./routes/eventRoutes'); // Add this line
 const contentRoutes = require('./routes/contentRoutes'); // Import content routes
 const userRoutes = require('./routes/userRoutes'); // Import user routes
 const geocodeRoutes = require('./routes/geocodeRoutes'); // Add this line
+const schedulerService = require('./services/schedulerService'); // Import scheduler service
 
 const app = express();
 const port = 5175; // Changed port to avoid conflicts
@@ -98,6 +99,13 @@ if (!fs.existsSync(scholarUploadsDir)) {
 const scholarDonationsDir = path.join(__dirname, 'uploads', 'scholardonations');
 if (!fs.existsSync(scholarDonationsDir)) {
   fs.mkdirSync(scholarDonationsDir, { recursive: true });
+}
+
+// Create uploads directory for events
+const eventsUploadsDir = path.join(__dirname, 'uploads', 'events');
+if (!fs.existsSync(eventsUploadsDir)) {
+  fs.mkdirSync(eventsUploadsDir, { recursive: true });
+  console.log('Created events uploads directory:', eventsUploadsDir);
 }
 
 // Update static file serving - add this before routes
@@ -188,6 +196,38 @@ app.use('/api/events', eventRoutes);  // Add this line to register event routes
 app.use('/api', userRoutes);  // Add this line before authRoutes
 app.use('/api', authRoutes);
 
+// Add specific debug logging for image requests
+app.use('/uploads/events', (req, res, next) => {
+  console.log('Event image request:', req.url);
+  // Check if file exists
+  const filePath = path.join(__dirname, 'uploads', 'events', req.url);
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error(`File not found: ${filePath}`);
+    } else {
+      console.log(`Serving file: ${filePath}`);
+    }
+    next();
+  });
+});
+
+// Add specific debug logging for event image requests
+app.use('/uploads/events', (req, res, next) => {
+  const fullPath = req.path;
+  console.log('Event image request:', fullPath);
+  
+  // Check if file exists
+  const filePath = path.join(__dirname, 'uploads', 'events', path.basename(fullPath));
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error(`Event image file not found: ${filePath}`);
+    } else {
+      console.log(`Serving event image file: ${filePath}`);
+    }
+    next();
+  });
+});
+
 // Add debug middleware for API requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`, {
@@ -232,8 +272,19 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Initialize server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
+  
+  // Make sure we're using the correct function name
+  try {
+    // Initialize scheduled tasks with error handling
+    console.log('Initializing scheduled tasks...');
+    schedulerService.initScheduledTasks();
+    console.log('Scheduled tasks initialization completed');
+  } catch (error) {
+    console.error('Failed to initialize scheduled tasks:', error);
+  }
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`Port ${port} is already in use`);
