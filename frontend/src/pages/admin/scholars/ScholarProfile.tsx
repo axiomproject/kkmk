@@ -11,7 +11,7 @@ interface ScholarForm {
   lastName: string;
   address: string;
   dateOfBirth: string;
-  gradeLevel: string;
+  gradeLevel: string; // Maps to education_level in users table
   school: string;
   guardianName: string;
   guardianPhone: string;
@@ -32,34 +32,37 @@ interface Scholar {
   id: number;
   first_name: string;
   last_name: string;
-  grade_level: string;
-  school: string;
-  image_url: string;
-  is_active: boolean;
+  education_level: string; // From users table (replacing grade_level)
+  school: string; // From users table
+  image_url: string; // From scholars table
+  is_active: boolean; // From scholars table
   created_at: string;
   address: string;
   date_of_birth: string;
   gender: string;
   guardian_name: string;
   guardian_phone: string;
-  favorite_subject: string;
-  favorite_activity: string;
-  favorite_color: string;
-  other_details: string;
-  status: 'active' | 'inactive' | 'graduated';  // Add this line
+  profile_photo?: string; // From users table
+  favorite_subject?: string; // From scholars table
+  favorite_activity?: string; // From scholars table
+  favorite_color?: string; // From scholars table
+  other_details?: string; // From scholars table
+  status: 'active' | 'inactive' | 'graduated'; // From scholars table
+  assigned_user_id?: number;
+  assigned_user_name?: string;
+  assigned_user_email?: string;
+  assigned_user_profile_photo?: string;
+  current_amount: number; // From scholars table
+  amount_needed: number; // From scholars table
+  user_id?: number; // Link to users table
   assigned_user?: {
     id: number;
     name: string;
     email: string;
     profile_photo?: string;
   };
-  // Add these new fields that come from the database
-  assigned_user_id?: number;
-  assigned_user_name?: string;
-  assigned_user_email?: string;
-  assigned_user_profile_photo?: string;
-  current_amount: number;
-  amount_needed: number;
+  is_verified: boolean; // Add this property explicitly
+  updated_at?: string; // Add this property explicitly
 }
 
 interface ScholarUser {
@@ -93,7 +96,12 @@ const initialFormState: ScholarForm = {
 };
 
 const ProgressBar: React.FC<{ currentAmount: number; amountNeeded: number }> = ({ currentAmount, amountNeeded }) => {
-  const percentage = Math.min((currentAmount / amountNeeded) * 100, 100);
+  // Add null/undefined checks and provide default values
+  const safeCurrentAmount = currentAmount || 0;
+  const safeAmountNeeded = amountNeeded || 1; // Avoid division by zero
+  
+  // Calculate percentage safely
+  const percentage = Math.min((safeCurrentAmount / safeAmountNeeded) * 100, 100);
   
   return (
     <div className="scholar-progress-container">
@@ -104,8 +112,8 @@ const ProgressBar: React.FC<{ currentAmount: number; amountNeeded: number }> = (
         />
       </div>
       <div className="scholar-progress-text">
-        <span>₱{currentAmount.toLocaleString()}</span>
-        <span>₱{amountNeeded.toLocaleString()}</span>
+        <span>₱{safeCurrentAmount.toLocaleString()}</span>
+        <span>₱{safeAmountNeeded.toLocaleString()}</span>
       </div>
     </div>
   );
@@ -132,8 +140,13 @@ const ScholarProfile: React.FC = () => {
       try {
         const response = await api.get('/scholars');
         if (response.status !== 200) throw new Error('Failed to fetch scholars');
+        
+        // Transform data to match the component's expected structure
         const transformedData = response.data.map((scholar: any) => ({
           ...scholar,
+          // Map education_level to grade_level for backward compatibility
+          grade_level: scholar.education_level,
+          // Handle assigned user
           assigned_user: scholar.assigned_user_id ? {
             id: scholar.assigned_user_id,
             name: scholar.assigned_user_name,
@@ -225,11 +238,80 @@ const ScholarProfile: React.FC = () => {
     }
   };
 
+  const fetchScholarById = async (id: number) => {
+    try {
+      const response = await api.get(`/admin/scholars/${id}`);
+      if (response.status !== 200) throw new Error('Failed to fetch scholar details');
+      
+      const data = response.data;
+      console.log('Scholar data from API:', data);
+      
+      // Format the date to YYYY-MM-DD for input fields
+      const formattedDate = data.date_of_birth ? 
+        new Date(data.date_of_birth).toISOString().split('T')[0] : '';
+      
+      // Handle the different data sources (whether from users table or scholars table)
+      return {
+        id: data.id,
+        firstName: data.first_name || '',
+        lastName: data.last_name || '',
+        address: data.address || '',
+        dateOfBirth: formattedDate,
+        gradeLevel: data.education_level || data.grade_level || '', // Try both fields
+        school: data.school || '',
+        guardianName: data.guardian_name || '',
+        guardianPhone: data.guardian_phone || '',
+        gender: data.gender || '',
+        favoriteSubject: data.favorite_subject || '',
+        favoriteActivity: data.favorite_activity || '',
+        favoriteColor: data.favorite_color || '',
+        otherDetails: data.other_details || '',
+        imagePreview: data.image_url ? `${API_URL}${data.image_url}` : 
+                   data.profile_photo ? `${API_URL}${data.profile_photo}` : '',
+        status: data.status || 'active',
+        currentAmount: data.current_amount || 0,
+        amountNeeded: data.amount_needed || 0,
+        isVerified: data.is_verified,
+        userId: data.user_id,
+        assignedUser: data.assigned_user || null
+      };
+    } catch (error) {
+      console.error('Error fetching scholar details:', error);
+      throw error;
+    }
+  };
+
   const handleViewScholar = async (id: number) => {
     try {
-      const response = await api.get(`/scholars/${id}`);
-      if (response.status !== 200) throw new Error('Failed to fetch scholar details');
-      setSelectedScholar(response.data);
+      const scholarData = await fetchScholarById(id);
+      
+      setSelectedScholar({
+        id: scholarData.id,
+        first_name: scholarData.firstName,
+        last_name: scholarData.lastName,
+        address: scholarData.address,
+        date_of_birth: scholarData.dateOfBirth,
+        education_level: scholarData.gradeLevel,
+        school: scholarData.school,
+        guardian_name: scholarData.guardianName,
+        guardian_phone: scholarData.guardianPhone,
+        gender: scholarData.gender,
+        favorite_subject: scholarData.favoriteSubject,
+        favorite_activity: scholarData.favoriteActivity,
+        favorite_color: scholarData.favoriteColor,
+        other_details: scholarData.otherDetails,
+        image_url: scholarData.imagePreview,
+        profile_photo: undefined,
+        status: scholarData.status,
+        is_active: scholarData.status !== 'inactive',
+        is_verified: scholarData.isVerified || false,
+        current_amount: scholarData.currentAmount,
+        amount_needed: scholarData.amountNeeded,
+        created_at: new Date().toISOString(),
+        user_id: scholarData.userId,
+        assigned_user: scholarData.assignedUser
+      });
+      
       setIsViewMode(true);
     } catch (error) {
       console.error('Error fetching scholar details:', error);
@@ -239,38 +321,58 @@ const ScholarProfile: React.FC = () => {
 
   const handleEditScholar = async (id: number) => {
     try {
-      const response = await fetch(`${API_URL}/api/scholars/${id}`, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch scholar details');
-      const data = await response.json();
-      
-      // Format the date to YYYY-MM-DD for the input field
-      const formattedDate = data.date_of_birth ? new Date(data.date_of_birth).toISOString().split('T')[0] : '';
+      const scholarData = await fetchScholarById(id);
       
       setFormData({
-        firstName: data.first_name,
-        lastName: data.last_name,
-        address: data.address,
-        dateOfBirth: formattedDate, // Use the formatted date
-        gradeLevel: data.grade_level,
-        school: data.school,
-        guardianName: data.guardian_name,
-        guardianPhone: data.guardian_phone,
-        gender: data.gender,
-        favoriteSubject: data.favorite_subject,
-        favoriteActivity: data.favorite_activity,
-        favoriteColor: data.favorite_color,
-        otherDetails: data.other_details,
+        firstName: scholarData.firstName,
+        lastName: scholarData.lastName,
+        address: scholarData.address,
+        dateOfBirth: scholarData.dateOfBirth,
+        gradeLevel: scholarData.gradeLevel,
+        school: scholarData.school,
+        guardianName: scholarData.guardianName,
+        guardianPhone: scholarData.guardianPhone,
+        gender: scholarData.gender,
+        favoriteSubject: scholarData.favoriteSubject,
+        favoriteActivity: scholarData.favoriteActivity,
+        favoriteColor: scholarData.favoriteColor,
+        otherDetails: scholarData.otherDetails,
         image: null,
-        imagePreview: data.image_url ? `${API_URL}${data.image_url}` : '', // This will be empty if no image
-        status: data.status || 'active',
-        assignedUserId: data.assigned_user_id,
-        currentAmount: data.current_amount || 0,
-        amountNeeded: data.amount_needed || 0 
+        imagePreview: scholarData.imagePreview,
+        status: scholarData.status,
+        assignedUserId: scholarData.userId,
+        currentAmount: scholarData.currentAmount,
+        amountNeeded: scholarData.amountNeeded
       });
       
-      setSelectedScholar(data);
+      setSelectedScholar({
+        id: scholarData.id,
+        first_name: scholarData.firstName,
+        last_name: scholarData.lastName,
+        address: scholarData.address,
+        date_of_birth: scholarData.dateOfBirth,
+        education_level: scholarData.gradeLevel,
+        school: scholarData.school,
+        guardian_name: scholarData.guardianName,
+        guardian_phone: scholarData.guardianPhone,
+        gender: scholarData.gender,
+        favorite_subject: scholarData.favoriteSubject,
+        favorite_activity: scholarData.favoriteActivity,
+        favorite_color: scholarData.favoriteColor,
+        other_details: scholarData.otherDetails,
+        image_url: scholarData.imagePreview,
+        profile_photo: undefined,
+        status: scholarData.status,
+        is_active: scholarData.status !== 'inactive',
+        is_verified: scholarData.isVerified || false,
+        current_amount: scholarData.currentAmount,
+        amount_needed: scholarData.amountNeeded,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        user_id: scholarData.userId,
+        assigned_user: scholarData.assignedUser
+      });
+      
       setIsEditMode(true);
     } catch (error) {
       console.error('Error fetching scholar details:', error);
@@ -320,22 +422,34 @@ const ScholarProfile: React.FC = () => {
   };
 
   const filteredScholars = scholars.filter(scholar => {
+    // Add null checks to avoid "Cannot read properties of null" errors
     // Apply search filter
     const searchStr = scholarSearchTerm.toLowerCase();
+    
+    // Add optional chaining and nullish coalescing for safe property access
+    const firstName = scholar?.first_name?.toLowerCase() || '';
+    const lastName = scholar?.last_name?.toLowerCase() || '';
+    const schoolName = scholar?.school?.toLowerCase() || '';
+    const educationLevel = scholar?.education_level?.toLowerCase() || '';
+    
     const matchesSearch = (
-      scholar.first_name.toLowerCase().includes(searchStr) ||
-      scholar.last_name.toLowerCase().includes(searchStr) ||
-      scholar.school.toLowerCase().includes(searchStr) ||
-      scholar.grade_level.toLowerCase().includes(searchStr)
+      firstName.includes(searchStr) ||
+      lastName.includes(searchStr) ||
+      schoolName.includes(searchStr) ||
+      educationLevel.includes(searchStr)
     );
-
-    // Update status filter logic
+  
+    // Use safe property access with optional chaining and nullish coalescing
+    const isActive = scholar?.is_active ?? false;
+    const status = scholar?.status || 'unknown';
+    
+    // Update status filter logic with null checks
     const matchesStatus = 
       statusFilter === 'all' || 
-      (statusFilter === 'active' && scholar.status === 'active' && scholar.is_active) ||
-      (statusFilter === 'inactive' && (scholar.status === 'inactive' || !scholar.is_active)) ||
-      (statusFilter === 'graduated' && scholar.status === 'graduated');
-
+      (statusFilter === 'active' && status === 'active' && isActive) ||
+      (statusFilter === 'inactive' && (status === 'inactive' || !isActive)) ||
+      (statusFilter === 'graduated' && status === 'graduated');
+  
     return matchesSearch && matchesStatus;
   });
 
@@ -493,36 +607,7 @@ const ScholarProfile: React.FC = () => {
 
   const renderScholarUserSearch = () => (
     <div className="scholar-user-search">
-      <div className="search-input-wrapper">
-        <FaSearch className="search-icon" />
-        <input
-          ref={searchInputRef}
-          type="text"
-          placeholder="Search scholar users..."
-          value={userSearchTerm}
-          onChange={(e) => {
-            const value = e.target.value;
-            setUserSearchTerm(value);
-            const filtered = scholarUsers.filter(user => 
-              user.name.toLowerCase().includes(value.toLowerCase()) ||
-              user.email.toLowerCase().includes(value.toLowerCase())
-            );
-            setSearchResults(filtered);
-            setShowSuggestions(true);
-          }}
-          className="search-input"
-        />
-        {userSearchTerm && (
-          <FaTimes 
-            className="clear-search" 
-            onClick={() => {
-              setUserSearchTerm('');
-              setSearchResults([]);
-              setShowSuggestions(false);
-            }}
-          />
-        )}
-      </div>
+   
 
       {showSuggestions && searchResults.length > 0 && (
         <div className="search-suggestions">
@@ -598,12 +683,7 @@ const ScholarProfile: React.FC = () => {
       >
         Assign User
       </button>
-      <button 
-        className="admin-scholar-delete-btn"
-        onClick={() => handleDeleteScholar(scholar.id)}
-      >
-        Delete
-      </button>
+     
     </div>
   );
 
@@ -611,9 +691,9 @@ const ScholarProfile: React.FC = () => {
     <div className="admin-scholar-modal-overlay" onClick={() => setShowAssignUserModal(false)}>
       <div className="admin-scholar-modal" onClick={e => e.stopPropagation()}>
         <h2>Assign User Account</h2>
-        <div className="scholar-user-search-container">
+  
           {renderScholarUserSearch()}
-        </div>
+     
         <button 
           className="admin-scholar-cancel-btn"
           onClick={() => setShowAssignUserModal(false)}
@@ -631,7 +711,6 @@ const ScholarProfile: React.FC = () => {
   }, [showModal, isEditMode]);
 
   const renderViewModal = () => {
-    // Add early return if selectedScholar is null
     if (!selectedScholar) return null;
 
     return (
@@ -640,7 +719,9 @@ const ScholarProfile: React.FC = () => {
           <h2>Scholar Details</h2>
           <div className="admin-scholar-details">
             <img 
-              src={`${API_URL}${selectedScholar.image_url}` || "https://via.placeholder.com/150"}
+              src={selectedScholar.image_url ? `${selectedScholar.image_url}` : 
+                   selectedScholar.profile_photo ? `${API_URL}${selectedScholar.profile_photo}` : 
+                   "https://via.placeholder.com/150"}
               alt={`${selectedScholar.first_name} ${selectedScholar.last_name}`}
               className="admin-scholar-detail-image"
             />
@@ -649,35 +730,34 @@ const ScholarProfile: React.FC = () => {
               <p><strong>Address:</strong> {selectedScholar.address}</p>
               <p><strong>Date of Birth:</strong> {new Date(selectedScholar.date_of_birth).toLocaleDateString()}</p>
               <p><strong>Gender:</strong> {selectedScholar.gender}</p>
-              <p><strong>Education Level:</strong> {selectedScholar.grade_level}</p>
+              <p><strong>Education Level:</strong> {selectedScholar.education_level}</p>
               <p><strong>School:</strong> {selectedScholar.school}</p>
               <p><strong>Guardian Name:</strong> {selectedScholar.guardian_name}</p>
               <p><strong>Guardian Phone:</strong> {selectedScholar.guardian_phone}</p>
-              <p><strong>Favorite Subject:</strong> {selectedScholar.favorite_subject}</p>
-              <p><strong>Favorite Activity:</strong> {selectedScholar.favorite_activity}</p>
-              <p><strong>Favorite Color:</strong> {selectedScholar.favorite_color}</p>
               {selectedScholar.other_details && (
                 <div className="admin-scholar-other-details">
-                  <p><strong>Other Details:</strong></p>
+                  <p><strong>Details:</strong></p>
                   <p>{selectedScholar.other_details}</p>
                 </div>
               )}
               <p><strong>Status:</strong> <span className={`status-${selectedScholar.is_active ? 'active' : 'inactive'}`}>
                 {selectedScholar.is_active ? 'Active' : 'Inactive'}
               </span></p>
-              <p><strong>Current Amount:</strong> ₱{selectedScholar.current_amount.toLocaleString()}</p>
-              <p><strong>Amount Needed:</strong> ₱{selectedScholar.amount_needed.toLocaleString()}</p>
-              </div>
+              <p><strong>Verification Status:</strong> <span className={`status-${selectedScholar.is_verified ? 'verified' : 'unverified'}`}>
+                {selectedScholar.is_verified ? 'Verified' : 'Not Verified'}
+              </span></p>
+              <p><strong>Current Amount:</strong> ₱{(selectedScholar.current_amount || 0).toLocaleString()}</p>
+              <p><strong>Amount Needed:</strong> ₱{(selectedScholar.amount_needed || 0).toLocaleString()}</p>
             </div>
-            <button 
-              className="admin-scholar-close-btn"
-              onClick={() => setIsViewMode(false)}
-            >
-              Close
-            </button>
           </div>
+          <button 
+            className="admin-scholar-close-btn"
+            onClick={() => setIsViewMode(false)}
+          >
+            Close
+          </button>
         </div>
-
+      </div>
     );
   };
 
@@ -708,6 +788,22 @@ const ScholarProfile: React.FC = () => {
     setFormData(initialFormState); // Reset to initial state
   };
 
+  const getImageUrl = (scholar: Scholar) => {
+    // Add null checks to image URL
+    if (!scholar) return '/images/default-avatar.jpg';
+    
+    const imageUrl = scholar.image_url;
+    const profilePhoto = scholar.profile_photo;
+    
+    if (imageUrl) {
+      return `${API_URL}${imageUrl}`;
+    } else if (profilePhoto) {
+      return `${API_URL}${profilePhoto}`;
+    }
+    
+    return '/images/default-avatar.jpg';
+  };
+
   return (
     <div className="admin-scholar-container">
       <div className="admin-scholar-header">
@@ -730,12 +826,7 @@ const ScholarProfile: React.FC = () => {
             <option value="inactive">Inactive</option>
             <option value="graduated">Graduated</option>
           </select>
-          <button 
-            className="admin-scholar-add-btn"
-            onClick={() => setShowModal(true)}
-          >
-            Add Scholar Profile
-          </button>
+        
         </div>
       </div>
 
@@ -752,7 +843,7 @@ const ScholarProfile: React.FC = () => {
               <div key={scholar.id} className="admin-scholar-card">
                 {/* ...existing card content... */}
                 <img 
-                src={`${API_URL}${scholar.image_url}` || '/images/default-avatar.jpg'} 
+                src={getImageUrl(scholar)} 
                 alt={`${scholar.first_name} ${scholar.last_name}`} 
                 className="admin-scholar-image"
                 onError={(e) => {
@@ -762,12 +853,17 @@ const ScholarProfile: React.FC = () => {
               />
               <div className="admin-scholar-info">
                 <h3>{scholar.first_name} {scholar.last_name}</h3>
+                <div className="admin-scholar-badges">
+                  {scholar.is_verified && 
+                    <span className="admin-scholar-verified-badge">Verified</span>
+                  }
+                </div>
                 <ProgressBar 
-                  currentAmount={scholar.current_amount} 
-                  amountNeeded={scholar.amount_needed}
+                  currentAmount={scholar.current_amount || 0} 
+                  amountNeeded={scholar.amount_needed || 1}
                 />
                 <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
-                <p>Education Level: {scholar.grade_level}</p>
+                <p>Education Level: {scholar.education_level}</p>
                 <p>School: {scholar.school}</p>
                 {renderAssignedUser(scholar)}
                 {renderScholarCardActions(scholar)}
@@ -779,7 +875,7 @@ const ScholarProfile: React.FC = () => {
         {/* Inactive Scholars */}
         {filteredScholars.some(scholar => !scholar.is_active || scholar.status === 'inactive') && (
           <>
-            <h2 className="section-title">Inactive Scholars</h2>
+            <h2 className="section-title">For Endorsement</h2>
             <div className="admin-scholar-grid">
               {filteredScholars
                 .filter(scholar => !scholar.is_active || scholar.status === 'inactive')
@@ -787,7 +883,7 @@ const ScholarProfile: React.FC = () => {
                   <div key={scholar.id} className="admin-scholar-card inactive">
                     {/* ...existing card content... */}
                     <img 
-                src={`${API_URL}${scholar.image_url}` || '/images/default-avatar.jpg'} 
+                src={getImageUrl(scholar)} 
                 alt={`${scholar.first_name} ${scholar.last_name}`} 
                 className="admin-scholar-image"
                 onError={(e) => {
@@ -797,12 +893,17 @@ const ScholarProfile: React.FC = () => {
               />
               <div className="admin-scholar-info">
                 <h3>{scholar.first_name} {scholar.last_name}</h3>
+                <div className="admin-scholar-badges">
+                  {scholar.is_verified && 
+                    <span className="admin-scholar-verified-badge">Verified</span>
+                  }
+                </div>
                 <ProgressBar 
-                  currentAmount={scholar.current_amount} 
-                  amountNeeded={scholar.amount_needed}
+                  currentAmount={scholar.current_amount || 0} 
+                  amountNeeded={scholar.amount_needed || 1}
                 />
                 <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
-                <p>Year Level: {scholar.grade_level}</p>
+                <p>Year Level: {scholar.education_level}</p>
                 <p>School: {scholar.school}</p>
                 {renderAssignedUser(scholar)}
                 {renderScholarCardActions(scholar)}
@@ -824,7 +925,7 @@ const ScholarProfile: React.FC = () => {
                   <div key={scholar.id} className="admin-scholar-card graduated">
                     {/* ...existing card content... */}
                     <img 
-                src={`${API_URL}${scholar.image_url}` || '/images/default-avatar.jpg'} 
+                src={getImageUrl(scholar)} 
                 alt={`${scholar.first_name} ${scholar.last_name}`} 
                 className="admin-scholar-image"
                 onError={(e) => {
@@ -834,12 +935,17 @@ const ScholarProfile: React.FC = () => {
               />
               <div className="admin-scholar-info">
                 <h3>{scholar.first_name} {scholar.last_name}</h3>
+                <div className="admin-scholar-badges">
+                  {scholar.is_verified && 
+                    <span className="admin-scholar-verified-badge">Verified</span>
+                  }
+                </div>
                 <ProgressBar 
-                  currentAmount={scholar.current_amount} 
-                  amountNeeded={scholar.amount_needed}
+                  currentAmount={scholar.current_amount || 0} 
+                  amountNeeded={scholar.amount_needed || 1}
                 />
                 <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
-                <p>Year Level: {scholar.grade_level}</p>
+                <p>Year Level: {scholar.education_level}</p>
                 <p>School: {scholar.school}</p>
                 {renderAssignedUser(scholar)}
                 {renderScholarCardActions(scholar)}
@@ -951,10 +1057,12 @@ const ScholarProfile: React.FC = () => {
                     required
                   >
                     <option value="">Select Education Level</option>
-                    <option value="Primary">Primary</option>
-                    <option value="Secondary">Secondary</option>
-                    <option value="K to 12">K to 12</option>
-                    <option value="Tertiary">Tertiary</option>
+                    <option value="Elementary">Elementary</option>
+                    <option value="Junior High School">Junior High School</option>
+                    <option value="Senior High School">Senior High School</option>
+                    <option value="Vocational">Vocational</option>
+                    <option value="College">College</option>
+                    <option value="Graduate School">Graduate School</option>
                   </select>
                 </div>
                 <div className="admin-scholar-form-group">
@@ -992,38 +1100,10 @@ const ScholarProfile: React.FC = () => {
                 </div>
               </div>
 
-              <div className="admin-scholar-form-row">
-                <div className="admin-scholar-form-group">
-                  <label>Favorite Subject</label>
-                  <input
-                    type="text"
-                    name="favoriteSubject"
-                    value={formData.favoriteSubject}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="admin-scholar-form-group">
-                  <label>Favorite Activity</label>
-                  <input
-                    type="text"
-                    name="favoriteActivity"
-                    value={formData.favoriteActivity}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="admin-scholar-form-group">
-                  <label>Favorite Color</label>
-                  <input
-                    type="text"
-                    name="favoriteColor"
-                    value={formData.favoriteColor}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
+            
 
               <div className="admin-scholar-form-group">
-                <label>Other Details</label>
+                <label>Details</label>
                 <textarea
                   name="otherDetails"
                   value={formData.otherDetails}
@@ -1180,10 +1260,12 @@ const ScholarProfile: React.FC = () => {
                     required
                   >
                     <option value="">Select Education Level</option>
-                    <option value="Primary">Primary</option>
-                    <option value="Secondary">Secondary</option>
-                    <option value="K to 12">K to 12</option>
-                    <option value="Tertiary">Tertiary</option>
+                    <option value="Elementary">Elementary</option>
+                    <option value="Junior High School">Junior High School</option>
+                    <option value="Senior High School">Senior High School</option>
+                    <option value="Vocational">Vocational</option>
+                    <option value="College">College</option>
+                    <option value="Graduate School">Graduate School</option>
                   </select>
                 </div>
                 <div className="admin-scholar-form-group">
@@ -1224,41 +1306,9 @@ const ScholarProfile: React.FC = () => {
                 </div>
               </div>
 
-              <div className="admin-scholar-form-row">
-                <div className="admin-scholar-form-group">
-                  <label>Favorite Subject</label>
-                  <input
-                    type="text"
-                    name="favoriteSubject"
-                    value={formData.favoriteSubject}
-                    onChange={handleInputChange}
-                    placeholder="Enter favorite subject"
-                  />
-                </div>
-                <div className="admin-scholar-form-group">
-                  <label>Favorite Activity</label>
-                  <input
-                    type="text"
-                    name="favoriteActivity"
-                    value={formData.favoriteActivity}
-                    onChange={handleInputChange}
-                    placeholder="Enter favorite activity"
-                  />
-                </div>
-                <div className="admin-scholar-form-group">
-                  <label>Favorite Color</label>
-                  <input
-                    type="text"
-                    name="favoriteColor"
-                    value={formData.favoriteColor}
-                    onChange={handleInputChange}
-                    placeholder="Enter favorite color"
-                  />
-                </div>
-              </div>
 
               <div className="admin-scholar-form-group">
-                <label>Other Details</label>
+                <label>Details</label>
                 <textarea
                   name="otherDetails"
                   value={formData.otherDetails}

@@ -107,3 +107,206 @@
   z-index: 1000;
   backdrop-filter: blur(2px);
 }
+
+/* Scholar Distributions Styles - Updated for 3x2 grid */
+.scholar-distributions-container {
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin: 20px 0;
+  width: 100%;
+}
+
+.distributions-header {
+  font-size: 1.5rem;
+  margin-bottom: 24px;
+  color: #333;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 10px;
+  font-weight: 600;
+}
+
+/* Update grid layout to 3x2 */
+.distributions-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columns */
+  grid-auto-rows: 1fr; /* Equal height rows */
+  gap: 18px;
+}
+
+/* Make sure items fill the grid cells properly */
+@media (max-width: 1024px) {
+  .distributions-list {
+    grid-template-columns: repeat(2, 1fr); /* 2 columns on medium screens */
+  }
+}
+
+@media (max-width: 640px) {
+  .distributions-list {
+    grid-template-columns: 1fr; /* 1 column on small screens */
+  }
+}
+
+.distribution-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 20px;
+  background-color: #fafafa;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.distribution-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+  background-color: #f5f9f5;
+}
+
+.distribution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.distribution-header h3 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: #333;
+  font-weight: 600;
+  max-width: 70%;
+}
+
+.distribution-category {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 15px;
+  color: #242424;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: auto;
+}
+
+/* Updated category colors with better contrast */
+.category-food-nutrition {
+  background-color: #2E7D32;
+}
+
+.category-clothing-footwear {
+  background-color: #1565C0;
+}
+
+.category-school-supplies {
+  background-color: #EF6C00;
+}
+
+.category-medical-supplies {
+  background-color: #C2185B;
+}
+
+.category-hygiene-supplies {
+  background-color: #7B1FA2;
+}
+
+.category-other {
+  background-color: #546E7A;
+}
+
+.distribution-details {
+  margin-top: 10px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.distribution-details p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #555;
+  display: flex;
+  justify-content: space-between;
+}
+
+.distribution-details p strong {
+  color: #444;
+  font-weight: 600;
+}
+
+/* Add a divider between property rows */
+.distribution-details p:not(:last-child) {
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #eee;
+}
+
+/* Add an icon for the donation type */
+.distribution-type {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.distribution-type.regular::before {
+  content: "📦";
+  margin-right: 8px;
+}
+
+.distribution-type.in-kind::before {
+  content: "🎁";
+  margin-right: 8px;
+}
+
+/* Update the no-distributions container to look better */
+.no-distributions-container {
+  text-align: center;
+  padding: 40px 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px dashed #ddd;
+  margin: 20px 0;
+}
+
+.no-distributions-text {
+  font-size: 1.2rem;
+  margin-bottom: 15px;
+  color: #666;
+}
+
+/* Add a notification icon for empty state */
+.no-distributions-container:before {
+  content: "📦";
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.distributions-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0;
+  color: #666;
+}
+
+.loading-spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-left-color: #4CAF50;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

@@ -13,6 +13,8 @@ import {
   ArcElement,
 } from "chart.js";
 
+import axios from 'axios';
+
 // Register Chart.js components BEFORE any other chart code
 ChartJS.register(  // Make sure CategoryScale is registered first
   LinearScale,
@@ -43,6 +45,7 @@ import {
   FaGraduationCap, 
   FaArrowDown, FaArrowRight, FaArrowUp 
 } from 'react-icons/fa';
+import { toast } from "react-toastify";
 
 interface Donor {
   id: number;
@@ -82,6 +85,8 @@ interface ItemsDistributedData {
   total: number;
   percentage_change: string;
 }
+
+const baseURL = axios.defaults.baseURL || 'http://localhost:5175';
 
 const Analytics: React.FC = () => {
   const [scholarCount, setScholarCount] = useState<number>(0);
@@ -125,74 +130,72 @@ const Analytics: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch scholar count
-        const scholarResponse = await fetch('/api/admin/scholar-count');
-        if (!scholarResponse.ok) throw new Error('Failed to fetch scholar count');
-        const scholarData = await scholarResponse.json();
+        // Get the API base URL from axios
+        const baseURL = axios.defaults.baseURL || 'http://localhost:5175';
+        const token = localStorage.getItem('token');
+        
+        // Common request options
+        const requestOptions = {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        };
+        
+        // Helper function to fetch data with error handling
+        const fetchEndpoint = async (endpoint: string) => {
+          try {
+            const response = await axios.get(`${baseURL}${endpoint}`, requestOptions);
+            // Check if response is valid JSON
+            if (typeof response.data === 'string') {
+              console.error(`Invalid JSON response from ${endpoint}:`, response.data.substring(0, 100));
+              throw new Error('Invalid response format');
+            }
+            return response.data;
+          } catch (error) {
+            console.error(`Error fetching from ${endpoint}:`, error);
+            throw error;
+          }
+        };
+
+        // Fetch all data using our helper function
+        const scholarData = await fetchEndpoint('/api/admin/scholar-count');
         setScholarCount(scholarData.count);
 
-        // Fetch items distributed
-        const itemsResponse = await fetch('/api/admin/items-distributed');
-        if (!itemsResponse.ok) throw new Error('Failed to fetch items distributed');
-        const itemsData = await itemsResponse.json();
+        const itemsData = await fetchEndpoint('/api/admin/items-distributed');
         setItemsDistributed(itemsData.count);
 
-        // Fetch new users count
-        const newUsersResponse = await fetch('/api/admin/new-users-count');
-        if (!newUsersResponse.ok) throw new Error('Failed to fetch new users count');
-        const newUsersData = await newUsersResponse.json();
+        const newUsersData = await fetchEndpoint('/api/admin/new-users-count');
         setNewUsersCount(newUsersData.count);
 
-        // Fetch events count
-        const eventsResponse = await fetch('/api/admin/events-count');
-        if (!eventsResponse.ok) throw new Error('Failed to fetch events count');
-        const eventsData = await eventsResponse.json();
+        const eventsData = await fetchEndpoint('/api/admin/events-count');
         setEventsCount(eventsData.count);
 
-        // Fetch generous donors
-        const donorsResponse = await fetch('/api/admin/generous-donors');
-        if (!donorsResponse.ok) throw new Error('Failed to fetch generous donors');
-        const donorsData = await donorsResponse.json();
+        const donorsData = await fetchEndpoint('/api/admin/generous-donors');
         setGenerousDonors(donorsData);
 
-        // Fetch donations summary
-        const donationsResponse = await fetch('/api/admin/donations-summary');
-        if (!donationsResponse.ok) throw new Error('Failed to fetch donations summary');
-        const donationsData = await donationsResponse.json();
+        const donationsData = await fetchEndpoint('/api/admin/donations-summary');
         setDonationSummary(donationsData);
 
-        // Fetch donation time statistics
-        const timeResponse = await fetch('/api/admin/donation-time-stats');
-        if (!timeResponse.ok) throw new Error('Failed to fetch donation time stats');
-        const timeData = await timeResponse.json();
+        const timeData = await fetchEndpoint('/api/admin/donation-time-stats');
         setTimeStats(timeData);
 
-        // Fetch donation trends
-        const trendsResponse = await fetch('/api/admin/donation-trends');
-        if (!trendsResponse.ok) throw new Error('Failed to fetch donation trends');
-        const trendsData = await trendsResponse.json();
+        const trendsData = await fetchEndpoint('/api/admin/donation-trends');
         setTrendStats(trendsData);
 
-        // Fetch daily traffic
-        const trafficResponse = await fetch('/api/admin/daily-traffic');
-        if (!trafficResponse.ok) throw new Error('Failed to fetch daily traffic');
-        const trafficData = await trafficResponse.json();
+        const trafficData = await fetchEndpoint('/api/admin/daily-traffic');
         setDailyTraffic(trafficData);
 
-        // Fetch scholar reports
-        const scholarReportsResponse = await fetch('/api/admin/scholar-reports');
-        if (!scholarReportsResponse.ok) throw new Error('Failed to fetch scholar reports');
-        const scholarReportsData = await scholarReportsResponse.json();
+        const scholarReportsData = await fetchEndpoint('/api/admin/scholar-reports');
         setScholarReportStatus(scholarReportsData);
 
-        // Add new fetch for items distributed stats
-        const itemsStatsResponse = await fetch('/api/admin/items-distributed-stats');
-        if (!itemsStatsResponse.ok) throw new Error('Failed to fetch items distributed stats');
-        const itemsStatsData = await itemsStatsResponse.json();
+        const itemsStatsData = await fetchEndpoint('/api/admin/items-distributed-stats');
         setItemsStats(itemsStatsData);
 
       } catch (error) {
         console.error('Error fetching data:', error);
+        // You might want to show a notification to the user here
+        toast.error("Failed to load dashboard data. Please check your connection and try again.");
       }
     };
 

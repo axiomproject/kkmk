@@ -146,6 +146,18 @@ const ScholarsLocation: React.FC = () => {
         setPendingScholars(current => 
           current.filter(scholar => scholar.id !== scholarId)
         );
+        
+        // Send notification to the scholar
+        await api.post(
+          '/notifications/send',
+          {
+            userId: scholarId,
+            type: 'location_verification',
+            content: 'Your location has been rejected. Please update your location. 📍❌'
+          },
+          { headers: { Authorization: `Bearer ${token}` }}
+        );
+        
         alert('Location has been rejected. Scholar will need to set their location again.');
       }
     } catch (error) {
@@ -338,7 +350,7 @@ const renderScholarCard = (
   type: 'pending' | 'verified' = 'pending', // Add this parameter
   handleDeleteVerification?: (id: number) => void
 ) => (
-  <div key={scholar.id} className="scholar-card">
+  <div key={scholar.id} className="scholar-cardss">
     <div className="scholar-info">
       <img 
         src={scholar.profile_photo || 'images/default-avatar.jpg'} 

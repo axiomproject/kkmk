@@ -123,78 +123,195 @@ const AdminModel = {
 
   // Volunteer Management
   async getVolunteers() {
-    const result = await db.query(`
-      SELECT 
-        id,
-        name,
-        email,
-        username,
-        phone,
-        date_of_birth,
-        status,
-        last_login,
-        is_verified,
-        profile_photo,
-        created_at
-      FROM users 
-      WHERE role = 'volunteer'
-      ORDER BY created_at DESC
-    `);
-    return result.rows;
-  },
+    try {
+      const result = await db.query(`
+        SELECT 
+          id,
+          name,
+          email,
+          phone,
+          username,
+          created_at,
+          status,
+          is_verified,
+          date_of_birth,
+          last_login,
+          skills,
+          disability,
+          gender
+        FROM users
+        WHERE role = 'volunteer'
+        ORDER BY created_at DESC
+      `);
 
+      // Process the results to handle JSON fields
+      return result.rows.map(volunteer => {
+        // Parse skills if it's a string
+        if (volunteer.skills && typeof volunteer.skills === 'string') {
+          try {
+            volunteer.skills = JSON.parse(volunteer.skills);
+          } catch (e) {
+            console.error(`Error parsing skills for user ${volunteer.id}:`, e);
+            volunteer.skills = [];
+          }
+        }
+        
+        // Parse disability if it's a string
+        if (volunteer.disability && typeof volunteer.disability === 'string') {
+          try {
+            volunteer.disability = JSON.parse(volunteer.disability);
+          } catch (e) {
+            console.error(`Error parsing disability for user ${volunteer.id}:`, e);
+            volunteer.disability = null;
+          }
+        }
+        
+        return volunteer;
+      });
+    } catch (error) {
+      console.error('Error in getVolunteers:', error);
+      throw new Error('Failed to fetch volunteers');
+    }
+  },
+  
   async getVolunteerById(id) {
-    const result = await db.query(`
-      SELECT 
-        id, name, email, username, phone,
-        date_of_birth, status, last_login,
-        is_verified, profile_photo, created_at
-      FROM users 
-      WHERE id = $1 AND role = 'volunteer'
-    `, [id]);
-    return result.rows.length ? result.rows[0] : null;
+    try {
+      const result = await db.query(`
+        SELECT 
+          id,
+          name,
+          email,
+          phone,
+          username,
+          created_at,
+          status,
+          is_verified,
+          date_of_birth,
+          last_login,
+          skills,
+          disability,
+          gender
+        FROM users
+        WHERE id = $1 AND role = 'volunteer'
+      `, [id]);
+      
+      if (result.rows.length === 0) {
+        return null;
+      }
+      
+      const volunteer = result.rows[0];
+      
+      // Parse skills if it's a string
+      if (volunteer.skills && typeof volunteer.skills === 'string') {
+        try {
+          volunteer.skills = JSON.parse(volunteer.skills);
+        } catch (e) {
+          console.error(`Error parsing skills for volunteer ${id}:`, e);
+          volunteer.skills = [];
+        }
+      }
+      
+      // Parse disability if it's a string
+      if (volunteer.disability && typeof volunteer.disability === 'string') {
+        try {
+          volunteer.disability = JSON.parse(volunteer.disability);
+        } catch (e) {
+          console.error(`Error parsing disability for volunteer ${id}:`, e);
+          volunteer.disability = null;
+        }
+      }
+      
+      return volunteer;
+    } catch (error) {
+      console.error('Error in getVolunteerById:', error);
+      throw new Error('Failed to fetch volunteer details');
+    }
   },
 
   async updateVolunteer(id, updates) {
-    const { name, email, username, phone, date_of_birth, status, is_verified, password } = updates;
-    
-    // Build the update query dynamically based on whether password is provided
-    const updateFields = [];
-    const values = [];
-    let valueIndex = 1;
-
-    // Add non-password fields
-    const fields = {
-      name, email, username, phone, date_of_birth, status, is_verified
-    };
-
-    for (const [key, value] of Object.entries(fields)) {
-      if (value !== undefined) {
-        updateFields.push(`${key} = $${valueIndex}`);
-        values.push(value);
-        valueIndex++;
+    try {
+      // Process skills and disability fields if they exist
+      let processedUpdates = { ...updates };
+      
+      // Convert skills array to JSON string if it's provided
+      if (updates.skills && Array.isArray(updates.skills)) {
+        processedUpdates.skills = JSON.stringify(updates.skills);
       }
+      
+      // Convert disability object to JSON string if it's provided
+      if (updates.disability !== undefined) {
+        // Handle null case properly
+        processedUpdates.disability = updates.disability ? 
+          JSON.stringify(updates.disability) : null;
+      }
+      
+      // Build the update query dynamically based on available fields
+      const updateFields = [];
+      const values = [];
+      let valueIndex = 1;
+
+      // Add all fields that should be updated
+      Object.entries(processedUpdates).forEach(([key, value]) => {
+        if (value !== undefined && key !== 'id') {
+          updateFields.push(`${key} = $${valueIndex}`);
+          values.push(value);
+          valueIndex++;
+        }
+      });
+
+      // Add ID and role to values array
+      values.push(id);
+
+      // Skip update if no fields to update
+      if (updateFields.length === 0) {
+        const currentUser = await db.query(
+          'SELECT id, name, email, username, phone, date_of_birth, status, is_verified, profile_photo, skills, disability, gender FROM users WHERE id = $1 AND role = $2',
+          [id, 'volunteer']
+        );
+        return currentUser.rows[0];
+      }
+
+      const query = `
+        UPDATE users 
+        SET ${updateFields.join(', ')}
+        WHERE id = $${valueIndex} AND role = 'volunteer'
+        RETURNING id, name, email, username, phone, date_of_birth, status, is_verified, profile_photo, skills, disability,gender
+      `;
+
+      const result = await db.query(query, values);
+      
+      // Process the result to parse JSON fields for the returned object
+      if (result.rows.length > 0) {
+        const volunteer = result.rows[0];
+        
+        // Parse skills if it's stored as a string
+        if (volunteer.skills && typeof volunteer.skills === 'string') {
+          try {
+            volunteer.skills = JSON.parse(volunteer.skills);
+          } catch (e) {
+            console.error(`Error parsing skills for volunteer ${volunteer.id}:`, e);
+            volunteer.skills = [];
+          }
+        }
+        
+        // Parse disability if it's stored as a string
+        if (volunteer.disability && typeof volunteer.disability === 'string') {
+          try {
+            volunteer.disability = JSON.parse(volunteer.disability);
+          } catch (e) {
+            console.error(`Error parsing disability for volunteer ${volunteer.id}:`, e);
+            volunteer.disability = null;
+          }
+        }
+        
+        return volunteer;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error updating volunteer:', error);
+      throw error;
     }
-
-    // Add password if provided
-    if (password) {
-      updateFields.push(`password = $${valueIndex}`);
-      values.push(password);
-      valueIndex++;
-    }
-
-    // Add ID and role to values array
-    values.push(id);
-
-    const query = `
-      UPDATE users 
-      SET ${updateFields.join(', ')}
-      WHERE id = $${valueIndex} AND role = 'volunteer'
-      RETURNING id, name, email, username, phone, date_of_birth, status, is_verified, profile_photo
-    `;
-
-    const result = await db.query(query, values);
-    return result.rows[0];
   },
 
   async deleteVolunteer(id) {
@@ -243,20 +360,43 @@ const AdminModel = {
   },
 
   async createVolunteer(volunteerData) {
-    const { name, username, email, password, date_of_birth } = volunteerData;
+    const { 
+      name, 
+      username, 
+      email, 
+      password, 
+      phone,
+      date_of_birth, 
+      status = 'active',
+      is_verified = false,
+      skills,
+      disability,
+      gender
+    } = volunteerData;
+    
     const result = await db.query(`
       INSERT INTO users (
         name, username, email, password, 
-        date_of_birth, role, status, 
-        is_verified, created_at
+        phone, date_of_birth, role, status, 
+        is_verified, created_at, skills, disability, gender
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) 
-      RETURNING id, name, email, username, date_of_birth, status, is_verified
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $12) 
+      RETURNING id, name, email, username, phone, date_of_birth, status, is_verified
     `, [
-      name, username, email, password, 
-      date_of_birth, 'volunteer', 'active', 
-      false
+      name, 
+      username, 
+      email, 
+      password, 
+      phone,
+      date_of_birth, 
+      'volunteer', 
+      status, 
+      is_verified,
+      skills,
+      disability,
+      gender
     ]);
+    
     return result.rows[0];
   },
 
@@ -321,43 +461,150 @@ const AdminModel = {
 
   async getScholarById(id) {
     const result = await db.query(`
-      SELECT * FROM users 
-      WHERE id = $1 AND role = 'scholar'
+      SELECT 
+        u.id, u.name, u.email, u.username, u.phone, 
+        u.date_of_birth, u.status, u.last_login,
+        u.is_verified, u.profile_photo, u.created_at,
+        u.first_name, u.middle_name, u.last_name, u.name_extension, u.gender,
+        u.guardian_name, u.guardian_phone, u.address, 
+        u.education_level, u.school, u.parents_income,
+        s.favorite_subject, s.favorite_activity, 
+        s.favorite_color, s.other_details,
+        s.image_url, s.current_amount, s.amount_needed
+      FROM users u
+      LEFT JOIN scholars s ON u.id = s.user_id
+      WHERE u.id = $1 AND u.role = 'scholar'
     `, [id]);
     return result.rows.length ? result.rows[0] : null;
   },
 
   async createScholar(scholarData) {
-    const { 
-      username, password, email = `${username}@placeholder.com`, name,
-      phone, status, is_verified, date_of_birth,
-      role
-    } = scholarData;
-
-    if (!password) {
-      throw new Error('Password is required');
-    }
-
-    const result = await db.query(`
-      INSERT INTO users (
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Check for required fields and apply column length limits
+      const { 
         username, password, email, name,
+        first_name, middle_name, last_name, name_extension,
         phone, status, is_verified, date_of_birth,
-        role, created_at
-      ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-      RETURNING id, name, email, username, phone, date_of_birth, status, is_verified
-    `, [
-      username,
-      password,  // The password will be hashed in the controller
-      email,
-      name,
-      phone,
-      status,
-      is_verified,
-      date_of_birth,
-      role
-    ]);
-    return result.rows[0];
+        gender, guardian_name, guardian_phone, address,
+        education_level, school, parents_income,
+        favorite_subject, favorite_activity, favorite_color, other_details,
+        role, current_amount = 0, amount_needed = 0
+      } = scholarData;
+
+      // Ensure we have a password
+      if (!password) {
+        throw new Error('Password is required');
+      }
+
+      // Helper to truncate values that might exceed column limits
+      const truncate = (val, maxLen) => {
+        return typeof val === 'string' && val.length > maxLen ? val.substring(0, maxLen) : val;
+      };
+      
+      // First create the user record
+      const userResult = await client.query(`
+        INSERT INTO users (
+          username, password, email, name,
+          first_name, middle_name, last_name, name_extension,
+          phone, status, is_verified, date_of_birth,
+          gender, guardian_name, guardian_phone, address,
+          education_level, school, parents_income,
+          role, created_at
+        ) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 
+                $13, $14, $15, $16, $17, $18, $19, $20, NOW())
+        RETURNING id, name, email, username, phone, date_of_birth, status, is_verified, 
+                  first_name, last_name, gender, guardian_name, guardian_phone, 
+                  address, education_level, school
+      `, [
+        truncate(username, 50),
+        password,  // The password will be hashed in the controller
+        truncate(email, 100),
+        truncate(name, 100),
+        truncate(first_name, 50),
+        middle_name ? truncate(middle_name, 50) : null,
+        truncate(last_name, 50),
+        name_extension ? truncate(name_extension, 10) : null,
+        truncate(phone, 20),
+        truncate(status, 20),  // Increased to VARCHAR(20)
+        is_verified,
+        date_of_birth,
+        truncate(gender, 20),  // Increased to VARCHAR(20)
+        guardian_name ? truncate(guardian_name, 100) : null,
+        guardian_phone ? truncate(guardian_phone, 20) : null,
+        address ? truncate(address, 255) : null,
+        education_level ? truncate(education_level, 50) : null,
+        school ? truncate(school, 100) : null,
+        parents_income ? truncate(parents_income, 50) : null,
+        truncate(role, 20)  // Increased to VARCHAR(20)
+      ]);
+      
+      const userId = userResult.rows[0].id;
+      console.log('Created user record with ID:', userId);
+      
+      // Set scholar status based on verification status
+      // If the user is verified, default scholar status to "inactive"
+      // Otherwise, use the provided status or default to "active"
+      const scholarStatus = is_verified === true ? 'inactive' : (status || 'active');
+      console.log(`Setting scholar status to "${scholarStatus}" (is_verified: ${is_verified})`);
+      
+      // Then create the corresponding scholars record with the user_id
+      await client.query(`
+        INSERT INTO scholars (
+          first_name, last_name, address, date_of_birth,
+          grade_level, school, guardian_name, guardian_phone,
+          gender, favorite_subject, favorite_activity, favorite_color,
+          other_details, is_active, user_id, status, current_amount, amount_needed, created_at
+        ) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NOW())
+      `, [
+        truncate(first_name || ''), 
+        truncate(last_name || ''),
+        address || null,
+        date_of_birth || null,
+        education_level || null,  // Map education_level to grade_level
+        school || null,
+        guardian_name || null,
+        guardian_phone || null,
+        gender || null,
+        favorite_subject || null,
+        favorite_activity || null,
+        favorite_color || null,
+        other_details || null,
+        scholarStatus !== 'inactive', // Set is_active based on status
+        userId,
+        truncate(scholarStatus, 20),
+        current_amount || 0,
+        amount_needed || 0
+      ]);
+
+      // Fetch the complete scholar data with joined fields
+      const finalResult = await client.query(`
+        SELECT 
+          u.id, u.name, u.email, u.username, u.phone, u.date_of_birth, 
+          u.status, u.is_verified, u.first_name, u.last_name, u.gender,
+          u.guardian_name, u.guardian_phone, u.address, u.education_level, 
+          u.school, u.parents_income, s.id as scholar_id, s.favorite_subject, 
+          s.favorite_activity, s.favorite_color, s.other_details, 
+          s.current_amount, s.amount_needed, s.status as scholar_status,
+          s.is_active
+        FROM users u
+        LEFT JOIN scholars s ON u.id = s.user_id
+        WHERE u.id = $1
+      `, [userId]);
+
+      await client.query('COMMIT');
+      return finalResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error in createScholar:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async updateScholar(id, updates) {
@@ -677,6 +924,90 @@ const AdminModel = {
     `;
 
     return await db.one(query, values);
+  },
+
+  // Add this new method or update an existing one to manage report cards with grade level
+  async getReportCardsByGradeLevel(gradeLevel) {
+    try {
+      const result = await db.query(`
+        SELECT rc.*, 
+               u.name as user_name, 
+               u.email as user_email
+        FROM report_cards rc
+        LEFT JOIN users u ON rc.user_id = u.id
+        WHERE rc.grade_level = $1
+        ORDER BY rc.submitted_at DESC
+      `, [gradeLevel]);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error fetching report cards by grade level:', error);
+      throw error;
+    }
+  },
+
+  async getAllReportCardsWithGradeInfo() {
+    try {
+      const result = await db.query(`
+        SELECT rc.*, 
+               u.name as user_name, 
+               u.email as user_email,
+               u.profile_photo
+        FROM report_cards rc
+        LEFT JOIN users u ON rc.user_id = u.id
+        ORDER BY 
+          CASE 
+            WHEN rc.grade_level LIKE 'grade1%' THEN 1
+            WHEN rc.grade_level LIKE 'grade2%' THEN 2
+            WHEN rc.grade_level LIKE 'grade3%' THEN 3
+            WHEN rc.grade_level LIKE 'grade4%' THEN 4
+            WHEN rc.grade_level LIKE 'grade5%' THEN 5
+            WHEN rc.grade_level LIKE 'grade6%' THEN 6
+            WHEN rc.grade_level LIKE 'grade7%' THEN 7
+            WHEN rc.grade_level LIKE 'grade8%' THEN 8
+            WHEN rc.grade_level LIKE 'grade9%' THEN 9
+            WHEN rc.grade_level LIKE 'grade10%' THEN 10
+            WHEN rc.grade_level LIKE 'grade11%' THEN 11
+            WHEN rc.grade_level LIKE 'grade12%' THEN 12
+            WHEN rc.grade_level LIKE 'college%' THEN 13
+            ELSE 99
+          END,
+          rc.submitted_at DESC
+      `);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error fetching report cards with grade info:', error);
+      throw error;
+    }
+  },
+
+  // If you already have a method like this, update it to include grade_level
+  async getReportCardStatistics() {
+    try {
+      const result = await db.query(`
+        SELECT 
+          COUNT(*) as total_submissions,
+          COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+          COUNT(CASE WHEN status = 'in_review' THEN 1 END) as in_review_count,
+          COUNT(CASE WHEN status = 'verified' THEN 1 END) as verified_count,
+          COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected_count,
+          json_object_agg(
+            COALESCE(grade_level, 'unknown'), 
+            (
+              SELECT COUNT(*) 
+              FROM report_cards rc2 
+              WHERE COALESCE(rc2.grade_level, 'unknown') = COALESCE(rc1.grade_level, 'unknown')
+            )
+          ) as grade_distribution
+        FROM report_cards rc1
+      `);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error fetching report card statistics:', error);
+      throw error;
+    }
   }
 };
 

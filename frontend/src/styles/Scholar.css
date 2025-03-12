@@ -997,4 +997,40 @@
   background-color: #c82333;
 }
 
+/* Add these styles to your existing Scholar.css file */
+
+.admin-scholar-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.admin-scholar-verified-badge {
+  background-color: #4caf50;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+}
+
+.admin-scholar-verified-badge::before {
+  content: "✓";
+  font-size: 0.8rem;
+  margin-right: 4px;
+}
+
+.status-verified {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.status-unverified {
+  color: #f44336;
+  font-weight: 500;
+}
+
 /* ...existing styles... */

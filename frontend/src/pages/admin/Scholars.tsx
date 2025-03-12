@@ -14,7 +14,6 @@ interface Scholar {
   status: string;
   created_at: string;
   is_verified: boolean;
-  is_active: boolean;
   profile_photo?: string;
   date_of_birth?: string;
   last_login?: string;
@@ -39,6 +38,8 @@ const ScholarManagement = () => {
   const [viewModalScholar, setViewModalScholar] = useState<any>(null);
   const [editFormScholar, setEditFormScholar] = useState<any>(null);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [approvalFilter, setApprovalFilter] = useState<string>('all');
+  const [formError, setFormError] = useState<{ field?: string, detail?: string } | null>(null);
   
   // Add more state for modals and forms as needed
 
@@ -114,12 +115,18 @@ const ScholarManagement = () => {
       scholar.name?.toLowerCase().includes(searchLower) ||
       scholar.username?.toLowerCase().includes(searchLower);
 
-    if (dateFilter === 'anytime') return matchesSearch;
+    // Apply approval filter
+    const matchesApprovalFilter = 
+      approvalFilter === 'all' || 
+      (approvalFilter === 'approved' && scholar.is_verified) ||
+      (approvalFilter === 'notapproved' && !scholar.is_verified);
+
+    if (dateFilter === 'anytime') return matchesSearch && matchesApprovalFilter;
 
     const scholarDate = new Date(scholar.created_at);
     const filterDate = getDateFromFilter(dateFilter);
     
-    return matchesSearch && filterDate && scholarDate >= filterDate;
+    return matchesSearch && matchesApprovalFilter && filterDate && scholarDate >= filterDate;
   }));
 
   // Pagination
@@ -159,7 +166,7 @@ const ScholarManagement = () => {
       'Username': scholar.username,
       'Phone': scholar.phone || 'N/A',
       'Status': scholar.status,
-      'Active': scholar.is_active ? 'Yes' : 'No',
+      'Approved': scholar.is_verified ? 'Yes' : 'No',
       'Created At': new Date(scholar.created_at).toLocaleDateString()
     }));
 
@@ -188,19 +195,82 @@ const ScholarManagement = () => {
     try {
       switch (action) {
         case 'view':
-          const viewResponse = await api.get(`/admin/scholars/${scholar.id}`);
-          if (viewResponse.data) {
-            setViewModalScholar(viewResponse.data);
+          try {
+            // Fetch the full scholar data with all fields, just like we do for edit
+            const viewResponse = await api.get(`/admin/scholars/${scholar.id}`);
+            if (viewResponse.data) {
+              console.log("Scholar data for view:", viewResponse.data);
+              setViewModalScholar(viewResponse.data);
+            }
+          } catch (error) {
+            console.error("Error fetching scholar details for view:", error);
+            throw new Error("Failed to load scholar details for viewing");
           }
           break;
 
         case 'edit':
-          const formattedScholar = {
-            ...scholar,
-            date_of_birth: scholar.date_of_birth ? 
-              new Date(scholar.date_of_birth).toISOString().split('T')[0] : ''
-          };
-          setEditFormScholar(formattedScholar);
+          try {
+            // Fetch the full scholar data with all name fields
+            const response = await api.get(`/admin/scholars/${scholar.id}`);
+            if (response.data) {
+              const scholarData = response.data;
+              
+              // Format date for the form
+              const formattedScholar = {
+                ...scholarData,
+                date_of_birth: scholarData.date_of_birth ? 
+                  new Date(scholarData.date_of_birth).toISOString().split('T')[0] : ''
+              };
+              
+              console.log("Scholar data for edit:", formattedScholar);
+              setEditFormScholar(formattedScholar);
+            }
+          } catch (error) {
+            console.error("Error fetching scholar details for edit:", error);
+            throw new Error("Failed to load scholar details for editing");
+          }
+          break;
+
+        case 'approve':
+          if (window.confirm('Are you sure you want to approve this scholar?')) {
+            try {
+              await api.put(`/admin/scholars/${scholar.id}/approve`, 
+                { is_verified: true },
+                { 
+                  headers: { 
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json' 
+                  } 
+                }
+              );
+              alert('Scholar approved successfully!');
+              await fetchScholars();
+            } catch (error: any) {
+              console.error('Approval error:', error.response?.data);
+              throw new Error(error.response?.data?.details || 'Failed to approve scholar');
+            }
+          }
+          break;
+
+        case 'revoke':
+          if (window.confirm('Are you sure you want to revoke this scholar\'s verification?')) {
+            try {
+              await api.put(`/admin/scholars/${scholar.id}/approve`, 
+                { is_verified: false },
+                { 
+                  headers: { 
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json' 
+                  } 
+                }
+              );
+              alert('Scholar verification revoked successfully!');
+              await fetchScholars();
+            } catch (error: any) {
+              console.error('Revocation error:', error.response?.data);
+              throw new Error(error.response?.data?.details || 'Failed to revoke scholar verification');
+            }
+          }
           break;
 
         case 'delete':
@@ -253,16 +323,31 @@ const ScholarManagement = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No auth token found');
 
-      // Send as an object instead of an array
+      // Reset form error
+      setFormError(null);
+      setError('');
+
+      // Include all fields from the form including the separated name fields
       const scholarData = {
+        first_name: formData.first_name,
+        middle_name: formData.middle_name || null,
+        last_name: formData.last_name,
+        name_extension: formData.name_extension || null,
+        name: formData.name, // Keep for backward compatibility
         username: formData.username,
         password: formData.password,
         email: formData.email,
-        name: formData.name,
         phone: formData.phone || null,
         status: formData.status,
         is_verified: formData.is_verified,
         date_of_birth: formData.date_of_birth || null,
+        gender: formData.gender,
+        guardian_name: formData.guardian_name || null,
+        guardian_phone: formData.guardian_phone || null,
+        address: formData.address || null,
+        education_level: formData.education_level || null,
+        school: formData.school || null,
+        parents_income: formData.parents_income || null,
         role: 'scholar'
       };
 
@@ -270,7 +355,7 @@ const ScholarManagement = () => {
 
       await api.post(
         '/admin/scholars',
-        scholarData,  // Send as object, not { data: [...] }
+        scholarData,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -284,7 +369,18 @@ const ScholarManagement = () => {
     } catch (error: any) {
       console.error('Error creating scholar:', error);
       console.error('Error details:', error.response?.data);
-      setError(error.response?.data?.error || 'Failed to create scholar');
+      
+      // Enhanced error handling for specific error types
+      if (error.response?.status === 409) {
+        // Handle duplicate username or email
+        setFormError({
+          field: error.response.data.field,
+          detail: error.response.data.detail
+        });
+      } else {
+        // Generic error
+        setError(error.response?.data?.error || 'Failed to create scholar');
+      }
     }
   };
 
@@ -358,6 +454,29 @@ const ScholarManagement = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          
+          {/* Move the filter tabs here, before the joined anytime dropdown */}
+          <div className="filter-tabs-container">
+            <button 
+              className={`filter-tab ${approvalFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setApprovalFilter('all')}
+            >
+              All
+            </button>
+            <button 
+              className={`filter-tab ${approvalFilter === 'approved' ? 'active' : ''}`}
+              onClick={() => setApprovalFilter('approved')}
+            >
+              Approved
+            </button>
+            <button 
+              className={`filter-tab ${approvalFilter === 'notapproved' ? 'active' : ''}`}
+              onClick={() => setApprovalFilter('notapproved')}
+            >
+              Not Approved
+            </button>
+          </div>
+          
           <select 
             className="filter"
             value={dateFilter}
@@ -379,7 +498,7 @@ const ScholarManagement = () => {
           </button>
         </div>
       </header>
-
+      
       <div className="table-wrapper">
         <table className="user-table">
           <thead>
@@ -405,7 +524,7 @@ const ScholarManagement = () => {
                 Status <span className="material-icons sort-icon">{getSortIcon('status')}</span>
               </th>
               <th onClick={() => handleSort('is_verified')} className="sortable-header">
-                Verified <span className="material-icons sort-icon">{getSortIcon('is_verified')}</span>
+                Approved <span className="material-icons sort-icon">{getSortIcon('is_verified')}</span>
               </th>
               <th>Actions</th>
             </tr>
@@ -443,6 +562,24 @@ const ScholarManagement = () => {
                     </button>
                     {activeDropdown === scholar.id && (
                       <div className="dropdowns-content active">
+                 
+                     
+                        {scholar.is_verified === false && (
+                          <button 
+                            className="dropdowns-item-admin approve"
+                            onClick={() => handleAction('approve', scholar)}
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {scholar.is_verified === true && (
+                          <button 
+                            className="dropdowns-item-admin revoke"
+                            onClick={() => handleAction('revoke', scholar)}
+                          >
+                            <span className="material-icons">cancel</span> Revoke
+                          </button>
+                        )}
                         <button 
                           className="dropdowns-item-admin view"
                           onClick={() => handleAction('view', scholar)}
@@ -517,7 +654,11 @@ const ScholarManagement = () => {
       {showNewForm && (
         <NewScholarForm
           onSubmit={handleCreateScholar}
-          onCancel={() => setShowNewForm(false)}
+          onCancel={() => {
+            setShowNewForm(false);
+            setFormError(null); // Clear any form errors when closing
+          }}
+          submitError={formError}
         />
       )}
     </div>

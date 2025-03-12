@@ -5,7 +5,29 @@ const db = require('../config/db'); // Keep this import
 // REMOVE the Pool creation and use the imported db connection instead
 // This is causing the performance issue by creating a separate connection pool
 
-const createUser = async (name, username, email, password, dateOfBirth, role = 'volunteer', faceData = null) => {
+const createUser = async (
+  firstName,
+  middleName,
+  lastName,
+  extension,
+  gender,
+  name, // Keeping for backward compatibility
+  username, 
+  email, 
+  phone, // Add phone parameter
+  password, 
+  dateOfBirth, 
+  role = 'volunteer', 
+  faceData = null,
+  guardianName = null,
+  guardianPhone = null,
+  address = null,
+  educationLevel = null,
+  school = null,
+  parentsIncome = null,  // Add parents' income parameter
+  skills = null,
+  disability = null     // Add disability parameter
+) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString('hex');
@@ -26,19 +48,31 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
     // Make sure we never pass null to the email field
     const emailValue = email || `${username}@placeholder.com`;
 
+    // Format skills as JSON if provided
+    const skillsJson = skills ? JSON.stringify(skills) : null;
+    
+    // Format disability information as JSON if provided
+    const disabilityJson = disability ? JSON.stringify(disability) : null;
+
     // Replace pool.query with db.query for consistent connection pooling
     const result = await db.query(
       `INSERT INTO users (
-        name, username, email, password, date_of_birth, 
+        first_name, middle_name, last_name, name_extension, gender,
+        name, username, email, phone, password, date_of_birth, 
         verification_token, is_verified, role, created_at,
-        face_descriptors, face_landmarks, has_face_verification
+        face_descriptors, face_landmarks, has_face_verification,
+        guardian_name, guardian_phone, address, education_level, school,
+        parents_income, skills, disability
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) 
       RETURNING *`,
       [
-        name, username, emailValue, hashedPassword, dateOfBirth, 
+        firstName, middleName, lastName, extension, gender,
+        name, username, emailValue, phone, hashedPassword, dateOfBirth, 
         verificationToken, false, role, new Date(),
-        face_descriptors, face_landmarks, faceData !== null
+        face_descriptors, face_landmarks, faceData !== null,
+        guardianName, guardianPhone, address, educationLevel, school,
+        parentsIncome, skillsJson, disabilityJson
       ]
     );
 
@@ -51,9 +85,11 @@ const createUser = async (name, username, email, password, dateOfBirth, role = '
 const findUserByEmailOrUsername = async (identifier) => {
   // Replace pool with db
   const result = await db.query(
-    `SELECT id, email, name, username, profile_photo, cover_photo, intro, 
+    `SELECT id, email, name, first_name, middle_name, last_name, name_extension, gender,
+            username, profile_photo, cover_photo, intro, 
             known_as, date_of_birth, phone, password, is_verified, role,
-            facebook_url, twitter_url, instagram_url, status
+            facebook_url, twitter_url, instagram_url, status,
+            guardian_name, guardian_phone, address, education_level, school, skills, disability
      FROM users 
      WHERE email = $1 OR username = $1`,
     [identifier]
@@ -86,32 +122,141 @@ const updateUserInfo = async (userId, intro, knownAs) => {
   return result.rows[0];
 };
 
-const updateUserDetails = async (userId, name, email, username, dateOfBirth, phone, intro, knownAs) => {
+const updateUserDetails = async (
+  userId, 
+  firstName,
+  middleName,
+  lastName,
+  extension,
+  gender,
+  name,
+  email, 
+  username, 
+  dateOfBirth, 
+  phone, 
+  intro, 
+  knownAs,
+  guardianName,
+  guardianPhone,
+  address,
+  educationLevel,
+  school,
+  skills,
+  disability
+) => {
   // First get the current user data to ensure we don't override the email with null
-  const userResult = await db.query('SELECT email FROM users WHERE id = $1', [userId]);
+  const userResult = await db.query('SELECT email, role FROM users WHERE id = $1', [userId]);
   
   if (userResult.rows.length === 0) {
     return null; // User not found
   }
   
   const currentEmail = userResult.rows[0].email;
+  const userRole = userResult.rows[0].role;
   
   // Use the current email if no new email is provided
   const emailToUse = email || currentEmail;
-  
-  const query = `
-    UPDATE users 
-    SET name = COALESCE($1, name),
-        email = $2, 
-        username = COALESCE($3, username),
-        date_of_birth = COALESCE($4, date_of_birth),
-        phone = COALESCE($5, phone),
-        intro = COALESCE($6, intro),
-        known_as = COALESCE($7, known_as)
-    WHERE id = $8 
-    RETURNING id, email, name, username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
 
-  const result = await db.query(query, [name, emailToUse, username, dateOfBirth, phone, intro, knownAs, userId]);
+  // Format skills as JSON if provided
+  const skillsJson = skills ? JSON.stringify(skills) : null;
+  
+  // Format disability as JSON if provided
+  const disabilityJson = disability ? JSON.stringify(disability) : null;
+  
+  // Build the query based on role
+  let query;
+  let params;
+
+  // Construct the full name from parts if provided
+  const fullName = name || [firstName, middleName, lastName, extension].filter(Boolean).join(' ');
+  
+  if (userRole === 'scholar') {
+    query = `
+      UPDATE users 
+      SET first_name = COALESCE($1, first_name),
+          middle_name = COALESCE($2, middle_name),
+          last_name = COALESCE($3, last_name),
+          name_extension = COALESCE($4, name_extension),
+          gender = COALESCE($5, gender),
+          name = COALESCE($6, name),
+          email = $7, 
+          username = COALESCE($8, username),
+          date_of_birth = COALESCE($9, date_of_birth),
+          phone = COALESCE($10, phone),
+          intro = COALESCE($11, intro),
+          known_as = COALESCE($12, known_as),
+          guardian_name = COALESCE($13, guardian_name),
+          guardian_phone = COALESCE($14, guardian_phone),
+          address = COALESCE($15, address),
+          education_level = COALESCE($16, education_level),
+          school = COALESCE($17, school)
+      WHERE id = $18 
+      RETURNING id, email, name, first_name, middle_name, last_name, name_extension, gender,
+                username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone,
+                guardian_name, guardian_phone, address, education_level, school`;
+    
+    params = [
+      firstName, middleName, lastName, extension, gender, fullName,
+      emailToUse, username, dateOfBirth, phone, intro, knownAs,
+      guardianName, guardianPhone, address, educationLevel, school,
+      userId
+    ];
+  } 
+  else if (userRole === 'volunteer') {
+    query = `
+      UPDATE users 
+      SET first_name = COALESCE($1, first_name),
+          middle_name = COALESCE($2, middle_name),
+          last_name = COALESCE($3, last_name),
+          name_extension = COALESCE($4, name_extension),
+          gender = COALESCE($5, gender),
+          name = COALESCE($6, name),
+          email = $7, 
+          username = COALESCE($8, username),
+          date_of_birth = COALESCE($9, date_of_birth),
+          phone = COALESCE($10, phone),
+          intro = COALESCE($11, intro),
+          known_as = COALESCE($12, known_as),
+          skills = COALESCE($13, skills),
+          disability = COALESCE($14, disability)
+      WHERE id = $15 
+      RETURNING id, email, name, first_name, middle_name, last_name, name_extension, gender,
+                username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone, skills, disability`;
+    
+    params = [
+      firstName, middleName, lastName, extension, gender, fullName,
+      emailToUse, username, dateOfBirth, phone, intro, knownAs,
+      skillsJson, disabilityJson, userId
+    ];
+  }
+  else {
+    // Default update for sponsor or any other role
+    query = `
+      UPDATE users 
+      SET first_name = COALESCE($1, first_name),
+          middle_name = COALESCE($2, middle_name),
+          last_name = COALESCE($3, last_name),
+          name_extension = COALESCE($4, name_extension),
+          gender = COALESCE($5, gender),
+          name = COALESCE($6, name),
+          email = $7, 
+          username = COALESCE($8, username),
+          date_of_birth = COALESCE($9, date_of_birth),
+          phone = COALESCE($10, phone),
+          intro = COALESCE($11, intro),
+          known_as = COALESCE($12, known_as)
+      WHERE id = $13 
+      RETURNING id, email, name, first_name, middle_name, last_name, name_extension, gender,
+                username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
+    
+    params = [
+      firstName, middleName, lastName, extension, gender, fullName,
+      emailToUse, username, dateOfBirth, phone, intro, knownAs,
+      userId
+    ];
+  }
+
+  const result = await db.query(query, params);
   return result.rows[0];
 };
 

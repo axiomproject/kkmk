@@ -1293,7 +1293,7 @@ body {
   color: #ffc107;
 }
 
-/* Add these styles to your existing CSS file or update existing ones */
+/* Add these styles to Layout.css */
 
 .payment-method-tabs {
   display: flex;
@@ -1348,3 +1348,688 @@ body {
 .gcash-details, .bank-details {
   line-height: 1.5;
 }
+
+/* Add these new styles */
+.quantity-unit-container {
+  margin-bottom: 1.5rem;
+}
+
+.quantity-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.quantity-input {
+  flex: 2;
+}
+
+.unit-select {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  background-color: white;
+}
+
+.add-to-cart-btn {
+  width: 100%;
+  padding: 0.5rem 1rem;
+  background-color: #ff4015;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-to-cart-btn:hover {
+  background-color: #df3812;
+}
+
+.cart-summary {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+.cart-summary h3 {
+  margin-bottom: 1rem;
+  color: #1a1a1a;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.remove-item-btn {
+  padding: 0.25rem 0.5rem;
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.remove-item-btn:hover {
+  background-color: #dc2626;
+}
+
+/* ...rest of existing styles... */
+
+/* ... existing styles ... */
+
+.unit-select {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: "Poppins";
+  background-color: white;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.unit-select:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 2px rgba(238, 63, 36, 0.1);
+}
+
+.quantity-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.quantity-input {
+  flex: 2;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: "Poppins";
+}
+
+/* ... rest of existing styles ... */
+
+/* ...rest of existing styles... */
+
+.cart-item-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.item-name {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.item-quantity {
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+.item-category {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* ...rest of existing styles... */
+
+/* ...existing styles... */
+
+.sub-quantity-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sub-quantity-input {
+  flex: 2;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: "Poppins";
+}
+
+.sub-unit-select {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: "Poppins";
+  background-color: white;
+  min-width: 120px;
+}
+
+.add-quantity-btn {
+  padding: 0.75rem;
+  background-color: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 40px;
+  font-size: 1.25rem;
+}
+
+.add-quantity-btn:hover {
+  background-color: #16a34a;
+}
+
+.item-quantities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sub-quantity {
+  background-color: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+/* ...rest of existing styles... */
+
+/* ...existing styles... */
+
+.frequency-select {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-family: "Poppins";
+  background-color: white;
+  min-width: 120px;
+}
+
+.item-frequency {
+  color: #4b5563;
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Update quantity-input-group to accommodate three elements */
+.quantity-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.quantity-input {
+  flex: 2;
+  min-width: 100px;
+}
+
+.unit-select,
+.frequency-select {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ...rest of existing styles... */
+
+/* ...existing styles... */
+
+.submit-cart-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-top: 1rem;
+  background-color: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-cart-button:hover {
+  background-color: #16a34a;
+}
+
+.submit-cart-button:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ...rest of existing styles... */
+
+.cart-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.add-donation-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background-color: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-donation-btn:hover {
+  background-color: #16a34a;
+}
+
+.add-donation-btn:disabled {
+  background-color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ...existing code... */
+
+.email-caution {
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: block;
+  font-style: italic;
+  font-family: "Poppins";
+}
+
+/* ...existing code... */
+
+.contact-number-group {
+  margin-bottom: 2rem;
+  width: 100%;
+  grid-column: 1 / -1;
+}
+
+.contact-number-input {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
+  min-height: 60px; /* Increased height */
+}
+
+.country-select {
+  width: 25%; /* Reduced from 35% to 25% */
+  min-width: 120px; /* Reduced from 140px */
+  max-width: 140px; /* Added max-width to control size */
+  padding: 0.75rem 1rem;
+  border: 2px solid #ddd; /* Thicker border */
+  border-radius: 8px; /* Increased border radius */
+  font-family: "Poppins";
+  background-color: white;
+  font-size: 1rem; /* Slightly reduced font size */
+  color: #333;
+  height: 60px; /* Increased height */
+  cursor: pointer;
+}
+
+.country-select:focus {
+  outline: none;
+  border-color: #ff4015;
+  box-shadow: 0 0 0 2px rgba(255, 64, 21, 0.1);
+}
+
+.phone-input {
+  flex: 1;
+  padding: 0.75rem 1.5rem; /* Increased padding */
+  border: 2px solid #ddd; /* Thicker border */
+  border-radius: 8px; /* Increased border radius */
+  font-family: "Poppins";
+  font-size: 1.2rem; /* Larger font */
+  height: 60px; /* Increased height */
+  letter-spacing: 1px; /* Better number spacing */
+  min-width: 300px; /* Increased from 280px */
+  width: 75%; /* Added to take up more space */
+}
+
+.phone-input:focus {
+  outline: none;
+  border-color: #ff4015;
+  box-shadow: 0 0 0 2px rgba(255, 64, 21, 0.1);
+}
+
+.format-hint {
+  color: #666;
+  font-size: 1rem; /* Increased font size */
+  font-style: italic;
+  margin-top: 0.5rem;
+  font-family: "Poppins";
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.format-hint i {
+  color: #999;
+  font-size: 1.2rem;
+}
+
+@media screen and (max-width: 768px) {
+  .contact-number-input {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .country-select,
+  .phone-input {
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+/* ...existing code... */
+
+/* Add these new styles for the report card renewal indicator */
+.renewal-indicator {
+  font-size: 0.85em;
+  margin-left: 5px;
+  font-weight: bold;
+  color: #fff;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(238, 63, 36, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(238, 63, 36, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(238, 63, 36, 0);
+  }
+}
+
+.report-card-button {
+  padding: 12px 20px;
+  background-color: #EE3F24;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-card-button:hover {
+  background-color: #d42e13;
+  transform: translateY(-2px);
+}
+
+.view-progress-button {
+  padding: 12px 20px;
+  background-color: #4285F4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.view-progress-button:hover {
+  background-color: #2b68cc;
+  transform: translateY(-2px);
+}
+
+/* ...existing code... */
+
+/* Base styles with theme variables */
+:root {
+  --primary-color: #4CAF50;
+  --secondary-color: #2c5282;
+  --primary-hover: #45a049;
+  --secondary-hover: #234676;
+}
+
+/* Existing styles... */
+
+.Profile-container {
+  /* ... existing styles ... */
+  background-color: var(--background-light);
+}
+
+.button, 
+.submit-button-report,
+.view-progress-button,
+.report-card-button,
+.location-button,
+.browse-events-button,
+.browse-scholars-button {
+  background-color: var(--primary-color) !important;
+  color: white;
+}
+
+.button:hover,
+.submit-button-report:hover,
+.view-progress-button:hover,
+.report-card-button:hover,
+.location-button:hover,
+.browse-events-button:hover,
+.browse-scholars-button:hover {
+  background-color: var(--primary-hover) !important;
+}
+
+.save-button-intro,
+.save-button-knowas,
+.save-button-socials {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.save-button-intro:hover,
+.save-button-knowas:hover,
+.save-button-socials:hover {
+  background-color: var(--primary-hover);
+}
+
+h1, h2, h3 {
+  color: var(--secondary-color);
+}
+
+.profile-text h1 {
+  color: var(--text-primary);
+}
+
+.event-tab-button.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* ... rest of existing styles ... */
+
+/* Update container styles with theme variables */
+.Profile-container {
+  background-color: var(--background-light);
+}
+
+.container-info {
+  background-color: var(--background-light);
+  border: 1px solid var(--border-color);
+}
+
+.event-details-card,
+.event-details-card-details,
+.event-details-info-side,
+.report-card-section,
+.event-description {
+  background-color: var(--background-light);
+  border-color: var(--border-color);
+}
+
+.donation-form-container,
+.event-header,
+.event-details-card,
+.event-details-card-details,
+.feedback-popup,
+.popup,
+.remarks-section,
+.remark-card {
+  background-color: var(--background-light);
+  border-color: var(--border-color);
+}
+
+.scholar-distributions-container,
+.distribution-item,
+.scholar-card {
+  background-color: var(--background-light);
+  border-color: var(--border-color);
+}
+
+/* Update text colors */
+.event-title,
+.event-details-info-side,
+.feedback-popup h2,
+.remarks-section h1,
+.distribution-header h3 {
+  color: var(--secondary-color);
+}
+
+/* Update hover effects */
+.event-card:hover,
+.scholar-card:hover,
+.distribution-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Update form element styles */
+.form-groupss input,
+.form-groupss select,
+.form-groupss textarea,
+.feedback-textarea {
+  border-color: var(--border-color);
+}
+
+.form-groupss input:focus,
+.form-groupss select:focus,
+.form-groupss textarea:focus,
+.feedback-textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.1);
+}
+
+/* ... rest of existing code ... */
+
+/* Add theme variables for content areas */
+.container-info {
+  background-color: var(--background-light);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.information {
+  background-color: var(--background-light);
+  padding: 35px;
+  border-radius: 8px;
+}
+
+.Profile-container {
+  background-color: var(--background-light);
+}
+
+/* Theme all content cards and sections */
+.event-details-card,
+.event-details-card-details,
+.report-card-section,
+.event-description,
+.scholar-distributions-container,
+.distribution-item,
+.feedback-popup,
+.popup,
+.scholar-card,
+.event-card,
+.donation-form-container {
+  background-color: var(--background-light);
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Update theme colors for headings */
+.information h1,
+.event-title,
+.distributions-header,
+.my-scholars-header {
+  color: var(--secondary-color);
+}
+
+/* Update theme colors for buttons */
+.save-button-intro,
+.save-button-knowas,
+.save-button-socials,
+.report-card-button,
+.view-progress-button,
+.location-button,
+.feedback-submit-button {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.save-button-intro:hover,
+.save-button-knowas:hover,
+.save-button-socials:hover,
+.report-card-button:hover,
+.view-progress-button:hover,
+.location-button:hover,
+.feedback-submit-button:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Theme the edit buttons and input fields */
+.edit-buttons button,
+input[type="text"],
+input[type="url"],
+textarea,
+select {
+  border-color: var(--border-color);
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.1);
+}
+
+/* ... rest of existing code ... */

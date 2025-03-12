@@ -992,3 +992,101 @@
 }
 
 /* ...existing code... */
+
+/* ...existing code... */
+
+.form-groupss input[type="date"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  margin-bottom: 0.5rem;
+}
+
+.form-groupss small {
+  color: #64748b;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* ...rest of existing code... */
+
+/* ...existing styles... */
+
+.inventory-form-group {
+  margin-bottom: 1rem;
+}
+
+.inventory-form-group small {
+  display: block;
+  color: #64748b;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.inventory-form-group input[type="date"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  font-family: 'Poppins', sans-serif;
+  margin-bottom: 0.5rem;
+}
+
+/* ...existing styles... */
+
+/* Add these new styles for expiring items */
+.expiring-items-section {
+  margin-bottom: 2rem;
+  border: 1px solid #ffa500;
+}
+
+.urgent-expiration {
+  background-color: #fff5f5;
+}
+
+.expiration-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.expiration-badge.urgent {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.expiration-badge.warning {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.expiration-badge.notice {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+/* ...existing code... */
+
+/* Add these new styles for expired items */
+.expired-row {
+  background-color: #fee2e2;
+}
+
+.expired-row:hover {
+  background-color: #fecaca !important;
+}
+
+.expiration-badge.expired {
+  background-color: #dc2626;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+/* ...existing code... */
+

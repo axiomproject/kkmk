@@ -79,3 +79,146 @@
   font-weight: bold;
   width: 150px;
 }
+
+/* Improved Scholar View Modal Styles */
+.details-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.details-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.details-grid {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.details-column {
+  flex: 1;
+}
+
+.detail-row {
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-row.full-width {
+  grid-column: 1 / -1;
+}
+
+.detail-row label {
+  font-weight: 500;
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.detail-row span {
+  font-size: 1rem;
+  color: #333;
+  font-family: 'Poppins', sans-serif;
+  word-break: break-word;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.active {
+  background-color: #e6f7e6;
+  color: #28a745;
+}
+
+.status-badge.inactive {
+  background-color: #f8d7da;
+  color: #dc3545;
+}
+
+.status-badge.pending {
+  background-color: #fff3cd;
+  color: #ffc107;
+}
+
+/* Add styling for the unified modal display */
+.detail-group {
+  margin-bottom: 1rem;
+}
+
+.detail-group label {
+  display: block;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.875rem;
+  color: #424242;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.detail-value {
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  padding: 8px 12px;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  min-height: 40px;
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-badge.active {
+  background-color: #e6f7e6;
+  color: #2e7d32;
+}
+
+.status-badge.inactive {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.status-badge.pending {
+  background-color: #fff8e1;
+  color: #f57f17;
+}
+
+/* Making the view modal match the form layout */
+.scholar-form .form-section:last-child {
+  margin-bottom: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .details-grid {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .detail-row {
+    margin-bottom: 1rem;
+  }
+}

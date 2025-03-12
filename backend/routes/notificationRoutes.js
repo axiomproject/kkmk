@@ -135,4 +135,27 @@ router.post('/event-response', async (req, res) => {
   }
 });
 
+// Add admin notification routes
+router.get('/admin/:userId', async (req, res) => {
+  try {
+    if (!req.params.userId) {
+      throw new Error('User ID is required');
+    }
+    // Use a similar function but with admin-specific filter
+    const notifications = await notificationModel.getAdminNotifications(req.params.userId);
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ error: error.message || 'Failed to fetch admin notifications' });
+  }
+});
+
+router.post('/admin/:userId/read-all', async (req, res) => {
+  try {
+    await notificationModel.markAllAdminAsRead(req.params.userId);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to mark admin notifications as read' });
+  }
+});
+
 module.exports = router;

@@ -78,6 +78,7 @@ export interface ReportCardSubmissionResponse {
     userId: number;
     frontImage: string;
     backImage: string;
+    gradeLevel: string; // Add this field
     status: string;
     verificationStep: number;
     submittedAt: string;

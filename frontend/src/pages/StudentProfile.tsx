@@ -1,31 +1,39 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { scholarApi } from '../services/api';
+import api from '../config/axios';
 import '../styles/StudentProfile.css';
-import '../routes/paths'
+import '../routes/paths';
 import PATHS from '../routes/paths';
 import { formatDate } from '../utils/dateUtils';
-import api from '../config/axios';
 
+// Update StudentDetails interface to match the new data structure
 interface StudentDetails {
   id: number;
   first_name: string;
   last_name: string;
   date_of_birth: string;
   gender: string;
+  education_level: string; // Changed from grade_level
+  school: string;
   favorite_subject: string;
   favorite_activity: string;
   favorite_color: string;
   image_url: string;
-  grade_level: string;
-  school: string;
+  profile_photo: string; // Add this for user profile photos
   status: string;
   current_amount: number;
   amount_needed: number;
+  is_verified: boolean; // Add this property
+  is_active: boolean; // Add this property
 }
 
 const ProgressBar: React.FC<{ currentAmount: number; amountNeeded: number }> = ({ currentAmount, amountNeeded }) => {
-  const percentage = Math.min((currentAmount / amountNeeded) * 100, 100);
+  // Add null/undefined checks and provide default values
+  const safeCurrentAmount = currentAmount || 0;
+  const safeAmountNeeded = amountNeeded || 1; // Avoid division by zero
+  
+  // Calculate percentage safely
+  const percentage = Math.min((safeCurrentAmount / safeAmountNeeded) * 100, 100);
   
   return (
     <div className="scholar-progress-container">
@@ -36,8 +44,8 @@ const ProgressBar: React.FC<{ currentAmount: number; amountNeeded: number }> = (
         />
       </div>
       <div className="scholar-progress-text">
-        <span>₱{currentAmount.toLocaleString()}</span>
-        <span>₱{amountNeeded.toLocaleString()}</span>
+        <span>₱{safeCurrentAmount.toLocaleString()}</span>
+        <span>₱{safeAmountNeeded.toLocaleString()}</span>
       </div>
     </div>
   );
@@ -56,23 +64,46 @@ const StudentProfile: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
 
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        // Updated to use axios instance
+        const response = await api.get('/scholars');
+        if (!response.data) throw new Error('No data returned');
+        
+        setStudents(response.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching students:', err);
+        setError('Failed to fetch students');
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, []);
+
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
-      // First filter out inactive and graduated students
-      if (student.status === 'inactive' || student.status === 'graduated') {
+      // Filter out scholars based on verification and status
+      // Only show active and approved scholars
+      if (
+        !student.is_verified || // Filter unverified scholars
+        student.status !== 'active' // Only show active scholars (exclude inactive, graduated, etc)
+      ) {
         return false;
       }
       
       const searchTerm = searchQuery.toLowerCase();
       const matchesSearch = 
-        student.first_name.toLowerCase().includes(searchTerm) ||
-        student.last_name.toLowerCase().includes(searchTerm) ||
-        student.school.toLowerCase().includes(searchTerm) ||
-        student.grade_level.toLowerCase().includes(searchTerm);
+        student.first_name?.toLowerCase().includes(searchTerm) ||
+        student.last_name?.toLowerCase().includes(searchTerm) ||
+        student.school?.toLowerCase().includes(searchTerm) ||
+        student.education_level?.toLowerCase().includes(searchTerm);
 
       // Apply category filter if one is selected
       const matchesCategory = selectedCategory ? 
-        student.grade_level.toLowerCase().includes(selectedCategory.toLowerCase()) : 
+        student.education_level?.toLowerCase().includes(selectedCategory.toLowerCase()) : 
         true;
 
       // Add donation status filtering
@@ -83,28 +114,12 @@ const StudentProfile: React.FC = () => {
         true;
 
       const matchesGender = selectedGender ? 
-        student.gender.toLowerCase() === selectedGender.toLowerCase() : 
+        student.gender?.toLowerCase() === selectedGender.toLowerCase() : 
         true;
 
       return matchesSearch && matchesCategory && matchesStatus && matchesGender;
     });
   }, [students, searchQuery, selectedCategory, selectedStatus, selectedGender]);
-
-  useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const data = await scholarApi.getAllScholars();
-        setStudents(data);
-      } catch (err) {
-        setError('Failed to fetch students');
-        console.error('Error fetching students:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStudents();
-  }, []);
 
   const handleCardClick = (studentId: number) => {
     navigate(`/StudentProfile/${studentId}`);
@@ -131,10 +146,25 @@ const StudentProfile: React.FC = () => {
     setSelectedGender(event.target.value);
   };
 
-  const getImageUrl = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('data:') || path.startsWith('http')) return path;
-    return `${import.meta.env.VITE_API_URL}${path}`;
+  const getImageUrl = (student: StudentDetails) => {
+    // First check for image_url from scholars table
+    if (student.image_url) {
+      if (student.image_url.startsWith('data:') || student.image_url.startsWith('http')) {
+        return student.image_url;
+      }
+      return `${import.meta.env.VITE_API_URL}${student.image_url}`;
+    }
+    
+    // Then check for profile_photo from users table
+    if (student.profile_photo) {
+      if (student.profile_photo.startsWith('data:') || student.profile_photo.startsWith('http')) {
+        return student.profile_photo;
+      }
+      return `${import.meta.env.VITE_API_URL}${student.profile_photo}`;
+    }
+    
+    // Default placeholder
+    return '/images/default-avatar.jpg';
   };
 
   return (
@@ -188,10 +218,12 @@ const StudentProfile: React.FC = () => {
             onChange={handleCategoryChange}
           >
             <option value="">All Education Levels</option>
-            <option value="primary">Primary</option>
-            <option value="secondary">Secondary</option>
-            <option value="k12">K to 12</option>
-            <option value="tertiary">Tertiary</option>
+            <option value="elementary">Elementary</option>
+            <option value="junior high">Junior High School</option>
+            <option value="senior high">Senior High School</option>
+            <option value="vocational">Vocational</option>
+            <option value="college">College</option>
+            <option value="graduate">Graduate School</option>
           </select>
         </div>
 
@@ -201,7 +233,7 @@ const StudentProfile: React.FC = () => {
         <div className="student-profile-grid">
           {filteredStudents.length === 0 ? (
             <div className="nostudents-found">
-            <p className='nostudents'>No students found matching your search.</p>
+              <p className='nostudents'>No students found matching your search.</p>
             </div>
           ) : (
             filteredStudents.map((student) => (
@@ -211,20 +243,24 @@ const StudentProfile: React.FC = () => {
                 onClick={() => handleCardClick(student.id)}
               >
                 <img
-                  src={getImageUrl(student.image_url)}
+                  src={getImageUrl(student)}
                   alt={`${student.first_name} ${student.last_name}`}
                   className="student-profile-image"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/images/default-avatar.jpg';
+                  }}
                 />
                 <h3 className="student-profile-name">
                   {`${student.first_name} ${student.last_name}`}: Journey to Success
                 </h3>
                 <ProgressBar 
-                  currentAmount={student.current_amount} 
-                  amountNeeded={student.amount_needed}
+                  currentAmount={student.current_amount || 0} 
+                  amountNeeded={student.amount_needed || 1}
                 />
                 <p className="student-profile-details">
-                  Education Level: {student.grade_level}<br />
-                  School: {student.school}
+                  Education Level: {student.education_level || 'Not specified'}<br />
+                  School: {student.school || 'Not specified'}
                 </p>
               </div>
             ))
@@ -239,9 +275,13 @@ const StudentProfile: React.FC = () => {
               
               <div className="modal-content">
                 <img 
-                  src={selectedStudent.image_url} 
+                  src={getImageUrl(selectedStudent)} 
                   alt={`${selectedStudent.first_name} ${selectedStudent.last_name}`} 
                   className="modal-student-image"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/images/default-avatar.jpg';
+                  }}
                 />
                 
                 <div className="modal-details">
@@ -269,9 +309,11 @@ const StudentProfile: React.FC = () => {
                         <p><strong>Last Name:</strong> {selectedStudent.last_name}</p>
                         <p><strong>Date of Birth:</strong> {formatDate(selectedStudent.date_of_birth)}</p>
                         <p><strong>Gender:</strong> {selectedStudent.gender}</p>
-                        <p><strong>Favorite Subject:</strong> {selectedStudent.favorite_subject}</p>
-                        <p><strong>Favorite Activity:</strong> {selectedStudent.favorite_activity}</p>
-                        <p><strong>Favorite Color:</strong> {selectedStudent.favorite_color}</p>
+                        <p><strong>Education Level:</strong> {selectedStudent.education_level}</p>
+                        <p><strong>School:</strong> {selectedStudent.school}</p>
+                        <p><strong>Favorite Subject:</strong> {selectedStudent.favorite_subject || 'Not specified'}</p>
+                        <p><strong>Favorite Activity:</strong> {selectedStudent.favorite_activity || 'Not specified'}</p>
+                        <p><strong>Favorite Color:</strong> {selectedStudent.favorite_color || 'Not specified'}</p>
                       </div>
                     ) : (
                       <div className="updates-tab">

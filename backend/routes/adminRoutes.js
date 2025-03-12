@@ -15,6 +15,9 @@ const fs = require('fs'); // Add this line
 // Add this constant for sponsor routes
 const authenticateToken = authMiddleware;
 
+// Near the top of the file, add this line to define authenticateAdmin
+const authenticateAdmin = roleAuth(['admin']); // This creates a middleware that only allows admin role
+
 // Configure multer for file upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -133,7 +136,7 @@ router.delete('/scholars/:id', roleAuth(['admin', 'staff']), scholarController.d
 router.post('/scholars/bulk-delete', roleAuth(['admin', 'staff']), scholarController.bulkDeleteScholars); // Changed from delete to post
 
 // Add this new endpoint
-router.get('/scholar-count', async (req, res) => {
+router.get('/scholar-count', authMiddleware, async (req, res) => {
   try {
     // Replace db.one with db.query
     const result = await db.query(`
@@ -141,7 +144,11 @@ router.get('/scholar-count', async (req, res) => {
       FROM users 
       WHERE role = 'scholar'
     `);
-    res.json({ count: parseInt(result.rows[0].count) });
+    
+    // Convert string to number explicitly
+    const count = parseInt(result.rows[0].count, 10) || 0;
+    
+    res.json({ count });
   } catch (error) {
     console.error('Error getting scholar count:', error);
     res.status(500).json({ error: 'Failed to get scholar count' });
@@ -168,14 +175,18 @@ router.get('/scholar-reports', async (req, res) => {
 });
 
 // Update this endpoint to simply sum quantities without status check
-router.get('/items-distributed', async (req, res) => {
+router.get('/items-distributed', authMiddleware, async (req, res) => {
   try {
     // Replace db.one with db.query
     const result = await db.query(`
       SELECT COALESCE(SUM(quantity), 0) as total_items
       FROM item_distributions
     `);
-    res.json({ count: parseInt(result.rows[0].total_items) });
+    
+    // Convert string to number explicitly
+    const count = parseInt(result.rows[0].total_items, 10) || 0;
+    
+    res.json({ count });
   } catch (error) {
     console.error('Error getting items distributed count:', error);
     res.status(500).json({ error: 'Failed to get items distributed count' });
@@ -271,14 +282,18 @@ router.put('/events/:id', eventController.updateEvent);
 router.delete('/events/:id', eventController.deleteEvent);
 
 // Add new endpoint for events count
-router.get('/events-count', async (req, res) => {
+router.get('/events-count', authMiddleware, async (req, res) => {
   try {
     // Replace db.one with db.query
     const result = await db.query(`
       SELECT COUNT(*) as count 
       FROM events
     `);
-    res.json({ count: parseInt(result.rows[0].count) });
+    
+    // Convert string to number explicitly
+    const count = parseInt(result.rows[0].count, 10) || 0;
+    
+    res.json({ count });
   } catch (error) {
     console.error('Error getting events count:', error);
     res.status(500).json({ error: 'Failed to get events count' });
@@ -286,7 +301,7 @@ router.get('/events-count', async (req, res) => {
 });
 
 // Add new endpoint for new users count (volunteers and sponsors)
-router.get('/new-users-count', async (req, res) => {
+router.get('/new-users-count', authMiddleware, async (req, res) => {
   try {
     // Replace db.one with db.query
     const result = await db.query(`
@@ -295,7 +310,11 @@ router.get('/new-users-count', async (req, res) => {
       WHERE role IN ('volunteer', 'sponsor')
       AND created_at >= NOW() - INTERVAL '30 days'
     `);
-    res.json({ count: parseInt(result.rows[0].count) });
+    
+    // Convert string to number explicitly
+    const count = parseInt(result.rows[0].count, 10) || 0;
+    
+    res.json({ count });
   } catch (error) {
     console.error('Error getting new users count:', error);
     res.status(500).json({ error: 'Failed to get new users count' });
@@ -919,6 +938,65 @@ router.get('/new-volunteers-count', async (req, res) => {
   } catch (error) {
     console.error('Error getting new volunteers count:', error);
     res.status(500).json({ error: 'Failed to get new volunteers count' });
+  }
+});
+
+// Add a new route to approve scholars
+router.put('/scholars/:id/approve', authenticateToken,  async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { is_verified } = req.body;
+    
+    if (is_verified === undefined) {
+      return res.status(400).json({ error: 'is_verified field is required' });
+    }
+    
+    const result = await db.query(
+      'UPDATE users SET is_verified = $1 WHERE id = $2 AND role = $3 RETURNING id',
+      [is_verified, id, 'scholar']
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Scholar not found' });
+    }
+    
+    res.json({ success: true, message: 'Scholar approval status updated successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Add a route to get report cards filtered by grade level
+router.get('/report-cards/grade/:gradeLevel', authMiddleware, roleAuth(['admin']), async (req, res) => {
+  try {
+    const { gradeLevel } = req.params;
+    const reportCards = await AdminModel.getReportCardsByGradeLevel(gradeLevel);
+    res.json(reportCards);
+  } catch (error) {
+    console.error('Error fetching report cards by grade level:', error);
+    res.status(500).json({ error: 'Failed to fetch report cards' });
+  }
+});
+
+// Add a route to get all report cards with grade info
+router.get('/report-cards/all-with-grades', authMiddleware, roleAuth(['admin']), async (req, res) => {
+  try {
+    const reportCards = await AdminModel.getAllReportCardsWithGradeInfo();
+    res.json(reportCards);
+  } catch (error) {
+    console.error('Error fetching report cards with grade info:', error);
+    res.status(500).json({ error: 'Failed to fetch report cards' });
+  }
+});
+
+// Add a route to get report card statistics including grade level distribution
+router.get('/report-cards/statistics', authMiddleware, roleAuth(['admin']), async (req, res) => {
+  try {
+    const statistics = await AdminModel.getReportCardStatistics();
+    res.json(statistics);
+  } catch (error) {
+    console.error('Error fetching report card statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 });
 

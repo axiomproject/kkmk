@@ -134,19 +134,97 @@ const getVolunteerById = async (req, res) => {
 
 const createVolunteer = async (req, res) => {
   try {
-    const { password, ...otherData } = req.body;
+    const { username, email, password, skills, disability, date_of_birth, ...otherData } = req.body;
+
+    // Validate minimum age (16 years)
+    if (date_of_birth) {
+      const birthDate = new Date(date_of_birth);
+      const today = new Date();
+      const minAgeDate = new Date();
+      minAgeDate.setFullYear(today.getFullYear() - 16);
+      
+      if (birthDate > minAgeDate) {
+        return res.status(400).json({ 
+          error: 'Age requirement not met', 
+          field: 'date_of_birth',
+          message: 'Volunteers must be at least 16 years old'
+        });
+      }
+    }
+
+    // First check if username or email already exists
+    const checkExistingQuery = await db.query(
+      'SELECT username, email FROM users WHERE username = $1 OR email = $2',
+      [username, email]
+    );
+
+    if (checkExistingQuery.rows.length > 0) {
+      const existingUser = checkExistingQuery.rows[0];
+      
+      if (existingUser.username === username) {
+        return res.status(400).json({ 
+          error: 'Username already taken', 
+          field: 'username',
+          message: 'This username is already registered. Please choose another username.'
+        });
+      }
+      
+      if (existingUser.email === email) {
+        return res.status(400).json({ 
+          error: 'Email already registered', 
+          field: 'email',
+          message: 'This email is already registered. Please use another email address.'
+        });
+      }
+    }
+    
+    // Process skills and disability fields if they exist
+    let processedData = { ...otherData };
+    
+    // Format skills as JSON string if provided
+    if (skills && Array.isArray(skills)) {
+      processedData.skills = JSON.stringify(skills);
+    }
+    
+    // Format disability object as JSON string if provided
+    if (disability !== undefined) {
+      processedData.disability = disability ? JSON.stringify(disability) : null;
+    }
     
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
+    // Call the model function with processed data
     const newVolunteer = await AdminModel.createVolunteer({
-      ...otherData,
+      ...processedData,
+      username,
+      email,
+      date_of_birth,
       password: hashedPassword
     });
 
+    console.log('New volunteer created:', newVolunteer);
     res.status(201).json(newVolunteer);
   } catch (error) {
     console.error('Error creating volunteer:', error);
+    
+    // Check for specific database constraint violations
+    if (error.code === '23505') { // PostgreSQL unique constraint violation code
+      if (error.constraint === 'users_username_key') {
+        return res.status(400).json({ 
+          error: 'Username already taken',
+          field: 'username',
+          message: 'This username is already registered. Please choose another username.'
+        });
+      } else if (error.constraint === 'users_email_key') {
+        return res.status(400).json({ 
+          error: 'Email already registered',
+          field: 'email',
+          message: 'This email is already registered. Please use another email address.'
+        });
+      }
+    }
+    
     res.status(500).json({ 
       error: 'Failed to create volunteer',
       details: error.message 
@@ -156,19 +234,110 @@ const createVolunteer = async (req, res) => {
 
 const updateVolunteer = async (req, res) => {
   try {
+    // Log the request body for debugging
+    console.log('Update volunteer request body:', req.body);
+    
     const { id } = req.params;
-    const updates = { ...req.body };
-
-    // If password is provided, hash it
+    const updates = req.body;
+    
+    // Validate minimum age (16 years) if date_of_birth is being updated
+    if (updates.date_of_birth) {
+      const birthDate = new Date(updates.date_of_birth);
+      const today = new Date();
+      const minAgeDate = new Date();
+      minAgeDate.setFullYear(today.getFullYear() - 16);
+      
+      if (birthDate > minAgeDate) {
+        return res.status(400).json({ 
+          error: 'Age requirement not met', 
+          field: 'date_of_birth',
+          message: 'Volunteers must be at least 16 years old'
+        });
+      }
+    }
+    
+    // Check if email or username already exists (excluding the current user)
+    if (updates.email || updates.username) {
+      // Get existing volunteer data first to compare changes
+      const currentVolunteerResult = await db.query(
+        'SELECT username, email FROM users WHERE id = $1',
+        [id]
+      );
+      
+      if (currentVolunteerResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Volunteer not found' });
+      }
+      
+      const currentVolunteer = currentVolunteerResult.rows[0];
+      
+      // Only check for conflicts if email or username is actually changed
+      if (
+        (updates.email && updates.email !== currentVolunteer.email) ||
+        (updates.username && updates.username !== currentVolunteer.username)
+      ) {
+        // Build the query to check for duplicates excluding current user
+        let query = 'SELECT username, email FROM users WHERE id != $1 AND (';
+        const queryParams = [id];
+        const conditions = [];
+        
+        if (updates.email && updates.email !== currentVolunteer.email) {
+          conditions.push(`email = $${queryParams.length + 1}`);
+          queryParams.push(updates.email);
+        }
+        
+        if (updates.username && updates.username !== currentVolunteer.username) {
+          conditions.push(`username = $${queryParams.length + 1}`);
+          queryParams.push(updates.username);
+        }
+        
+        query += conditions.join(' OR ') + ')';
+        
+        // Only run the query if we actually have conditions to check
+        if (conditions.length > 0) {
+          const checkExistingQuery = await db.query(query, queryParams);
+          
+          if (checkExistingQuery.rows.length > 0) {
+            const existingUser = checkExistingQuery.rows[0];
+            
+            if (updates.username && existingUser.username === updates.username) {
+              return res.status(400).json({ 
+                error: 'Username already taken', 
+                field: 'username',
+                message: 'This username is already registered. Please choose another username.'
+              });
+            }
+            
+            if (updates.email && existingUser.email === updates.email) {
+              return res.status(400).json({ 
+                error: 'Email already registered', 
+                field: 'email',
+                message: 'This email is already registered. Please use another email address.'
+              });
+            }
+          }
+        }
+      }
+    }
+    
+    // Check if password is provided and hash it
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
     }
-
+    
     const updatedVolunteer = await AdminModel.updateVolunteer(id, updates);
+    
+    if (!updatedVolunteer) {
+      return res.status(404).json({ error: 'Volunteer not found' });
+    }
+    
+    // Log the updated volunteer (without sensitive fields)
+    const { password, ...safeData } = updatedVolunteer;
+    console.log('Updated volunteer data:', safeData);
+    
     res.json(updatedVolunteer);
   } catch (error) {
-    console.error('Error updating volunteer:', error);
-    res.status(500).json({ error: 'Failed to update volunteer' });
+    console.error('Error in updateVolunteer:', error);
+    res.status(500).json({ error: 'Failed to update volunteer', details: error.message });
   }
 };
 

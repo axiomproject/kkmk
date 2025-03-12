@@ -7,6 +7,13 @@ import VolunteerEditForm from '../../components/forms/VolunteerEditForm';
 import NewVolunteerForm from '../../components/forms/NewVolunteerForm';
 import * as XLSX from 'xlsx';
 
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+}
+
 interface Volunteer {
   id: string;
   name: string;
@@ -18,6 +25,8 @@ interface Volunteer {
   is_verified: boolean;
   date_of_birth?: string;
   last_login?: string;
+  past_events?: Event[]; // Changed from active_events to past_events
+  past_events_count?: number; // Changed from active_events_count to past_events_count
 }
 
 interface SortConfig {
@@ -106,13 +115,36 @@ const Volunteer = () => {
       
       console.log('Raw data from API:', JSON.stringify(response.data, null, 2));
 
+      // Process volunteer data
       const processedData = response.data.map((v: any) => ({
         ...v,
         created_at: v.created_at || v.createdAt || v.createdat || v.createdDate || v.created
       }));
 
-      console.log('Processed data:', processedData);
-      setVolunteers(processedData);
+      // Fetch past events for each volunteer
+      const volunteersWithEvents = await Promise.all(
+        processedData.map(async (volunteer: Volunteer) => {
+          try {
+            const eventsResponse = await api.get(`/admin/volunteers/${volunteer.id}/past-events`);
+            const pastEvents = eventsResponse.data || [];
+            return {
+              ...volunteer,
+              past_events: pastEvents,
+              past_events_count: pastEvents.length
+            };
+          } catch (err) {
+            console.error(`Error fetching events for volunteer ${volunteer.id}:`, err);
+            return {
+              ...volunteer,
+              past_events: [],
+              past_events_count: 0
+            };
+          }
+        })
+      );
+
+      console.log('Processed data with events:', volunteersWithEvents);
+      setVolunteers(volunteersWithEvents);
       setLoading(false);
     } catch (err: any) {
       console.error('Error fetching volunteers:', err);
@@ -156,6 +188,13 @@ const getSortedVolunteers = (volunteers: Volunteer[]) => {
   if (!sortConfig.direction || !sortConfig.key) return volunteers;
 
   return [...volunteers].sort((a, b) => {
+    // Special handling for past_events_count
+    if (sortConfig.key === 'past_events_count') {
+      const aValue = a.past_events_count || 0;
+      const bValue = b.past_events_count || 0;
+      return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+    
     const aValue = a[sortConfig.key as keyof Volunteer] || '';
     const bValue = b[sortConfig.key as keyof Volunteer] || '';
 
@@ -274,9 +313,16 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
     try {
       switch (action) {
         case 'view':
+          // Fetch detailed volunteer info including past events
           const viewResponse = await api.get(`/admin/volunteers/${volunteer.id}`);
           if (viewResponse.data) {
-            setViewModalVolunteer(viewResponse.data);
+            // Also get past events for this volunteer
+            const eventsResponse = await api.get(`/admin/volunteers/${volunteer.id}/past-events`);
+            const volunteerWithEvents = {
+              ...viewResponse.data,
+              past_events: eventsResponse.data || []
+            };
+            setViewModalVolunteer(volunteerWithEvents);
           }
           break;
 
@@ -311,6 +357,8 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
 
   const handleEditSubmit = async (formData: any) => {
     try {
+      console.log('Submitting form data:', formData); // Add debug log
+      
       const response = await api.put(
         `/admin/volunteers/${editFormVolunteer.id}`,
         {
@@ -319,25 +367,38 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
         }
       );
       
+      console.log('Server response:', response.data); // Add debug log
+      
       if (response.data) {
         setEditFormVolunteer(null);
         await fetchVolunteers();
       }
     } catch (error: any) {
       console.error('Error updating volunteer:', error);
+      if (error.response) {
+        console.error('Response error data:', error.response.data);
+        console.error('Response error status:', error.response.status);
+      }
       setError(error.response?.data?.error || 'Failed to update volunteer');
     }
   };
 
   const handleCreateVolunteer = async (formData: any) => {
     try {
-      // Format the date for display before sending to server
-      await api.post('/admin/volunteers', formData);
+      // Send request to create volunteer
+      const response = await api.post('/admin/volunteers', formData);
+      
+      // If successful, close the form and refresh volunteer list
       setShowNewForm(false);
       await fetchVolunteers();
+      
+      // Return the response data to resolve the promise successfully
+      return response.data;
     } catch (error: any) {
       console.error('Error creating volunteer:', error);
-      setError(error.response?.data?.error || 'Failed to create volunteer');
+      
+      // Re-throw the error to be caught by the form component
+      throw error;
     }
   };
 
@@ -503,6 +564,9 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
             <th onClick={() => handleSort('is_verified')} className="sortable-header">
               Verified <span className="material-icons sort-icon">{getSortIcon('is_verified')}</span>
             </th>
+            <th onClick={() => handleSort('past_events_count')} className="sortable-header">
+              Events Joined <span className="material-icons sort-icon">{getSortIcon('past_events_count')}</span>
+            </th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -522,6 +586,7 @@ const filteredVolunteers = getSortedVolunteers(volunteers.filter(volunteer => {
               <td>{volunteer.phone || 'N/A'}</td>
               <td>{volunteer.status}</td>
               <td>{volunteer.is_verified ? 'Yes' : 'No'}</td>
+              <td>{volunteer.past_events_count || 0}</td>
               <td>
                 <div className="dropdowns">
                   <button

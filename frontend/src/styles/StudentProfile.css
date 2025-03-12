@@ -1,17 +1,20 @@
 .student-profile-container {
   display: flex;
-  min-height: 100vh;
+  min-height: calc(100vh - 40px);
   background-color: #FEF6E4;
-  padding: 20px;
-  gap: 20px;
+  padding: 15px;
+  gap: 15px;
 }
 
 .student-profile-sidebar {
-  width: 250px;
+  width: 220px;
   background-color: #FEF6E4;
-  padding: 20px;
+  padding: 15px;
   border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  align-self: flex-start;
+  position: sticky;
+  top: 15px;
 }
 
 .student-profile-btn {
@@ -467,21 +470,24 @@
 
 .student-profile-donate-btn {
   width: 100%;
-  padding: 12px;
-  margin-top: 10px;
+  padding: 14px;
+  margin-top: 15px;
   border: none;
-  border-radius: 6px;
-  background-color: #28a745;
+  border-radius: 8px;
+  background-color: #ec6e00;
   color: white;
   font-family: "Poppins";
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(236, 110, 0, 0.2);
 }
 
 .student-profile-donate-btn:hover {
-  background-color: #218838;
+  background-color: #d86600;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(236, 110, 0, 0.25);
 }
 
 /* ...existing styles... */
@@ -901,20 +907,29 @@
 }
 
 .donation-updates {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .update-item {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 20px;
-  padding: 15px;
+  padding: 20px;
   border-radius: 10px;
+  background-color: #f9f4e8;
+  transition: transform 0.2s ease;
+  border-left: 3px solid #2c5282;
+}
+
+.update-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 .update-icon {
-  font-size: 24px;
-  margin-right: 15px;
+  font-size: 28px;
+  margin-right: 20px;
   padding-top: 5px;
 }
 
@@ -924,26 +939,36 @@
 
 .update-text {
   margin: 0;
-  font-size: 16px;
+  font-size: 1.1rem;
   color: #333;
+  font-weight: 500;
 }
 
 .update-text .amount {
-  font-weight: bold;
+  font-weight: 700;
   color: #2c5282;
 }
 
 .update-date {
-  margin: 5px 0 0;
-  font-size: 14px;
+  margin: 8px 0 0;
+  font-size: 0.9rem;
   color: #666;
 }
 
 .no-updates {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
   text-align: center;
   color: #666;
-  padding: 30px;
-  font-style: italic;
+  padding: 40px;
+}
+
+.no-updates p {
+  font-size: 1.1rem;
+  margin-bottom: 25px;
 }
 
 .student-profile-details{
@@ -1108,4 +1133,353 @@
   font-size: 0.85rem;
   margin-top: 5px;
   margin-bottom: 0;
+}
+
+/* New Student Story Page Styles */
+.student-story-main {
+  padding: 0;
+  overflow: hidden;
+  background-color: #FEF6E4;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+}
+
+.student-story-header {
+  display: flex;
+  gap: 30px;
+  padding: 30px 40px;
+  background: linear-gradient(to bottom, #fdfdfd, #f8f3e8);
+  border-radius: 15px 15px 0 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.student-portrait-container {
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  position: relative;
+}
+
+.student-portrait {
+  width: 100%;
+  height: 380px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease;
+}
+
+.student-portrait:hover {
+  transform: scale(1.02);
+}
+
+.student-story-intro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.student-name {
+  margin: 0;
+  font-size: 2.8rem;
+  color: #333;
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  display: inline-block;
+}
+
+.student-name:after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 80px;
+  height: 3px;
+  background-color: #ec6e00;
+  border-radius: 2px;
+}
+
+.student-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 30px 0 20px;
+}
+
+.highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px;
+  background-color: #F9F4E8;
+  border-radius: 10px;
+  min-width: 200px;
+  border-left: 3px solid #ec6e00;
+  transition: all 0.2s ease;
+  flex: 1;
+  max-width: calc(50% - 8px);
+  justify-content: center;
+}
+
+.highlight-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.highlight-icon {
+  font-size: 1.8rem;
+  color: #ec6e00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.highlight-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.highlight-label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.highlight-value {
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.student-tabs {
+  display: flex;
+  gap: 15px;
+  margin-top: auto;
+}
+
+.student-tabs .tab-btn {
+  padding: 12px 25px;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background-color: #f0e6d2;
+  color: #333;
+  font-weight: 600;
+  text-align: center;
+}
+
+.student-tabs .tab-btn:hover {
+  background-color: #e8dcc0;
+}
+
+.student-tabs .tab-btn.active {
+  background-color: #ec6e00;
+  color: white;
+}
+
+.student-content-area {
+  padding: 30px 40px 40px;
+  background-color: #FEF6E4;
+  flex: 1;
+}
+
+.student-story {
+  position: relative;
+  padding: 40px 60px;
+  background-color: #fff;
+  border-radius: 15px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.story-quote-mark {
+  font-family: "Georgia", serif;
+  font-size: 120px;
+  line-height: 0.6;
+  color: rgba(236, 110, 0, 0.15);
+  position: absolute;
+  z-index: 0;
+}
+
+.start-quote {
+  top: 20px;
+  left: 20px;
+}
+
+.end-quote {
+  bottom: 40px;
+  right: 20px;
+}
+
+.story-content {
+  font-family: "Poppins", sans-serif;
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: #444;
+  text-align: justify;
+  position: relative;
+  z-index: 1;
+  white-space: pre-line;
+  padding: 20px 0;
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+.student-loading,
+.student-error,
+.student-not-found {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  font-family: "Poppins", sans-serif;
+  font-size: 1.2rem;
+  color: #666;
+  width: 100%;
+}
+
+.no-story-message,
+.no-updates {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-family: "Poppins", sans-serif;
+}
+
+.student-support-cta {
+  margin-top: 20px;
+  padding: 14px 30px;
+  background-color: #ec6e00;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(236, 110, 0, 0.2);
+}
+
+.student-support-cta:hover {
+  background-color: #d86600;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(236, 110, 0, 0.25);
+}
+
+/* Modify the scholar progress bar for better visual */
+.scholar-progress-container {
+  width: 100%;
+  margin-top: 15px;
+}
+
+.scholar-progress-bar {
+  height: 10px;
+  background-color: #e9e9e9;
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+}
+
+.scholar-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ec6e00, #f39c12);
+  position: absolute;
+  left: 0;
+  transition: width 0.5s ease-out;
+}
+
+.scholar-progress-text {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.95rem;
+  color: #555;
+  font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 820px) {
+  .student-story-header {
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    gap: 20px;
+  }
+  
+  .student-portrait-container {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .student-story-intro {
+    width: 100%;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .student-name {
+    font-size: 2rem;
+    text-align: center;
+  }
+  
+  .student-story {
+    padding: 20px;
+  }
+  
+  .story-quote-mark {
+    font-size: 80px;
+  }
+  
+  .start-quote {
+    top: 10px;
+    left: 10px;
+  }
+  
+  .end-quote {
+    bottom: 20px;
+    right: 10px;
+  }
+  
+  .story-content {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .student-story-header {
+    padding: 15px;
+  }
+  
+  .student-content-area {
+    padding: 15px;
+  }
+  
+  .student-portrait {
+    height: 280px;
+  }
+  
+  .student-name {
+    font-size: 1.8rem;
+  }
+  
+  .highlight-item {
+    min-width: 0;
+    width: 100%;
+  }
 }

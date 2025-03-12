@@ -3,6 +3,8 @@ const multer = require('multer');
 const path = require('path');
 const router = express.Router();
 const db = require('../config/db');
+const emailService = require('../services/emailService'); // Import email service
+const notificationUtils = require('../utils/notificationUtils'); // Add this import
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -33,7 +35,7 @@ router.get('/', async (req, res) => {
     
     const donations = result.rows;
 
-    // Add full URLs to proof_of_payment paths
+    // Add full URLs to proof_of_payment paths - make sure they start with /
     const donationsWithUrls = donations.map(donation => ({
       ...donation,
       proof_of_payment: donation.proof_of_payment 
@@ -41,7 +43,11 @@ router.get('/', async (req, res) => {
         : null
     }));
 
-    console.log('Sending donations with URLs:', donationsWithUrls);
+    console.log('Sample proof_of_payment path:', 
+      donations.length > 0 && donations[0].proof_of_payment 
+        ? donationsWithUrls[0].proof_of_payment 
+        : 'No donations found');
+    
     res.json(donationsWithUrls);
   } catch (error) {
     console.error('Error fetching donations:', error);
@@ -57,7 +63,13 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
       file: req.file
     });
 
-    const { fullName, email, contactNumber, amount, message, date } = req.body;
+    const { fullName, email, contactNumber, amount, message, date, paymentMethod } = req.body;
+    
+    // Map payment methods to allowed values in the database
+    let mappedPaymentMethod = paymentMethod;
+    if (paymentMethod === 'bank_transfer') {
+      mappedPaymentMethod = 'gcash'; // temporarily map to an allowed value
+    }
     
     // Validate required fields
     if (!fullName || !email || !contactNumber || !amount || !date) {
@@ -73,7 +85,7 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
     }
 
     console.log('Processing donation with data:', {
-      fullName, email, contactNumber, amountValue, message, date, proofOfPayment
+      fullName, email, contactNumber, amountValue, message, date, proofOfPayment, paymentMethod
     });
 
     console.log('Proof of payment file:', proofOfPayment);
@@ -82,8 +94,8 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
     const result = await db.query(
       `INSERT INTO monetary_donations (
         full_name, email, contact_number, amount, message, 
-        proof_of_payment, date, verification_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+        proof_of_payment, payment_method, date, verification_status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
       RETURNING *`,
       [
         fullName, 
@@ -92,15 +104,40 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
         amountValue,
         message || null, // Handle null message properly
         proofOfPayment, 
+        mappedPaymentMethod, // Use the mapped value
         date,
         'pending'
       ]
     );
 
-    console.log('Donation saved successfully:', result.rows[0]);
+    const newDonation = result.rows[0];
+    console.log('Donation saved successfully:', newDonation);
+    
+    // Format amount for notification
+    const formattedAmount = new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP'
+    }).format(amountValue);
+
+    // Send notification to admins about new donation
+    try {
+      await notificationUtils.notifyAllAdmins(
+        'donation',
+        `New donation of ${formattedAmount} from ${fullName} is waiting for verification.`,
+        newDonation.id,
+        {
+          name: fullName,
+          profile_photo: '/images/donate-icon.png'
+        }
+      );
+      console.log('Admin notification sent for new donation');
+    } catch (notificationError) {
+      console.error('Failed to send admin notification:', notificationError);
+      // Don't fail the request if notification sending fails
+    }
     
     const responseData = {
-      ...result.rows[0],
+      ...newDonation,
       proof_of_payment: proofOfPayment ? `/uploads/donations/${proofOfPayment}` : null
     };
 
@@ -116,11 +153,23 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
   }
 });
 
-// Verify donation
+// Verify donation with email notification
 router.put('/:id/verify', async (req, res) => {
   try {
     console.log('Verifying donation:', req.params.id);
-    // Replace db.one with db.query
+    
+    // First, get the donation details to have the email
+    const donationResult = await db.query(
+      'SELECT * FROM monetary_donations WHERE id = $1',
+      [req.params.id]
+    );
+    
+    const donation = donationResult.rows[0];
+    if (!donation) {
+      return res.status(404).json({ error: 'Donation not found' });
+    }
+    
+    // Then update the donation status
     const result = await db.query(`
       UPDATE monetary_donations 
       SET 
@@ -131,20 +180,71 @@ router.put('/:id/verify', async (req, res) => {
       RETURNING *
     `, ['Admin', req.params.id]);
 
-    console.log('Verification result:', result.rows[0]);
-    res.json(result.rows[0]);
+    const verifiedDonation = result.rows[0];
+    console.log('Verification result:', verifiedDonation);
+    
+    // Send verification email
+    try {
+      await sendDonationVerifiedEmail(
+        donation.email, 
+        donation.full_name, 
+        donation.amount,
+        donation.payment_method
+      );
+      console.log('Verification email sent to', donation.email);
+    } catch (emailError) {
+      console.error('Error sending verification email:', emailError);
+      // Don't fail the request if email sending fails
+    }
+    
+    // Format amount for notification
+    const formattedAmount = new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP'
+    }).format(donation.amount);
+
+    // Send notification to admins about verified donation
+    try {
+      await notificationUtils.notifyAllAdmins(
+        'donation_verified',
+        `Donation of ${formattedAmount} from ${donation.full_name} has been verified.`,
+        donation.id,
+        {
+          name: 'System',
+          profile_photo: '/images/success-icon.png'
+        }
+      );
+      console.log('Admin notification sent for verified donation');
+    } catch (notificationError) {
+      console.error('Failed to send admin notification:', notificationError);
+      // Don't fail the request if notification sending fails
+    }
+    
+    res.json(verifiedDonation);
   } catch (error) {
     console.error('Verification error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Reject donation
+// Reject donation with email notification
 router.put('/:id/reject', async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    // Replace db.one with db.query
+    
+    // First, get the donation details to have the email
+    const donationResult = await db.query(
+      'SELECT * FROM monetary_donations WHERE id = $1',
+      [id]
+    );
+    
+    const donation = donationResult.rows[0];
+    if (!donation) {
+      return res.status(404).json({ error: 'Donation not found' });
+    }
+    
+    // Then update the donation status
     const result = await db.query(
       `UPDATE monetary_donations 
        SET verification_status = 'rejected',
@@ -154,7 +254,48 @@ router.put('/:id/reject', async (req, res) => {
        WHERE id = $3 RETURNING *`,
       ['Admin', reason, id]
     );
-    res.json(result.rows[0]);
+    
+    const rejectedDonation = result.rows[0];
+    
+    // Send rejection email
+    try {
+      await sendDonationRejectedEmail(
+        donation.email, 
+        donation.full_name, 
+        donation.amount,
+        reason,
+        donation.payment_method
+      );
+      console.log('Rejection email sent to', donation.email);
+    } catch (emailError) {
+      console.error('Error sending rejection email:', emailError);
+      // Don't fail the request if email sending fails
+    }
+    
+    // Format amount for notification
+    const formattedAmount = new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP'
+    }).format(donation.amount);
+
+    // Send notification to admins about rejected donation
+    try {
+      await notificationUtils.notifyAllAdmins(
+        'donation_rejected',
+        `Donation of ${formattedAmount} from ${donation.full_name} has been rejected. Reason: ${reason || 'Not specified'}`,
+        donation.id,
+        {
+          name: 'System',
+          profile_photo: '/images/error-icon.png'
+        }
+      );
+      console.log('Admin notification sent for rejected donation');
+    } catch (notificationError) {
+      console.error('Failed to send admin notification:', notificationError);
+      // Don't fail the request if notification sending fails
+    }
+    
+    res.json(rejectedDonation);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -171,5 +312,145 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Endpoint for monetary donations
+router.post('/monetary', upload.single('proofOfPayment'), async (req, res) => {
+  try {
+    const {
+      fullName,
+      email,
+      contactNumber,
+      amount,
+      message,
+      paymentMethod
+    } = req.body;
+
+    const result = await db.query(`
+      INSERT INTO monetary_donations (
+        full_name,
+        email,
+        contact_number,
+        amount,
+        message,
+        proof_of_payment,
+        date,
+        payment_method
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE, $7)
+      RETURNING *
+    `, [
+      fullName,
+      email,
+      contactNumber,
+      amount,
+      message,
+      req.file ? req.file.filename : null,
+      paymentMethod
+    ]);
+
+    const newDonation = result.rows[0];
+    
+    // Format amount for notification
+    const formattedAmount = new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP'
+    }).format(amount);
+
+    // Send notification to admins about new donation
+    try {
+      await notificationUtils.notifyAllAdmins(
+        'donation',
+        `New donation of ${formattedAmount} from ${fullName} is waiting for verification.`,
+        newDonation.id,
+        {
+          name: fullName,
+          profile_photo: '/images/donate-icon.png'
+        }
+      );
+      console.log('Admin notification sent for new donation');
+    } catch (notificationError) {
+      console.error('Failed to send admin notification:', notificationError);
+      // Don't fail the request if notification sending fails
+    }
+
+    res.status(201).json(newDonation);
+  } catch (error) {
+    console.error('Error creating monetary donation:', error);
+    res.status(500).json({ error: 'Failed to create monetary donation' });
+  }
+});
+
+// Helper functions for sending emails
+async function sendDonationVerifiedEmail(email, name, amount, paymentMethod) {
+  const formattedAmount = parseFloat(amount).toLocaleString('en-PH', {
+    style: 'currency',
+    currency: 'PHP'
+  });
+
+  const mailOptions = {
+    from: {
+      name: 'KKMK Donations',
+      address: process.env.EMAIL_USER
+    },
+    to: email,
+    subject: 'Your Donation Has Been Verified',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">Thank You, ${name}!</h1>
+        <p>Your donation of <strong>${formattedAmount}</strong> via <strong>${paymentMethod || 'bank transfer'}</strong> has been verified and received.</p>
+        
+        <div style="background-color: #f5f5f5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0; color: #333;">Your generous contribution will help support our scholars and programs.</p>
+        </div>
+        
+        <p>If you have any questions about your donation, please don't hesitate to contact us.</p>
+        
+        <p>With gratitude,<br>KKMK Team</p>
+        
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
+      </div>
+    `
+  };
+
+  return emailService.sendMail(email, mailOptions.subject, mailOptions.html);
+}
+
+async function sendDonationRejectedEmail(email, name, amount, reason, paymentMethod) {
+  const formattedAmount = parseFloat(amount).toLocaleString('en-PH', {
+    style: 'currency',
+    currency: 'PHP'
+  });
+
+  const mailOptions = {
+    from: {
+      name: 'KKMK Donations',
+      address: process.env.EMAIL_USER
+    },
+    to: email,
+    subject: 'Important Information About Your Donation',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">Hello ${name},</h1>
+        <p>We wanted to inform you that your recent donation of <strong>${formattedAmount}</strong> via <strong>${paymentMethod || 'bank transfer'}</strong> requires some attention.</p>
+        
+        <div style="background-color: #fff3f3; border-left: 4px solid #EF4444; padding: 15px; margin: 20px 0;">
+          <p style="margin: 0; color: #333;"><strong>Reason:</strong> ${reason || 'The payment could not be verified at this time.'}</p>
+        </div>
+        
+        <p>You may need to provide additional information or try submitting your donation again. If you have any questions, please contact us directly for assistance.</p>
+        
+        <p>We appreciate your intention to support our cause and hope we can resolve this soon.</p>
+        
+        <p>Sincerely,<br>KKMK Team</p>
+        
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
+      </div>
+    `
+  };
+
+  return emailService.sendMail(email, mailOptions.subject, mailOptions.html);
+}
 
 module.exports = router;

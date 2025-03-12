@@ -5,7 +5,10 @@ const path = require('path');
 const authenticateToken = require('../middleware/authenticateToken'); // Add this line
 const ScholarModel = require('../models/scholarModel');
 const ReportCardModel = require('../models/reportCardModel');
+const notificationModel = require('../models/notificationModel'); // Add this import
+const emailService = require('../services/emailService'); // Add this import
 const db = require('../config/db'); // Use the shared db connection
+const notificationUtils = require('../utils/notificationUtils'); // Add this import
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -32,13 +35,37 @@ router.get('/report-cards/all', async (req, res) => {
   }
 });
 
+// Update report card routes for the 3-step process
 router.post('/report-card', async (req, res) => {
   try {
-    const { userId, frontImage, backImage } = req.body;
-    if (!userId || !frontImage || !backImage) {
+    const { userId, frontImage, backImage, gradeLevel } = req.body;
+    if (!userId || !frontImage || !backImage || !gradeLevel) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    const reportCard = await ReportCardModel.submitReportCard(userId, frontImage, backImage);
+    // Report card starts as 'pending'
+    const reportCard = await ReportCardModel.submitReportCard(userId, frontImage, backImage, gradeLevel);
+    
+    // Send notification that the report card was submitted and is pending
+    await notificationModel.createReportCardStatusNotification(userId, 'pending');
+    
+    // Fetch scholar details for admin notification
+    const scholarResult = await db.query(
+      'SELECT name FROM users WHERE id = $1 AND role = $2', 
+      [userId, 'scholar']
+    );
+    
+    if (scholarResult.rows.length > 0) {
+      const scholar = scholarResult.rows[0];
+      // Send notification to admins
+      await notificationUtils.notifyReportCardUpdate(
+        reportCard.id,
+        userId,
+        scholar.name,
+        `New report card submitted by ${scholar.name} (Grade: ${gradeLevel})`,
+        'pending'
+      );
+    }
+    
     res.status(201).json({ message: 'Report card submitted successfully', reportCard });
   } catch (error) {
     console.error('Error submitting report card:', error);
@@ -46,9 +73,69 @@ router.post('/report-card', async (req, res) => {
   }
 });
 
+// New route to move report card to "in_review" status
+router.put('/report-cards/:id/review', async (req, res) => {
+  try {
+    const reportCard = await ReportCardModel.reviewReportCard(req.params.id);
+    
+    // Send notification to the scholar
+    if (reportCard && reportCard.user_id) {
+      await notificationModel.createReportCardStatusNotification(reportCard.user_id, 'in_review');
+      
+      // Fetch scholar details for admin notification
+      const scholarResult = await db.query(
+        'SELECT name FROM users WHERE id = $1 AND role = $2', 
+        [reportCard.user_id, 'scholar']
+      );
+      
+      if (scholarResult.rows.length > 0) {
+        const scholar = scholarResult.rows[0];
+        // Send notification to admins
+        await notificationUtils.notifyReportCardUpdate(
+          reportCard.id,
+          reportCard.user_id,
+          scholar.name,
+          `Report card for ${scholar.name} is now under review`,
+          'in_review'
+        );
+      }
+    }
+    
+    res.json(reportCard);
+  } catch (error) {
+    console.error('Error updating report card to review status:', error);
+    res.status(500).json({ error: 'Failed to update report card status' });
+  }
+});
+
+// Existing verify route - now the final step
 router.put('/report-cards/:id/verify', async (req, res) => {
   try {
     const reportCard = await ReportCardModel.verifyReportCard(req.params.id);
+    
+    // Send notification to the scholar
+    if (reportCard && reportCard.user_id) {
+      await notificationModel.createReportCardStatusNotification(reportCard.user_id, 'verified');
+      
+      // Fetch scholar details for admin notification
+      const scholarResult = await db.query(
+        'SELECT name FROM users WHERE id = $1 AND role = $2', 
+        [reportCard.user_id, 'scholar']
+      );
+      
+      if (scholarResult.rows.length > 0) {
+        const scholar = scholarResult.rows[0];
+        // Send notification to admins
+        await notificationUtils.notifyReportCardUpdate(
+          reportCard.id,
+          reportCard.user_id,
+          scholar.name,
+          `Report card for ${scholar.name} has been verified successfully ✅`,
+          'verified'
+        );
+      }
+    }
+    
     res.json(reportCard);
   } catch (error) {
     console.error('Error verifying report card:', error);
@@ -60,6 +147,30 @@ router.put('/report-cards/:id/reject', async (req, res) => {
   try {
     const { reason } = req.body;
     const reportCard = await ReportCardModel.rejectReportCard(req.params.id, reason);
+    
+    // Send notification to the scholar
+    if (reportCard && reportCard.user_id) {
+      await notificationModel.createReportCardStatusNotification(reportCard.user_id, 'rejected', reason);
+      
+      // Fetch scholar details for admin notification
+      const scholarResult = await db.query(
+        'SELECT name FROM users WHERE id = $1 AND role = $2', 
+        [reportCard.user_id, 'scholar']
+      );
+      
+      if (scholarResult.rows.length > 0) {
+        const scholar = scholarResult.rows[0];
+        // Send notification to admins
+        await notificationUtils.notifyReportCardUpdate(
+          reportCard.id,
+          reportCard.user_id,
+          scholar.name,
+          `Report card for ${scholar.name} has been rejected ❌ Reason: ${reason || 'No reason provided'}`,
+          'rejected'
+        );
+      }
+    }
+    
     res.json(reportCard);
   } catch (error) {
     console.error('Error rejecting report card:', error);
@@ -105,6 +216,92 @@ router.delete('/report-cards/:id', async (req, res) => {
   }
 });
 
+// Update the renew endpoint to better handle notifications
+router.put('/report-cards/:id/renew', async (req, res) => {
+  try {
+    const reportCard = await ReportCardModel.renewReportCard(req.params.id);
+    
+    // Send notification to the scholar
+    if (reportCard && reportCard.user_id) {
+      await notificationModel.createReportCardStatusNotification(
+        reportCard.user_id, 
+        'renewal_requested', 
+        'You need to submit a new report card with updated information. Your previous report card history is still available.'
+      );
+      
+      // Fetch scholar details for admin notification
+      const scholarResult = await db.query(
+        'SELECT name FROM users WHERE id = $1 AND role = $2', 
+        [reportCard.user_id, 'scholar']
+      );
+      
+      if (scholarResult.rows.length > 0) {
+        const scholar = scholarResult.rows[0];
+        // Send notification to admins
+        await notificationUtils.notifyReportCardUpdate(
+          reportCard.id,
+          reportCard.user_id,
+          scholar.name,
+          `Renewal requested for ${scholar.name}'s report card`,
+          'renewal_requested'
+        );
+      }
+      
+      // Send email notification
+      try {
+        await emailService.sendReportCardRenewalEmail(
+          reportCard.user_email,
+          reportCard.user_name
+        );
+      } catch (emailError) {
+        console.error('Failed to send renewal email:', emailError);
+        // Continue even if email fails
+      }
+    }
+    
+    res.json(reportCard);
+  } catch (error) {
+    console.error('Error renewing report card:', error);
+    res.status(500).json({ error: 'Failed to renew report card' });
+  }
+});
+
+// Add new route to get report card history - Make sure ReportCardModel is properly imported
+router.get('/report-card/:userId/history', authenticateToken, async (req, res) => {
+  try {
+    console.log(`Fetching history for user ID: ${req.params.userId}`);
+    
+    // Check if the function exists
+    if (typeof ReportCardModel.getReportCardHistory !== 'function') {
+      console.error('ReportCardModel.getReportCardHistory is not a function');
+      return res.status(500).json({ 
+        error: 'Server configuration error',
+        details: 'The history function is not properly defined'
+      });
+    }
+    
+    const history = await ReportCardModel.getReportCardHistory(req.params.userId);
+    res.json(history);
+  } catch (error) {
+    console.error('Error fetching report card history:', error);
+    res.status(500).json({ error: 'Failed to fetch report card history' });
+  }
+});
+
+// Add route to get a specific history entry - Add authentication middleware
+router.get('/report-card/history/:historyId', authenticateToken, async (req, res) => {
+  try {
+    const historyEntry = await ReportCardModel.getReportCardHistoryById(req.params.historyId);
+    if (!historyEntry) {
+      return res.status(404).json({ error: 'Report card history entry not found' });
+    }
+    res.json(historyEntry);
+  } catch (error) {
+    console.error('Error fetching report card history entry:', error);
+    res.status(500).json({ error: 'Failed to fetch report card history entry' });
+  }
+});
+
 // Scholar routes
 router.get('/:id([0-9]+)', async (req, res) => {
   try {
@@ -132,46 +329,50 @@ router.get('/', async (req, res) => {
 
 router.put('/:id', upload.single('image'), async (req, res) => {
   try {
-    console.log('Updating scholar with data:', req.body);
-
-    // Convert form data to match database columns
-    const scholarData = {
-      // ...existing fields...
-      current_amount: parseFloat(req.body.currentAmount) || 0,
-      amount_needed: parseFloat(req.body.amountNeeded) || 0,
-      // Make sure these are properly converted to numbers
-      first_name: req.body.firstName,
-      last_name: req.body.lastName,
-      address: req.body.address,
-      date_of_birth: req.body.dateOfBirth,
-      grade_level: req.body.gradeLevel,
-      school: req.body.school,
-      guardian_name: req.body.guardianName,
-      guardian_phone: req.body.guardianPhone,
-      gender: req.body.gender,
-      favorite_subject: req.body.favoriteSubject,
-      favorite_activity: req.body.favoriteActivity,
-      favorite_color: req.body.favoriteColor,
-      other_details: req.body.otherDetails,
-      status: req.body.status // Add status handling
-    };
-
-    // Only add image_url if a new image was uploaded
+    const updates = { ...req.body };
+    
+    // Handle optional image upload
     if (req.file) {
-      scholarData.image_url = `/uploads/scholars/${req.file.filename}`;
+      updates.imageUrl = `/uploads/scholars/${req.file.filename}`;
+    }
+
+    // Convert string values to appropriate types
+    if (updates.currentAmount) {
+      updates.currentAmount = parseFloat(updates.currentAmount);
     }
     
-    // Log the data being sent to the model
-    console.log('Scholar data being sent to update:', scholarData);
+    if (updates.amountNeeded) {
+      updates.amountNeeded = parseFloat(updates.amountNeeded);
+    }
+    
+    // Explicitly map form field names to the expected format for the model
+    const scholarData = {
+      firstName: updates.firstName,
+      lastName: updates.lastName,
+      address: updates.address,
+      dateOfBirth: updates.dateOfBirth,
+      gradeLevel: updates.gradeLevel,
+      school: updates.school,
+      guardianName: updates.guardianName,
+      guardianPhone: updates.guardianPhone,
+      gender: updates.gender,
+      favoriteSubject: updates.favoriteSubject,
+      favoriteActivity: updates.favoriteActivity,
+      favoriteColor: updates.favoriteColor,
+      otherDetails: updates.otherDetails,
+      imageUrl: updates.imageUrl, // Use imageUrl consistently
+      status: updates.status,
+      currentAmount: updates.currentAmount,
+      amountNeeded: updates.amountNeeded
+    };
+
+    console.log('Updating scholar with data:', scholarData);
     
     const updatedScholar = await ScholarModel.updateScholar(req.params.id, scholarData);
     res.json(updatedScholar);
   } catch (error) {
     console.error('Error updating scholar:', error);
-    res.status(500).json({ 
-      error: 'Failed to update scholar',
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to update scholar' });
   }
 });
 
@@ -279,12 +480,24 @@ router.get('/pending-locations', authenticateToken, async (req, res) => {
   }
 });
 
+// Update this route to include admin notification
 router.put('/verify-location/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { verified, address } = req.body;
   
   try {
-    // Replace pool.query with db.query
+    // Get scholar details before updating
+    const scholarResult = await db.query(`
+      SELECT name, email FROM users WHERE id = $1 AND role = 'scholar'
+    `, [id]);
+    
+    if (scholarResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Scholar not found' });
+    }
+    
+    const scholar = scholarResult.rows[0];
+    
+    // Update the scholar's location verification status
     const result = await db.query(`
       UPDATE users
       SET location_verified = $1,
@@ -296,7 +509,7 @@ router.put('/verify-location/:id', authenticateToken, async (req, res) => {
     `, [
       verified, 
       'Your location is verified',
-      address, // Add address to the update
+      address,
       id
     ]);
     
@@ -304,10 +517,35 @@ router.put('/verify-location/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Scholar not found' });
     }
     
+    // Send notification to scholar
+    await notificationModel.createLocationVerificationNotification(
+      id,
+      'Your location has been verified successfully! 📍✅'
+    );
+    
+    // Send notification to admins - make sure notificationUtils is imported at the top
+    await notificationUtils.notifyScholarLocationUpdate(
+      id,
+      scholar.name,
+      `Location for scholar ${scholar.name} has been verified ✅`
+    );
+    
+    // Send email notification
+    try {
+      await emailService.sendLocationStatusEmail(
+        scholar.email,
+        scholar.name,
+        'verified'
+      );
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Continue even if email fails - the API update was successful
+    }
+    
     res.json({ 
       success: true, 
       verifiedAt: result.rows[0].location_updated_at,
-      address: result.rows[0].address // Return the address in response
+      address: result.rows[0].address
     });
   } catch (error) {
     console.error('Error verifying location:', error);
@@ -375,7 +613,18 @@ router.post('/location-remark/:id', authenticateToken, async (req, res) => {
   const { remark, visitDate } = req.body;
   
   try {
-    // Replace pool.query with db.query
+    // Get scholar details first
+    const scholarResult = await db.query(`
+      SELECT name, email FROM users WHERE id = $1 AND role = 'scholar'
+    `, [id]);
+    
+    if (scholarResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Scholar not found' });
+    }
+    
+    const scholar = scholarResult.rows[0];
+    
+    // Update the database
     const result = await db.query(`
       UPDATE users
       SET location_remark = $1,
@@ -389,7 +638,25 @@ router.post('/location-remark/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Scholar not found' });
     }
 
-    // You could add notification logic here
+    // Send notification
+    await notificationModel.createLocationRemarkNotification(
+      id,
+      `Scheduled visit: ${new Date(visitDate).toLocaleDateString()} 📅`
+    );
+    
+    // Send email notification
+    try {
+      await emailService.sendLocationStatusEmail(
+        scholar.email,
+        scholar.name,
+        'remark',
+        remark,
+        visitDate
+      );
+    } catch (emailError) {
+      console.error('Failed to send remark email:', emailError);
+      // Continue even if email fails
+    }
     
     res.json({ 
       success: true, 
@@ -435,8 +702,18 @@ router.post('/location-remarks/:scholarId/reject', authenticateToken, async (req
     const { scholarId } = req.params;
     const { location_remark } = req.body;
     
+    // Get scholar details first
+    const scholarResult = await db.query(`
+      SELECT name, email FROM users WHERE id = $1 AND role = 'scholar'
+    `, [scholarId]);
+    
+    if (scholarResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Scholar not found' });
+    }
+    
+    const scholar = scholarResult.rows[0];
+    
     // Reset user's location data and set verification to false
-    // Replace pool.query with db.query
     const result = await db.query(
       `UPDATE users 
        SET location_verified = false,
@@ -451,6 +728,32 @@ router.post('/location-remarks/:scholarId/reject', authenticateToken, async (req
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Scholar not found' });
+    }
+
+    // Send notification to scholar
+    await notificationModel.createLocationVerificationNotification(
+      scholarId,
+      'Your location has been rejected. Please update your location. 📍❌'
+    );
+    
+    // Send notification to admins - make sure notificationUtils is imported at the top
+    await notificationUtils.notifyScholarLocationUpdate(
+      scholarId,
+      scholar.name,
+      `Location for scholar ${scholar.name} has been rejected ❌ Reason: ${location_remark || 'No reason provided'}`
+    );
+    
+    // Send email notification
+    try {
+      await emailService.sendLocationStatusEmail(
+        scholar.email,
+        scholar.name,
+        'rejected',
+        location_remark
+      );
+    } catch (emailError) {
+      console.error('Failed to send rejection email:', emailError);
+      // Continue even if email fails
     }
 
     res.json({ success: true });
@@ -488,6 +791,62 @@ router.put('/reset-location/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error resetting location:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Add notification when a scholar updates their location
+router.post('/update-location', authenticateToken, async (req, res) => {
+  try {
+    const { userId, latitude, longitude, address } = req.body;
+    
+    // Validate input
+    if (!userId || !latitude || !longitude) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Get user details to ensure it's a scholar
+    const userResult = await db.query(
+      'SELECT name, email, role FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = userResult.rows[0];
+    if (user.role !== 'scholar') {
+      return res.status(403).json({ error: 'Only scholars can update their location' });
+    }
+    
+    // Update location
+    const result = await db.query(
+      `UPDATE users 
+       SET latitude = $1,
+           longitude = $2,
+           location_updated_at = CURRENT_TIMESTAMP,
+           location_verified = false,
+           address = $3
+       WHERE id = $4
+       RETURNING id, latitude, longitude, location_updated_at`,
+      [latitude, longitude, address, userId]
+    );
+    
+    // Notify admins about the updated location
+    await notificationUtils.notifyScholarLocationUpdate(
+      userId,
+      user.name,
+      `New location update from scholar ${user.name} requires verification 📍`
+    );
+    
+    res.json({ 
+      success: true, 
+      message: 'Location updated successfully',
+      location: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error updating location:', error);
+    res.status(500).json({ error: 'Failed to update location' });
   }
 });
 

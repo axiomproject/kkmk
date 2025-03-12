@@ -1,132 +1,81 @@
-interface DonationSubmission {
-  fullName: string;
-  email: string;
-  contactNumber: string;
-  amount: number;
-  message?: string;
-  proofOfPayment?: string;
-  date: string;
-}
+import axios from 'axios';
+import api from '../config/axios'; // Import your configured API client
 
-const API_URL = '/api/donations';  // Use the direct port number from your server.js
+// Define the API base URL based on the environment
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
+const API_PATH = '/api/donations';
 
 class DonationService {
-  static async submitDonation(formData: FormData) {
+  /**
+   * Get all donations
+   */
+  async getDonations() {
     try {
-      const response = await fetch(`${API_URL}`, {  // Remove /donations from here since it's in the base URL
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          // Don't set Content-Type when sending FormData
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit donation');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error submitting donation:', error);
-      throw error;
-    }
-  }
-
-  static async getDonations() {
-    try {
-      const response = await fetch(`${API_URL}`, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch donations');
-      }
-
-      const data = await response.json();
-      console.log('Fetched donations:', data); // Add logging
-      return data;
+      // Use the pre-configured api instance that has the correct baseURL
+      const response = await api.get('/donations');
+      return response.data;
     } catch (error) {
       console.error('Error fetching donations:', error);
-      throw error;
+      throw new Error('Failed to fetch donations');
     }
   }
 
-  static async verifyDonation(id: number) {
+  /**
+   * Add a new donation
+   */
+  async addDonation(formData: FormData) {
     try {
-      const response = await fetch(`${API_URL}/${id}/verify`, {
-        method: 'PUT',
-        credentials: 'include',
+      const response = await api.post('/donations', formData, {
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          'Content-Type': 'multipart/form-data'
         }
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to verify donation');
-      }
-
-      const data = await response.json();
-      console.log('Verification response:', data);
-      return data;
+      return response.data;
     } catch (error) {
-      console.error('Error verifying donation:', error);
-      throw error;
+      console.error('Error adding donation:', error);
+      throw new Error('Failed to add donation');
     }
   }
 
-  static async rejectDonation(id: number, reason: string) {
+  /**
+   * Delete a donation
+   */
+  async deleteDonation(id: number) {
     try {
-      const response = await fetch(`${API_URL}/${id}/reject`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ reason }),
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to reject donation');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error rejecting donation:', error);
-      throw error;
-    }
-  }
-
-  static async deleteDonation(id: number) {
-    try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete donation');
-      }
-
-      return await response.json();
+      // Use the api instance with the correct base URL
+      const response = await api.delete(`/donations/${id}`);
+      return response.data;
     } catch (error) {
       console.error('Error deleting donation:', error);
-      throw error;
+      throw new Error('Failed to delete donation');
+    }
+  }
+
+  /**
+   * Verify a donation
+   */
+  async verifyDonation(id: number) {
+    try {
+      const response = await api.put(`/donations/${id}/verify`);
+      return response.data;
+    } catch (error) {
+      console.error('Error verifying donation:', error);
+      throw new Error('Failed to verify donation');
+    }
+  }
+
+  /**
+   * Reject a donation
+   */
+  async rejectDonation(id: number, reason: string) {
+    try {
+      const response = await api.put(`/donations/${id}/reject`, { reason });
+      return response.data;
+    } catch (error) {
+      console.error('Error rejecting donation:', error);
+      throw new Error('Failed to reject donation');
     }
   }
 }
 
-export default {
-  submitDonation: DonationService.submitDonation,
-  getDonations: DonationService.getDonations,
-  verifyDonation: DonationService.verifyDonation,
-  rejectDonation: DonationService.rejectDonation,
-  deleteDonation: DonationService.deleteDonation, // Use the class method directly
-};
+export default new DonationService();

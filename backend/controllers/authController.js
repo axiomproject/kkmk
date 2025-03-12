@@ -17,112 +17,93 @@ const {
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService');
-const register = async (req, res) => {
-  const { name, username, email, password, dateOfBirth, role, faceData } = req.body;
-  
+const notificationUtils = require('../utils/notificationUtils');
+
+const register = async (req, res, next) => {
   try {
-    console.log('Registration attempt:', { email, username, role });
+    // Extract all registration data from request body
+    const { 
+      firstName, middleName, lastName, extension, gender, 
+      name, username, email, phone, password, dateOfBirth, 
+      role, faceData, guardianName, guardianPhone, address, 
+      educationLevel, school, parentsIncome, skills, disability 
+    } = req.body;
 
-    // For non-scholar roles, check if email exists
-    if (role !== 'scholar' && email) {
-      const existingUser = await findUserByEmailOrUsername(email);
-      if (existingUser) {
-        return res.status(400).json({ error: 'User already exists' });
-      }
+    // Log the received role to debug the issue
+    console.log('Registration request received with role:', role);
+
+    // Validate required fields
+    if (!firstName || !lastName || !username || !password || !dateOfBirth) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Check if username exists for all roles
-    const existingUsername = await findUserByEmailOrUsername(username);
-    if (existingUsername) {
-      return res.status(400).json({ error: 'Username already taken' });
-    }
-
-    // Validate face data if provided
-    if (faceData) {
-      try {
-        const parsed = JSON.parse(faceData);
-        if (!parsed.descriptors || !Array.isArray(parsed.descriptors)) {
-          return res.status(400).json({ 
-            error: 'Invalid face data: descriptors must be an array' 
-          });
-        }
-        if (!parsed.landmarks || !Array.isArray(parsed.landmarks)) {
-          return res.status(400).json({ 
-            error: 'Invalid face data: landmarks must be an array' 
-          });
-        }
-      } catch (e) {
-        return res.status(400).json({ 
-          error: 'Invalid face data format' 
-        });
-      }
-    }
-
-    // Generate a placeholder email for scholars to satisfy the not-null constraint
-    // When using a placeholder, create a unique one based on username to avoid conflicts
-    const userEmail = role === 'scholar' ? 
-      `${username}@placeholder.com` : 
-      email;
-
-    const { user, verificationToken } = await createUser(
-      name, 
-      username, 
-      userEmail, // Use placeholder email for scholars
-      password, 
-      dateOfBirth, 
-      role,
-      faceData  // Pass face data to createUser
-    );
+    // Ensure role is set to one of the valid options (default to volunteer if not specified)
+    const validRoles = ['volunteer', 'scholar', 'sponsor'];
+    const userRole = validRoles.includes(role) ? role : 'volunteer';
     
-    // For scholars, we don't send verification emails, admin will verify
-    if (role === 'scholar') {
-      res.status(201).json({
-        message: 'Registration successful. Please wait for admin to verify your account.',
-        user: {
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          hasFaceVerification: user.has_face_verification
-        }
-      });
-    } else {
-      try {
-        await sendVerificationEmail(email, verificationToken);
-        res.status(201).json({
-          message: 'Registration successful. Please check your email to verify your account.',
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            username: user.username,
-            hasFaceVerification: user.has_face_verification
-          }
-        });
-      } catch (emailError) {
-        console.error('Failed to send verification email:', emailError);
-        // Still create the user but inform about email issue
-        res.status(201).json({
-          message: 'Registration successful but failed to send verification email. Please contact support.',
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            username: user.username,
-            hasFaceVerification: user.has_face_verification
-          }
-        });
+    try {
+      // Check if user already exists
+      const existingUser = await findUserByEmailOrUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ error: 'User already exists with this username' });
       }
+
+      if (email) {
+        const existingEmail = await findUserByEmailOrUsername(email);
+        if (existingEmail) {
+          return res.status(409).json({ error: 'User already exists with this email' });
+        }
+      }
+
+      // Log role before creating user
+      console.log('Creating user with role:', userRole);
+      
+      // Create user in database
+      const { user, verificationToken } = await createUser(
+        firstName, middleName, lastName, extension, gender,
+        name, username, email, phone, password, dateOfBirth, 
+        userRole, faceData, guardianName, guardianPhone, address, 
+        educationLevel, school, parentsIncome, skills, disability
+      );
+
+      // Send verification email if email is provided
+      if (email) {
+        try {
+          await sendVerificationEmail(email, verificationToken);
+        } catch (emailError) {
+          console.error('Error sending verification email:', emailError);
+          // Continue registration process even if email fails
+        }
+      }
+
+      // Notify all admins after successful registration with role-specific messages
+      if (user.role === 'scholar') {
+        await notificationUtils.notifyAllAdmins(
+          'student_application', // Changed from new_user to student_application for scholars
+          `New scholar registered: ${user.name} (${user.email || 'No email'})`,
+          user.id
+        );
+      } else {
+        await notificationUtils.notifyAllAdmins(
+          'new_user',
+          `New ${user.role} registered: ${user.name} (${user.email || 'No email'})`,
+          user.id
+        );
+      }
+
+      // Return success response without sending password
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json({
+        message: 'User registered successfully. Please check your email for verification.',
+        user: userWithoutPassword
+      });
+      
+    } catch (error) {
+      console.error('Error during user creation:', error);
+      res.status(500).json({ error: error.message || 'Registration failed' });
     }
   } catch (error) {
-    console.error('Registration error:', error);
-    if (error.code === '23505') { // Postgres duplicate key error
-      if (error.constraint === 'users_username_key') {
-        return res.status(400).json({ error: 'This username is already taken. Please choose another username.' });
-      } else if (error.constraint === 'users_email_key') {
-        return res.status(400).json({ error: 'This email is already registered. Please use another email.' });
-      }
-    }
-    res.status(500).json({ error: 'Registration failed. Please try again.' });
+    next(error);
   }
 };
 

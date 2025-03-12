@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const notificationUtils = require('../utils/notificationUtils'); // Add this import
 
 // Get all contacts
 router.get('/', async (req, res) => {
@@ -38,9 +39,33 @@ router.post('/', async (req, res) => {
       RETURNING *`,
       [firstName, lastName, email, phone, message || '']
     );
+    
+    const newContact = result.rows[0];
+    console.log('Contact saved successfully:', newContact);
+    
+    // Send notification to admins about the new contact
+    try {
+      // Format message for notification (shorter version)
+      let notificationMessage = `New contact from ${firstName} ${lastName} (${email})`;
+      
+      // Send the notification to all admins
+      await notificationUtils.notifyAllAdmins(
+        'contact_form',
+        notificationMessage,
+        newContact.id,
+        {
+          name: `${firstName} ${lastName}`,
+          profile_photo: '/images/contact-icon.png'
+        }
+      );
+      
+      console.log('Admin notification sent for new contact form submission');
+    } catch (notificationError) {
+      console.error('Failed to send admin notification:', notificationError);
+      // Continue processing even if notification fails
+    }
 
-    console.log('Contact saved successfully:', result.rows[0]);
-    return res.status(201).json(result.rows[0]);
+    return res.status(201).json(newContact);
 
   } catch (error) {
     console.error('Database error:', error);

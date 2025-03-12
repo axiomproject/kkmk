@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BsBell, BsBellFill } from 'react-icons/bs'; // Add BsBellFill import
+// Add these imports for expand/collapse icons
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import '../../styles/Header.css';
 import logo from '../img/kmlogo.png';
 import { Link } from 'react-router-dom';
@@ -24,6 +27,7 @@ interface Notification {
   created_at: string;
   actor_name: string;
   actor_avatar: string;
+  expanded?: boolean; // Add this property to track expanded state
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
@@ -304,6 +308,16 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     }, 500);
   };
 
+  // Add this function to toggle notification expansion
+  const toggleNotificationExpand = (id: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent notification click event from firing
+    setNotifications(prevNotifications =>
+      prevNotifications.map(n =>
+        n.id === id ? { ...n, expanded: !n.expanded } : n
+      )
+    );
+  };
+
   return (
     <header className="header-container">
       <div className="logo-container">
@@ -512,7 +526,21 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                           }}
                         />
                         <div className="notification-content">
-                          <p className="notification-text">{notification.content}</p>
+                          <div className="notification-text-container">
+                            <p className={`notification-text ${notification.expanded ? 'expanded' : ''}`}>
+                              {notification.content}
+                            </p>
+                            <button 
+                              className="expand-button"
+                              onClick={(e) => toggleNotificationExpand(notification.id, e)}
+                              title={notification.expanded ? "Show less" : "Show more"}
+                            >
+                              {notification.expanded ? 
+                                <KeyboardArrowUpIcon fontSize="small" /> : 
+                                <KeyboardArrowDownIcon fontSize="small" />
+                              }
+                            </button>
+                          </div>
                           {notification.type === 'event_reminder' && !notification.read && (
                             <div className="notification-actions">
                               <div 

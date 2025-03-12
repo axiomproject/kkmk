@@ -1,18 +1,16 @@
 const db = require('../config/db');
 
 const ReportCardModel = {
-  async submitReportCard(userId, frontImage, backImage) {
+  async submitReportCard(userId, frontImage, backImage, gradeLevel) {
     try {
-      // Replace db.one with db.query
       const result = await db.query(`
         INSERT INTO report_cards 
-        (user_id, front_image, back_image, status, verification_step, submitted_at, updated_at)
+        (user_id, front_image, back_image, grade_level, status, verification_step, submitted_at, updated_at)
         VALUES 
-        ($1, $2, $3, 'pending', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ($1, $2, $3, $4, 'pending', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING *
-      `, [userId, frontImage, backImage]);
+      `, [userId, frontImage, backImage, gradeLevel]);
 
-      // Replace db.none with db.query
       await db.query(`
         UPDATE users 
         SET has_submitted_report = true 
@@ -21,12 +19,12 @@ const ReportCardModel = {
 
       return result.rows[0];
     } catch (error) {
+      console.error('Error submitting report card:', error);
       throw error;
     }
   },
 
   async updateVerificationStep(userId, step) {
-    // Replace db.one with db.query
     const result = await db.query(`
       UPDATE report_cards 
       SET verification_step = $2, 
@@ -39,7 +37,6 @@ const ReportCardModel = {
   },
 
   async getReportCardByUserId(userId) {
-    // Replace db.oneOrNone with db.query
     const result = await db.query(`
       SELECT * FROM report_cards 
       WHERE user_id = $1 
@@ -51,7 +48,6 @@ const ReportCardModel = {
   },
 
   async getAllReportCards() {
-    // Replace db.any with db.query
     const result = await db.query(`
       SELECT rc.*, 
              u.name as user_name, 
@@ -65,26 +61,35 @@ const ReportCardModel = {
   },
 
   async verifyReportCard(id) {
-    // Replace db.one with db.query
-    const result = await db.query(`
-      UPDATE report_cards 
-      SET 
-        status = CASE 
-          WHEN verification_step = 1 THEN 'in_review'
-          WHEN verification_step = 2 THEN 'verified'
-          ELSE status
-        END,
-        verification_step = LEAST(verification_step + 1, 3),
-        updated_at = CURRENT_TIMESTAMP 
-      WHERE id = $1 
-      RETURNING *
-    `, [id]);
-    
-    return result.rows[0];
+    try {
+      const result = await db.query(`
+        UPDATE report_cards
+        SET status = 'verified', verification_step = 3, updated_at = NOW()
+        WHERE id = $1
+        RETURNING *, (
+          SELECT json_build_object('name', u.name, 'email', u.email)
+          FROM users u
+          WHERE u.id = report_cards.user_id
+        ) as user_info
+      `, [id]);
+
+      const reportCard = result.rows[0];
+      if (!reportCard) {
+        throw new Error('Report card not found');
+      }
+
+      reportCard.user_name = reportCard.user_info?.name;
+      reportCard.user_email = reportCard.user_info?.email;
+      delete reportCard.user_info;
+
+      return reportCard;
+    } catch (error) {
+      console.error('Error verifying report card:', error);
+      throw error;
+    }
   },
 
   async rejectReportCard(id, reason) {
-    // Replace db.one with db.query
     const result = await db.query(`
       UPDATE report_cards 
       SET 
@@ -98,7 +103,6 @@ const ReportCardModel = {
   },
 
   async getActiveReportCard(userId) {
-    // Replace db.oneOrNone with db.query
     const result = await db.query(`
       SELECT * FROM report_cards 
       WHERE user_id = $1 
@@ -111,7 +115,6 @@ const ReportCardModel = {
   },
 
   async deleteReportCard(id) {
-    // Replace db.result with db.query
     const result = await db.query(`
       DELETE FROM report_cards 
       WHERE id = $1
@@ -119,6 +122,189 @@ const ReportCardModel = {
     `, [id]);
     
     return { rowCount: result.rowCount };
+  },
+
+  async reviewReportCard(id) {
+    try {
+      const result = await db.query(`
+        UPDATE report_cards
+        SET status = 'in_review', verification_step = 2, updated_at = NOW()
+        WHERE id = $1
+        RETURNING *, (
+          SELECT json_build_object('name', u.name, 'email', u.email)
+          FROM users u
+          WHERE u.id = report_cards.user_id
+        ) as user_info
+      `, [id]);
+
+      const reportCard = result.rows[0];
+      if (!reportCard) {
+        throw new Error('Report card not found');
+      }
+
+      reportCard.user_name = reportCard.user_info?.name;
+      reportCard.user_email = reportCard.user_info?.email;
+      delete reportCard.user_info;
+
+      return reportCard;
+    } catch (error) {
+      console.error('Error reviewing report card:', error);
+      throw error;
+    }
+  },
+
+  async renewReportCard(id) {
+    try {
+      const client = await db.connect();
+      try {
+        await client.query('BEGIN');
+
+        // First get the existing report card details
+        const existingCardResult = await client.query(`
+          SELECT rc.*, 
+                 TO_CHAR(NOW(), 'YYYY') || '-' || TO_CHAR(NOW() + INTERVAL '1 year', 'YYYY') as school_year
+          FROM report_cards rc
+          WHERE rc.id = $1
+        `, [id]);
+        
+        if (existingCardResult.rows.length === 0) {
+          throw new Error('Report card not found');
+        }
+        
+        const oldReportCard = existingCardResult.rows[0];
+        const schoolYear = oldReportCard.school_year;
+        
+        // Archive the current report card in the history table
+        await client.query(`
+          INSERT INTO report_card_history (
+            report_card_id, user_id, front_image, back_image, 
+            grade_level, status, verification_step, 
+            submitted_at, updated_at, school_year, 
+            renewal_reason, archived_at
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW()
+          )
+        `, [
+          oldReportCard.id,
+          oldReportCard.user_id,
+          oldReportCard.front_image,
+          oldReportCard.back_image,
+          oldReportCard.grade_level,
+          oldReportCard.status,
+          oldReportCard.verification_step,
+          oldReportCard.submitted_at,
+          oldReportCard.updated_at,
+          schoolYear,
+          'Annual renewal for new school year'
+        ]);
+        
+        // Update the report card status to indicate renewal
+        await client.query(`
+          UPDATE report_cards
+          SET status = 'renewal_requested',
+              updated_at = NOW()
+          WHERE id = $1
+        `, [id]);
+        
+        // Update only the report card submission status
+        await client.query(`
+          UPDATE users 
+          SET has_submitted_report = false
+          WHERE id = $1
+        `, [oldReportCard.user_id]);
+        
+        // Fetch user info for notifications
+        const userInfoResult = await client.query(`
+          SELECT name, email
+          FROM users
+          WHERE id = $1
+        `, [oldReportCard.user_id]);
+        
+        if (userInfoResult.rows.length === 0) {
+          throw new Error('User not found');
+        }
+        
+        const user = userInfoResult.rows[0];
+
+        await client.query('COMMIT');
+        
+        return {
+          id: id,
+          user_id: oldReportCard.user_id,
+          user_name: user.name,
+          user_email: user.email,
+          status: 'renewal_requested'
+        };
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      console.error('Error renewing report card:', error);
+      throw error;
+    }
+  },
+
+  async getReportCardHistory(userId) {
+    try {
+      // Check if the report_card_history table exists
+      const tableExists = await db.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_name = 'report_card_history'
+        );
+      `);
+      
+      // If table doesn't exist, return empty array
+      if (!tableExists.rows[0].exists) {
+        console.error('report_card_history table does not exist');
+        return [];
+      }
+      
+      const result = await db.query(`
+        SELECT 
+          rch.id as history_id,
+          rch.report_card_id,
+          rch.user_id,
+          rch.grade_level,
+          rch.status,
+          rch.verification_step,
+          rch.submitted_at,
+          rch.archived_at,
+          rch.school_year,
+          rch.renewal_reason
+        FROM report_card_history rch
+        WHERE rch.user_id = $1
+        ORDER BY rch.archived_at DESC
+      `, [userId]);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error fetching report card history:', error);
+      // Return empty array instead of throwing to avoid breaking the client
+      return [];
+    }
+  },
+
+  async getReportCardHistoryById(historyId) {
+    try {
+      const result = await db.query(`
+        SELECT 
+          rch.*,
+          u.name as user_name,
+          u.email as user_email
+        FROM report_card_history rch
+        JOIN users u ON rch.user_id = u.id
+        WHERE rch.id = $1
+      `, [historyId]);
+      
+      return result.rows.length ? result.rows[0] : null;
+    } catch (error) {
+      console.error('Error fetching report card history by ID:', error);
+      return null;
+    }
   }
 };
 

@@ -1745,3 +1745,150 @@
 }
 
 /* ...existing code... */
+
+/* Skills Section Styling - Updated for uniform grid */
+.form-section h5 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  margin-top: 20px;
+  font-family: "Poppins";
+  font-weight: 500;
+  color: #242424;
+}
+
+.skills-info {
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  color: #666;
+}
+
+/* Skills Section Styling - Fixed for uniform grid */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Equal width columns */
+  gap: 15px;
+  margin-bottom: 20px;
+  width: 100%; /* Ensure full width container */
+}
+
+.skill-checkbox-container {
+  border: 1px solid #e0e0e0;
+  padding: 15px;
+  border-radius: 8px;
+  transition: border-color 0.3s, background-color 0.3s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100px; /* Increased minimum height to accommodate longer text */
+  width: 100%; /* Ensure each container takes full cell width */
+  box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.skill-checkbox-container:hover {
+  border-color: #EE3F24;
+  background-color: rgba(238, 63, 36, 0.03);
+}
+
+.skill-checkbox {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.skill-checkbox input[type="checkbox"] {
+  margin-right: 10px;
+  margin-top: 3px; /* Align checkbox with the first line of text */
+  width: 18px;
+  height: 18px;
+  min-width: 18px; /* Prevent checkbox from shrinking */
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border: 2px solid #ccc;
+  border-radius: 3px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.skill-checkbox input[type="checkbox"]:checked {
+  background-color: #EE3F24;
+  border-color: #EE3F24;
+}
+
+.skill-checkbox input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+}
+
+.skill-checkbox label {
+  font-family: "Poppins";
+  font-weight: 500;
+  color: #242424;
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1.4; /* Better line height for multi-word skills */
+  flex: 1;
+  word-break: break-word; /* Allow words to break */
+  overflow-wrap: break-word; /* Ensure long words wrap */
+  hyphens: auto; /* Enable hyphenation where needed */
+}
+
+.skill-examples {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+  padding-left: 28px;
+  line-height: 1.4;
+  flex-grow: 1; /* Allow examples to take up remaining space */
+}
+
+.skills-error {
+  display: block;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* Mobile responsiveness for skills grid */
+@media screen and (max-width: 768px) {
+  .skills-grid {
+    grid-template-columns: 100%; /* Full width on mobile */
+  }
+  
+  .skill-checkbox-container {
+    min-height: 80px; /* Slightly smaller on mobile */
+  }
+}
+
+/* Make sure all grid items are exactly the same width */
+@media screen and (min-width: 769px) {
+  .skills-grid {
+    grid-template-columns: calc(50% - 7.5px) calc(50% - 7.5px); /* Exact 50% width minus half the gap */
+  }
+}
+
+/* Ensure better touch target sizes on mobile */
+@media (hover: none) and (pointer: coarse) {
+  .skill-checkbox input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+  }
+  
+  .skill-checkbox {
+    min-height: 30px; /* Taller checkboxes on touch devices */
+    padding: 2px 0;
+  }
+  
+  .skill-examples {
+    padding-left: 34px; /* Adjust padding for larger checkboxes */
+  }
+}
+
+/* ...existing code... */

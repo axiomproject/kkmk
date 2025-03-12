@@ -78,7 +78,66 @@ router.get('/events/:eventId/participants', eventController.getEventParticipants
 router.get('/events/:eventId/check-participation', authMiddleware, eventController.checkParticipation);
 
 // Add this route with other event routes
-router.delete('/events/:eventId/participants/:userId', authMiddleware, eventController.removeParticipant);
+router.delete('/events/:eventId/participants/:userId', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin or staff
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json({ error: 'Not authorized to remove participants' });
+    }
+
+    const { eventId, userId } = req.params;
+    const { reason } = req.body; // Get optional removal reason from request body
+    
+    // Remove participant and get info for notifications
+    const EventModel = require('../models/eventModel');
+    const result = await EventModel.removeParticipant(eventId, userId, reason, {
+      id: req.user.id,
+      name: req.user.name,
+      profile_photo: req.user.profile_photo
+    });
+    
+    // Send email notification if we have email service configured
+    try {
+      const emailService = require('../services/emailService');
+      await emailService.sendParticipantRemovalEmail(
+        result.user.email,
+        result.user.name,
+        result.eventTitle,
+        reason || 'No specific reason provided'
+      );
+    } catch (emailError) {
+      console.error('Failed to send removal email:', emailError);
+      // Continue even if email fails - we don't want to fail the API call
+    }
+    
+    // Create in-app notification for the volunteer
+    try {
+      const notificationModel = require('../models/notificationModel');
+      await notificationModel.createParticipantRemovalNotification(
+        userId, 
+        eventId, 
+        result.eventTitle, 
+        reason,
+        {
+          id: req.user.id,
+          name: req.user.name,
+          profile_photo: req.user.profile_photo
+        }
+      );
+    } catch (notificationError) {
+      console.error('Failed to create removal notification:', notificationError);
+      // Continue even if notification fails
+    }
+
+    res.json({ 
+      message: 'Participant removed successfully',
+      event: result.event
+    });
+  } catch (error) {
+    console.error('Error removing participant:', error);
+    res.status(500).json({ error: 'Failed to remove participant' });
+  }
+});
 
 // Add new route for manually adding volunteers
 router.post('/events/:eventId/add-volunteer', authMiddleware, eventController.addVolunteer);
@@ -117,7 +176,166 @@ router.post('/events/:eventId/dismiss-feedback', authMiddleware, async (req, res
   }
 });
 
-router.post('/register', register);
+// Add this route with other event routes
+router.put('/events/:eventId/participants/:userId/approve', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin or staff
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json({ error: 'Not authorized to approve participants' });
+    }
+
+    const { eventId, userId } = req.params;
+
+    // First, check if the participant exists and is in PENDING status
+    const participantResult = await db.query(
+      'SELECT ep.*, e.title as event_title, u.email as user_email, u.name as user_name FROM event_participants ep JOIN events e ON ep.event_id = e.id JOIN users u ON ep.user_id = u.id WHERE ep.event_id = $1 AND ep.user_id = $2',
+      [eventId, userId]
+    );
+
+    if (participantResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Participant not found in this event' });
+    }
+
+    const participant = participantResult.rows[0];
+    
+    if (participant.status !== 'PENDING') {
+      return res.status(400).json({ error: 'Participant is already approved or has another status' });
+    }
+
+    // Update participant status to ACTIVE
+    await db.query(
+      'UPDATE event_participants SET status = $1 WHERE event_id = $2 AND user_id = $3',
+      ['ACTIVE', eventId, userId]
+    );
+
+    // Send email notification if we have email service configured
+    try {
+      const emailService = require('../services/emailService');
+      await emailService.sendParticipantApprovalEmail(
+        participant.user_email,
+        participant.user_name,
+        participant.event_title
+      );
+    } catch (emailError) {
+      console.error('Failed to send approval email:', emailError);
+      // Continue even if email fails - we don't want to fail the API call
+    }
+    
+    // Create in-app notification for the volunteer
+    try {
+      const notificationModel = require('../models/notificationModel');
+      await notificationModel.createNotification({
+        userId: userId,
+        type: 'event_approval',
+        content: `Your participation in "${participant.event_title}" has been approved!`,
+        relatedId: eventId,
+        actorId: req.user.id,
+        actorName: req.user.name || 'Admin',
+        actorAvatar: req.user.profile_photo || '/images/notify-icon.png'
+      });
+    } catch (notificationError) {
+      console.error('Failed to create approval notification:', notificationError);
+      // Continue even if notification fails
+    }
+
+    // Return updated participant info
+    res.json({
+      message: 'Participant approved successfully',
+      eventId,
+      userId
+    });
+    
+  } catch (error) {
+    console.error('Error approving participant:', error);
+    res.status(500).json({ error: 'Failed to approve participant' });
+  }
+});
+
+// Add this route for rejecting participants
+router.put('/events/:eventId/participants/:userId/reject', authMiddleware, async (req, res) => {
+  try {
+    // Check if user is admin or staff
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json({ error: 'Not authorized to reject participants' });
+    }
+
+    const { eventId, userId } = req.params;
+    const { reason } = req.body; // Optional rejection reason
+
+    // First, check if the participant exists and is in PENDING status
+    const participantResult = await db.query(
+      'SELECT ep.*, e.title as event_title, u.email as user_email, u.name as user_name FROM event_participants ep JOIN events e ON ep.event_id = e.id JOIN users u ON ep.user_id = u.id WHERE ep.event_id = $1 AND ep.user_id = $2',
+      [eventId, userId]
+    );
+
+    if (participantResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Participant not found in this event' });
+    }
+
+    const participant = participantResult.rows[0];
+    
+    // Remove the participant from the event
+    await db.query(
+      'DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2',
+      [eventId, userId]
+    );
+
+    // Update event's current_volunteers count
+    await db.query(
+      'UPDATE events SET current_volunteers = current_volunteers - 1 WHERE id = $1 AND current_volunteers > 0',
+      [eventId]
+    );
+
+    // Send email notification if we have email service configured
+    try {
+      const emailService = require('../services/emailService');
+      await emailService.sendParticipantRejectionEmail(
+        participant.user_email,
+        participant.user_name,
+        participant.event_title,
+        reason || 'No specific reason provided'
+      );
+    } catch (emailError) {
+      console.error('Failed to send rejection email:', emailError);
+      // Continue even if email fails
+    }
+
+    // Create in-app notification for the volunteer
+    try {
+      const notificationModel = require('../models/notificationModel');
+      await notificationModel.createNotification({
+        userId: userId,
+        type: 'event_rejection',
+        content: `Your request to join "${participant.event_title}" was not approved.${reason ? ' Reason: ' + reason : ''}`,
+        relatedId: eventId,
+        actorId: req.user.id,
+        actorName: req.user.name || 'Admin',
+        actorAvatar: req.user.profile_photo || '/images/notify-icon.png'
+      });
+    } catch (notificationError) {
+      console.error('Failed to create rejection notification:', notificationError);
+      // Continue even if notification fails
+    }
+
+    // Return success response
+    res.json({
+      message: 'Participant rejected successfully',
+      eventId,
+      userId
+    });
+    
+  } catch (error) {
+    console.error('Error rejecting participant:', error);
+    res.status(500).json({ error: 'Failed to reject participant' });
+  }
+});
+
+// Add logging middleware for debugging registration requests
+router.post('/register', (req, res, next) => {
+  console.log('Registration request received with role:', req.body.role);
+  return register(req, res, next);
+});
+
 router.post('/login', login);
 router.post('/logout', logout);
 router.get('/user', getUserByEmail);
@@ -157,6 +375,50 @@ router.post('/test-face-save', async (req, res) => {
   } catch (error) {
     console.error('Test face save error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Add endpoint to check if username is available
+router.get('/check-username', async (req, res) => {
+  try {
+    const { username } = req.query;
+    
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+    
+    const result = await db.query('SELECT id FROM users WHERE username = $1', [username]);
+    
+    if (result.rows.length > 0) {
+      return res.status(409).json({ available: false, message: 'This username is already registered. Please choose another username.' });
+    }
+    
+    res.json({ available: true, message: 'Username is available' });
+  } catch (error) {
+    console.error('Error checking username:', error);
+    res.status(500).json({ error: 'Server error', message: 'Failed to check username availability' });
+  }
+});
+
+// Add endpoint to check if email is available
+router.get('/check-email', async (req, res) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+    
+    const result = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    
+    if (result.rows.length > 0) {
+      return res.status(409).json({ available: false, message: 'This email is already registered. Please use another email address.' });
+    }
+    
+    res.json({ available: true, message: 'Email is available' });
+  } catch (error) {
+    console.error('Error checking email:', error);
+    res.status(500).json({ error: 'Server error', message: 'Failed to check email availability' });
   }
 });
 
