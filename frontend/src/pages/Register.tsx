@@ -1015,7 +1015,7 @@ const Register: React.FC = () => {
             className={`face-verify-button ${faceVerified ? 'verified' : ''}`}
             onClick={() => setShowFaceVerification(true)}
           >
-            {faceVerified ? 'Face Verified ✓' : 'Verify Face (Optional)'}
+            {faceVerified ? 'Face Verified ✓' : 'Verify Face'}
           </button>
         </div>
         {showFaceVerification && (
