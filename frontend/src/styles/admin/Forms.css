@@ -469,7 +469,6 @@
 }
 
 .form-section {
-  background-color: #f9f9f9;
   border-radius: 8px;
   padding: 20px;
   margin-bottom: 15px;
@@ -575,4 +574,9 @@
   .form-column {
     width: 100%;
   }
+}
+
+
+.disability-question{
+  justify-items: center;
 }
