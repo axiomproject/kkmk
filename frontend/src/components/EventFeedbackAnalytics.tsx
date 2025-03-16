@@ -1,7 +1,13 @@
-import React, { useEffect, useState, memo, Suspense, lazy } from 'react';
+import React, { useEffect, useState, memo, Suspense, lazy, useRef } from 'react';
 import api from '../config/axios';
 import { Line, Pie } from 'react-chartjs-2';
 import '../styles/EventFeedbackAnalytics.css';
+// Add DatePicker imports
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+// Add icons for filters
+import { FaFilter, FaCalendarAlt, FaDownload, FaPrint } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 
 // Create a component to suppress console warnings specifically for react-wordcloud
 class ErrorBoundary extends React.Component<
@@ -108,14 +114,30 @@ const EventFeedbackAnalytics: React.FC = () => {
   const [filterRating, setFilterRating] = useState<number | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Add date filter state variables
+  const [showDateFilter, setShowDateFilter] = useState<boolean>(false);
+  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 30)));
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [isFilterApplied, setIsFilterApplied] = useState<boolean>(false);
+
+  // Add refs for charts to capture them during export
+  const sentimentChartRef = useRef<any>(null);
+  const wordCloudContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Try the correct API endpoint - check if it might be a different path
-        const { data } = await api.get<FeedbackAnalytics>('/admin/feedback-analytics');
+        let url = '/admin/feedback-analytics';
+        
+        // Add date parameters if filter is applied
+        if (isFilterApplied) {
+          url += `?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`;
+        }
+        
+        const { data } = await api.get<FeedbackAnalytics>(url);
         setAnalytics(data);
       } catch (error) {
         console.error('Error fetching feedback analytics:', error);
@@ -132,10 +154,241 @@ const EventFeedbackAnalytics: React.FC = () => {
     };
 
     fetchAnalytics();
-    // Refresh every 5 minutes
+    // Refresh every 5 minutes, or when filter changes
     const interval = setInterval(fetchAnalytics, 300000);
     return () => clearInterval(interval);
-  }, []);
+  }, [startDate, endDate, isFilterApplied]); // Add filter dependencies
+
+  // Apply date filter function
+  const applyDateFilter = () => {
+    if (startDate > endDate) {
+      setError("Start date cannot be after end date");
+      return;
+    }
+    
+    setIsFilterApplied(true);
+    setShowDateFilter(false);
+  };
+
+  // Reset date filter function
+  const resetDateFilter = () => {
+    setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
+    setEndDate(new Date());
+    setIsFilterApplied(false);
+    setSelectedEvent(null);
+    setFilterRating(null);
+  };
+
+  // Add the print export function
+  const handleExportFeedback = () => {
+    try {
+      toast.info("Preparing export...");
+      
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+        return;
+      }
+      
+      // Prepare chart images if they're available
+      let sentimentChartImg = '';
+      if (sentimentChartRef.current) {
+        sentimentChartImg = sentimentChartRef.current.canvas.toDataURL('image/png');
+      }
+      
+      // Generate HTML content for the print window
+      const currentDate = new Date().toLocaleDateString();
+      const dateRange = isFilterApplied 
+        ? `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`
+        : 'Last 30 days';
+        
+      // Ensure analytics is available before generating export
+      if (!analytics) {
+        toast.error("Analytics data not available for export");
+        printWindow.close();
+        return;
+      }
+      
+      // Create printable HTML content
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Event Feedback Analytics Export - ${currentDate}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              padding: 20px;
+            }
+            h1, h2, h3 {
+              color: #EE3F24;
+              text-align: center;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 20px;
+              border-bottom: 2px solid #EE3F24;
+              padding-bottom: 10px;
+            }
+            .date {
+              font-weight: normal;
+              font-size: 14px;
+              color: #666;
+            }
+            .stats-grid {
+              display: grid;
+              grid-template-columns: repeat(3, 1fr);
+              gap: 20px;
+              margin-bottom: 30px;
+            }
+            .stat-card {
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              padding: 15px;
+              text-align: center;
+            }
+            .chart-container {
+              margin: 20px 0;
+              page-break-inside: avoid;
+              border: 1px solid #eee;
+              padding: 15px;
+              border-radius: 8px;
+              text-align: center;
+            }
+            .chart-img {
+              max-width: 500px;
+              height: auto;
+              display: block;
+              margin: 0 auto;
+            }
+            .feedback-list {
+              margin-top: 30px;
+            }
+            .event-feedback {
+              margin-bottom: 20px;
+              page-break-inside: avoid;
+              border: 1px solid #eee;
+              padding: 15px;
+              border-radius: 8px;
+            }
+            .feedback-item {
+              padding: 10px 0;
+              border-bottom: 1px solid #eee;
+            }
+            .rating {
+              color: #FF9800;
+            }
+            .word-frequency {
+              columns: 3;
+              margin: 0 auto;
+              max-width: 600px;
+              text-align: left;
+            }
+            .word-frequency-item {
+              break-inside: avoid;
+              margin-bottom: 5px;
+            }
+            @media print {
+              body {
+                padding: 0;
+                margin: 20px;
+              }
+              h1 {
+                font-size: 18px;
+              }
+              h2 {
+                font-size: 16px;
+              }
+              h3 {
+                font-size: 14px;
+              }
+              .no-break {
+                page-break-inside: avoid;
+              }
+              .page-break {
+                page-break-before: always;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Event Feedback Analytics Report</h1>
+            <div class="date">Generated: ${currentDate}<br>Period: ${dateRange}</div>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Overall Rating</h3>
+              <h2>${averageRating} / 5.0</h2>
+            </div>
+            <div class="stat-card">
+              <h3>Total Feedback</h3>
+              <h2>${analytics.overallStats.total_feedback}</h2>
+            </div>
+            <div class="stat-card">
+              <h3>Events with Feedback</h3>
+              <h2>${analytics.overallStats.events_with_feedback}</h2>
+            </div>
+          </div>
+          
+          <div class="chart-container">
+            <h2>Feedback Sentiment Distribution</h2>
+            ${sentimentChartImg ? `<img src="${sentimentChartImg}" class="chart-img" alt="Sentiment Chart" />` : 'Chart not available'}
+          </div>
+          
+          <div class="chart-container">
+            <h2>Common Feedback Themes</h2>
+            <div class="word-frequency">
+              ${wordCloudData.slice(0, 30).map((word, index) => 
+                `<div class="word-frequency-item">${index + 1}. ${word.text} (${word.value})</div>`
+              ).join('')}
+            </div>
+          </div>
+          
+          <div class="feedback-list">
+            <h2>Event Feedback Summary</h2>
+            ${analytics.eventStats
+              .filter(event => !selectedEvent || event.id === selectedEvent)
+              .map(event => `
+                <div class="event-feedback no-break">
+                  <h3>${event.title}</h3>
+                  <p>Average Rating: ${event.average_rating.toFixed(1)} | Total Feedback: ${event.feedback_count}</p>
+                  ${event.feedback_details
+                    .filter(feedback => !filterRating || feedback.rating === filterRating)
+                    .slice(0, 5) // Limit to top 5 feedbacks per event
+                    .map(feedback => `
+                      <div class="feedback-item">
+                        <div class="rating">${'★'.repeat(feedback.rating)}</div>
+                        <p>${feedback.comment}</p>
+                        <small>${feedback.user_name} - ${new Date(feedback.created_at).toLocaleDateString()}</small>
+                      </div>
+                    `).join('')}
+                </div>
+              `).join('')}
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      toast.success("Export ready. A print dialog will open.");
+    } catch (error) {
+      console.error('Error exporting feedback:', error);
+      toast.error("Failed to export feedback data");
+    }
+  };
 
   if (loading) return <div className="loading-container">Loading analytics data...</div>;
   if (error && !analytics) return <div className="error-container">{error}</div>;
@@ -199,6 +452,80 @@ const EventFeedbackAnalytics: React.FC = () => {
     <div className="feedback-analytics-container">
       {error && <div className="error-banner">{error}</div>}
       
+      {/* Add date filter UI at the top */}
+      <div className="feedback-filter-container">
+        <div className="feedback-date-filter-button" onClick={() => setShowDateFilter(!showDateFilter)}>
+          <FaFilter size={14} color="#FF3D00" />
+          <span>
+            {isFilterApplied 
+              ? `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`
+              : "Filter by Date"}
+          </span>
+        </div>
+        
+        {isFilterApplied && (
+          <button 
+            className="feedback-date-reset-button" 
+            onClick={resetDateFilter}>
+            Reset
+          </button>
+        )}
+        
+        {/* Add Export Button */}
+        <button 
+          className="feedback-export-button" 
+          onClick={handleExportFeedback}
+          title="Export feedback data">
+          <FaPrint size={14} />
+          <span>Export</span>
+        </button>
+        
+        {showDateFilter && (
+          <div className="feedback-date-filter-dropdown">
+            <div className="feedback-date-filter-inputs">
+              <div className="feedback-date-input-group">
+                <label>From:</label>
+                <DatePicker
+                  selected={startDate}
+                  onChange={(date: Date | null) => date && setStartDate(date)}
+                  selectsStart
+                  startDate={startDate}
+                  endDate={endDate}
+                  maxDate={new Date()}
+                  className="feedback-date-picker"
+                />
+              </div>
+              <div className="feedback-date-input-group">
+                <label>To:</label>
+                <DatePicker
+                  selected={endDate}
+                  onChange={(date: Date | null) => date && setEndDate(date)}
+                  selectsEnd
+                  startDate={startDate}
+                  endDate={endDate}
+                  minDate={startDate}
+                  maxDate={new Date()}
+                  className="feedback-date-picker"
+                />
+              </div>
+            </div>
+            <div className="feedback-date-filter-actions">
+              <button className="feedback-apply-filter-button" onClick={applyDateFilter}>Apply Filter</button>
+              <button className="feedback-cancel-filter-button" onClick={() => setShowDateFilter(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Filter indication bar */}
+      {isFilterApplied && (
+        <div className="feedback-filter-active-bar">
+          <FaCalendarAlt size={16} color="#FF3D00" />
+          <span>Showing data from {startDate.toLocaleDateString()} to {endDate.toLocaleDateString()}</span>
+        </div>
+      )}
+      
+      {/* Rest of your existing UI components */}
       <div className="feedback-header">
         <p>Event Feedback</p>
       </div>
@@ -223,6 +550,7 @@ const EventFeedbackAnalytics: React.FC = () => {
           <h2>Feedback Sentiment Distribution</h2>
           <div>
             <Pie 
+              ref={sentimentChartRef} // Add ref to the chart
               data={sentimentData} 
               options={{ 
                 maintainAspectRatio: true,
@@ -241,7 +569,7 @@ const EventFeedbackAnalytics: React.FC = () => {
           </div>
         </div>
 
-        <div className="word-cloud-container">
+        <div className="word-cloud-container" ref={wordCloudContainerRef}>
           <h2>Common Feedback Themes</h2>
           <WordCloudWithErrorHandling
             words={selectedEvent || filterRating ? getFilteredWordCloudData() : wordCloudData}

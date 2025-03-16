@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import api from '../../config/axios'; // Replace axios import
 import { Chart as ChartJS } from 'chart.js/auto';
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
-import { FaPoll, FaPrint, FaDownload, FaChartBar, FaChartPie } from 'react-icons/fa';
+import { FaPoll, FaPrint, FaDownload, FaChartBar, FaChartPie, FaFilter, FaCalendarAlt } from 'react-icons/fa';
 import '../../styles/ForumAnalytics.css';
 import { CircularProgress, Typography } from '@mui/material';
-import { useReactToPrint } from 'react-to-print';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { toast } from 'react-toastify'; // Add toast for feedback
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
 
@@ -39,49 +41,46 @@ const ForumAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const componentRef = useRef(null);
 
+  const [showDateFilter, setShowDateFilter] = useState<boolean>(false);
+  const [startDate, setStartDate] = useState<Date>(new Date(new Date().setDate(new Date().getDate() - 30)));
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [isFilterApplied, setIsFilterApplied] = useState<boolean>(false);
+  const [filterError, setFilterError] = useState<string | null>(null);
+
+  // Add refs for charts to capture them during export
+  const barChartRef = useRef<any>(null);
+  const doughnutChartRef = useRef<any>(null);
+  const lineChartRef = useRef<any>(null);
+
   useEffect(() => {
     fetchPollData();
-  }, []);
+  }, [startDate, endDate, isFilterApplied]);
 
   const fetchPollData = async () => {
     try {
-      const response = await api.get('/forum/polls/analytics');
+      setLoading(true);
+      setFilterError(null);
+      
+      console.log('Fetching with filters:', { 
+        isFilterApplied, 
+        startDate: startDate.toISOString().split('T')[0], 
+        endDate: endDate.toISOString().split('T')[0] 
+      });
+      
+      let url = '/forum/polls/analytics';
+      if (isFilterApplied) {
+        url += `?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`;
+      }
+      const response = await api.get(url);
+      console.log('Response data:', response.data);
       setPollData(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching poll data:', error);
+      setFilterError('Failed to fetch data with selected date range');
       setLoading(false);
     }
   };
-
-  const handlePrint = useReactToPrint({
-    documentTitle: 'Forum Analytics Report',
-    contentRef: componentRef,
-    pageStyle: `
-      @page {
-        size: A4;
-        margin: 20mm;
-      }
-      @media print {
-        html, body {
-          height: initial !important;
-          overflow: initial !important;
-          -webkit-print-color-adjust: exact;
-        }
-        .header-actions, .print-hide {
-          display: none !important;
-        }
-        .analytics-grid {
-          transform: scale(0.9);
-          transform-origin: top left;
-        }
-        .chart-container {
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-      }
-    `
-  });
 
   const getBarChartData = () => {
     const pollsByCategory = pollData.reduce((acc: { [key: string]: number }, poll) => {
@@ -140,6 +139,121 @@ const ForumAnalytics: React.FC = () => {
     };
   };
 
+  const applyDateFilter = () => {
+    if (startDate > endDate) {
+      setFilterError("Start date cannot be after end date");
+      return;
+    }
+    
+    console.log('Applying date filter:', { startDate, endDate });
+    setIsFilterApplied(true);
+    setShowDateFilter(false);
+  };
+
+  const resetDateFilter = () => {
+    setStartDate(new Date(new Date().setDate(new Date().getDate() - 30)));
+    setEndDate(new Date());
+    setIsFilterApplied(false);
+  };
+
+  const handleExportForum = () => {
+    try {
+      toast.info("Preparing export...");
+      
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast.error("Pop-up blocked. Please allow pop-ups for this site.");
+        return;
+      }
+      
+      // Prepare chart images if they're available
+      let barChartImg = '';
+      let doughnutChartImg = '';
+      let lineChartImg = '';
+      
+      if (barChartRef.current) {
+        barChartImg = barChartRef.current.toBase64Image();
+      }
+      if (doughnutChartRef.current) {
+        doughnutChartImg = doughnutChartRef.current.toBase64Image();
+      }
+      if (lineChartRef.current) {
+        lineChartImg = lineChartRef.current.toBase64Image();
+      }
+      
+      // Prepare the HTML content for the new window
+      const htmlContent = `
+        <html>
+          <head>
+            <title>Forum Analytics Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h2, h3 { color: #FF3D00; }
+              .chart-container { margin-bottom: 20px; }
+              .poll-details { margin-bottom: 20px; }
+              .poll-item { margin-bottom: 10px; }
+              .poll-options { margin-left: 20px; }
+              .poll-option { margin-bottom: 5px; }
+              .option-bar { height: 10px; background-color: #f0f0f0; }
+              .option-progress { height: 100%; }
+            </style>
+          </head>
+          <body>
+            <h2>Forum Poll Analytics</h2>
+            <div class="poll-details">
+              ${pollData.map(poll => `
+                <div class="poll-item">
+                  <h3>${poll.title}</h3>
+                  <div class="poll-options">
+                    ${poll.options.map(option => `
+                      <div class="poll-option">
+                        <div class="option-info">
+                          <span class="option-text">${option.text}</span>
+                          <span class="option-votes">${option.votes} votes (${((option.votes / poll.totalVotes) * 100).toFixed(1)}%)</span>
+                        </div>
+                        <div class="option-bar">
+                          <div class="option-progress" style="width: ${(option.votes / poll.totalVotes) * 100}%; background-color: ${redPalette.shades[poll.options.indexOf(option) % redPalette.shades.length]};"></div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                  <div class="poll-meta">
+                    <div>Total Votes: ${poll.totalVotes}</div>
+                    <div>Category: ${poll.category}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            <div class="chart-container">
+              <h3>Votes by Category</h3>
+              <img src="${barChartImg}" alt="Bar Chart" />
+            </div>
+            <div class="chart-container">
+              <h3>Poll Distribution</h3>
+              <img src="${doughnutChartImg}" alt="Doughnut Chart" />
+            </div>
+            <div class="chart-container">
+              <h3>Engagement Timeline</h3>
+              <img src="${lineChartImg}" alt="Line Chart" />
+            </div>
+          </body>
+        </html>
+      `;
+      
+      // Write the HTML content to the new window and print
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.print();
+      printWindow.close();
+      
+      toast.success("Export completed successfully!");
+    } catch (error) {
+      console.error("Error during export:", error);
+      toast.error("Failed to export data. Please try again.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="forum-analytics-loading">
@@ -156,29 +270,103 @@ const ForumAnalytics: React.FC = () => {
           <FaPoll className="header-icon" />
           <h2>Forum Poll</h2>
         </div>
-        <div className="header-actions">
-          <button className="action-button print" onClick={(e) => handlePrint()}>
-            <FaPrint /> Print Report
-          </button>
-          <button 
-            className="action-button export"
-            onClick={() => {
-              const jsonStr = JSON.stringify(pollData, null, 2);
-              const blob = new Blob([jsonStr], { type: 'application/json' });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = 'forum-analytics.json';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            }}
-          >
-            <FaDownload /> Export Data
-          </button>
+        
+        {/* Move filter to header right section */}
+        <div className="header-right-section">
+          {/* Filter component */}
+          <div className="forum-filter-container">
+            {filterError && (
+              <div className="forum-error-message">
+                {filterError}
+              </div>
+            )}
+            
+            <div className="forum-date-filter-button" onClick={() => setShowDateFilter(!showDateFilter)}>
+              <FaFilter size={14} color="#FF3D00" />
+              <span>
+                {isFilterApplied 
+                  ? `${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`
+                  : "Filter by Date"}
+              </span>
+            </div>
+            
+            {isFilterApplied && (
+              <button 
+                className="forum-date-reset-button" 
+                onClick={resetDateFilter}>
+                Reset
+              </button>
+            )}
+            
+            {showDateFilter && (
+              <div className="forum-date-filter-dropdown">
+                <div className="forum-date-filter-inputs">
+                  <div className="forum-date-input-group">
+                    <label>From:</label>
+                    <DatePicker
+                      selected={startDate}
+                      onChange={(date: Date | null) => date && setStartDate(date)}
+                      selectsStart
+                      startDate={startDate}
+                      endDate={endDate}
+                      maxDate={new Date()}
+                      className="forum-date-picker"
+                    />
+                  </div>
+                  <div className="forum-date-input-group">
+                    <label>To:</label>
+                    <DatePicker
+                      selected={endDate}
+                      onChange={(date: Date | null) => date && setEndDate(date)}
+                      selectsEnd
+                      startDate={startDate}
+                      endDate={endDate}
+                      minDate={startDate}
+                      maxDate={new Date()}
+                      className="forum-date-picker"
+                    />
+                  </div>
+                </div>
+                <div className="forum-date-filter-actions">
+                  <button className="forum-apply-filter-button" onClick={applyDateFilter}>Apply Filter</button>
+                  <button className="forum-cancel-filter-button" onClick={() => setShowDateFilter(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Action buttons */}
+          <div className="header-actions">
+            <button className="action-button print" onClick={(e) => handleExportForum()}>
+              <FaPrint /> Export Report
+            </button>
+            <button 
+              className="action-button export"
+              onClick={() => {
+                const jsonStr = JSON.stringify(pollData, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'forum-analytics.json';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              }}
+            >
+              <FaDownload /> Export Data
+            </button>
+          </div>
         </div>
       </div>
+
+      {isFilterApplied && (
+        <div className="forum-filter-active-bar">
+          <FaCalendarAlt size={16} color="#FF3D00" />
+          <span>Showing data from {startDate.toLocaleDateString()} to {endDate.toLocaleDateString()}</span>
+        </div>
+      )}
 
       <div className="analytics-grid">
         {/* Detailed Poll Results card - moved to top */}
@@ -229,7 +417,7 @@ const ForumAnalytics: React.FC = () => {
             <h3>Votes by Category</h3>
           </div>
           <div className="chart-container">
-            <Bar data={getBarChartData()} options={{
+            <Bar ref={barChartRef} data={getBarChartData()} options={{
               responsive: true,
               maintainAspectRatio: false,
               plugins: {
@@ -293,7 +481,7 @@ const ForumAnalytics: React.FC = () => {
               <h3>Poll Distribution</h3>
             </div>
             <div className="chart-container">
-              <Doughnut data={getDoughnutData()} options={{
+              <Doughnut ref={doughnutChartRef} data={getDoughnutData()} options={{
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
@@ -311,7 +499,7 @@ const ForumAnalytics: React.FC = () => {
               <h3>Engagement Timeline</h3>
             </div>
             <div className="chart-container">
-              <Line data={getLineChartData()} options={{
+              <Line ref={lineChartRef} data={getLineChartData()} options={{
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {

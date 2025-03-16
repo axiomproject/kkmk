@@ -222,7 +222,8 @@ router.post('/submit', upload.single('proof'), async (req, res) => {
             phone,
             message,
             paymentMethod,
-            sponsorId
+            sponsorId,
+            frequency // This may be submitted from frontend but not stored if column doesn't exist
         } = req.body;
         const proof_image = req.file ? `/uploads/scholardonations/${req.file.filename}` : null;
 
@@ -234,6 +235,7 @@ router.post('/submit', upload.single('proof'), async (req, res) => {
             donor_phone: phone, 
             amount, 
             payment_method: paymentMethod,
+            frequency, // Log this even if we don't store it yet
             proof_image,
             message 
         });
@@ -252,24 +254,61 @@ router.post('/submit', upload.single('proof'), async (req, res) => {
             });
         }
 
-        // Replace db.query with pool.query format
-        const result = await client.query(
-            `INSERT INTO scholar_donations (
-                scholar_id, sponsor_id, donor_name, donor_email, 
-                donor_phone, amount, payment_method, proof_image, message
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-            [
-                scholarId,
-                sponsorId || null, 
-                name,
-                email,
-                phone,
-                amount,
-                paymentMethod,
-                proof_image,
-                message || null
-            ]
-        );
+        // Check if frequency column exists in the table
+        let hasFrequencyColumn = false;
+        try {
+            const columnCheck = await client.query(`
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'scholar_donations' AND column_name = 'frequency'
+            `);
+            hasFrequencyColumn = columnCheck.rows.length > 0;
+        } catch (checkError) {
+            console.error('Error checking for frequency column:', checkError);
+            // Continue without frequency if there's an error checking
+        }
+
+        // Use different SQL based on whether frequency column exists
+        let result;
+        if (hasFrequencyColumn) {
+            result = await client.query(
+                `INSERT INTO scholar_donations (
+                    scholar_id, sponsor_id, donor_name, donor_email, 
+                    donor_phone, amount, payment_method, proof_image, message, frequency
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+                [
+                    scholarId,
+                    sponsorId || null, 
+                    name,
+                    email,
+                    phone,
+                    amount,
+                    paymentMethod,
+                    proof_image,
+                    message || null,
+                    frequency || 'monthly'
+                ]
+            );
+        } else {
+            // Fallback query without the frequency column
+            result = await client.query(
+                `INSERT INTO scholar_donations (
+                    scholar_id, sponsor_id, donor_name, donor_email, 
+                    donor_phone, amount, payment_method, proof_image, message
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+                [
+                    scholarId,
+                    sponsorId || null, 
+                    name,
+                    email,
+                    phone,
+                    amount,
+                    paymentMethod,
+                    proof_image,
+                    message || null
+                ]
+            );
+        }
 
         const newDonation = result.rows[0];
 

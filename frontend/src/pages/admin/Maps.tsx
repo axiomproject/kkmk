@@ -158,7 +158,7 @@ const PAYATAS_SECTORS: Record<string, Sector> = {
       [14.7297784, 121.1183808]  // Close the polygon
     ] as [number, number][],
     color: '#4A90E2', // More professional blue
-    name: 'North Sector'
+    name: 'Payatas C'
   },
   CENTRAL: {
     coordinates: [
@@ -178,7 +178,7 @@ const PAYATAS_SECTORS: Record<string, Sector> = {
       [14.7226809, 121.1036179]  // Close the polygon
     ] as [number, number][],
     color: '#50C878', // Professional green
-    name: 'Central Sector'
+    name: 'Payatas B'
   },
   SOUTH: {
     coordinates: [
@@ -196,7 +196,7 @@ const PAYATAS_SECTORS: Record<string, Sector> = {
       [14.7141304, 121.0919879]  // Close the polygon
     ] as [number, number][],
     color: '#FFD700', // Professional gold
-    name: 'South Sector'
+    name: 'Payatas A'
   }
 };
 
@@ -377,7 +377,7 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
           const div = L.DomUtil.create('div', 'sector-progress-container');
           
           div.innerHTML = `
-            <h4>Distribution Progress by Sector</h4>
+            <h4>Distribution Progress by Area</h4>
             <div class="sector-progress-bar">
               <div class="progress-segments">
                 ${Object.entries(sectorData)

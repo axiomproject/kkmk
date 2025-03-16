@@ -29,6 +29,10 @@ interface ValidationErrors {
   parentsIncome?: string;
   disability?: string;
   disabilityDetails?: string;
+  schoolRegistrationForm?: string;
+  psaDocument?: string;
+  parentsId?: string;
+  reportCard?: string;
 }
 
 interface SkillOption {
@@ -72,6 +76,12 @@ const Register: React.FC = () => {
   const [school, setSchool] = useState('');
   const [parentsIncome, setParentsIncome] = useState('');
   
+  // Add new state variables for document uploads
+  const [schoolRegistrationForm, setSchoolRegistrationForm] = useState<File | null>(null);
+  const [psaDocument, setPsaDocument] = useState<File | null>(null);
+  const [parentsId, setParentsId] = useState<File | null>(null);
+  const [reportCard, setReportCard] = useState<File | null>(null);
+  
   // Volunteer specific fields
   const [skills, setSkills] = useState<string[]>([]);
   const [hasDisability, setHasDisability] = useState<boolean | null>(null);
@@ -114,10 +124,20 @@ const Register: React.FC = () => {
   ];
 
   useEffect(() => {
-    // Check if there's a preselectedRole
+    // Check if there's a preselectedRole in location state
     if (location.state?.preselectedRole) {
       setRole(location.state.preselectedRole);
       setStep('form');
+    } 
+    // Also check localStorage as a fallback
+    else {
+      const preselectedRole = localStorage.getItem('preselectedRole');
+      if (preselectedRole === 'scholar' || preselectedRole === 'volunteer' || preselectedRole === 'sponsor') {
+        setRole(preselectedRole);
+        setStep('form');
+        // Clear from localStorage after use
+        localStorage.removeItem('preselectedRole');
+      }
     }
   }, [location.state]);
 
@@ -269,6 +289,31 @@ const Register: React.FC = () => {
       if (!parentsIncome) {
         newErrors.parentsIncome = 'Parents\' income is required';
       }
+
+      // Document upload validations
+      if (!schoolRegistrationForm) {
+        newErrors.schoolRegistrationForm = 'School registration form is required';
+      } else if (schoolRegistrationForm.size > 5 * 1024 * 1024) { // 5MB limit
+        newErrors.schoolRegistrationForm = 'File is too large (max 5MB)';
+      }
+      
+      if (!psaDocument) {
+        newErrors.psaDocument = 'PSA Birth Certificate is required';
+      } else if (psaDocument.size > 5 * 1024 * 1024) {
+        newErrors.psaDocument = 'File is too large (max 5MB)';
+      }
+      
+      if (!parentsId) {
+        newErrors.parentsId = "Parent's ID is required";
+      } else if (parentsId.size > 5 * 1024 * 1024) {
+        newErrors.parentsId = 'File is too large (max 5MB)';
+      }
+      
+      if (!reportCard) {
+        newErrors.reportCard = 'Latest report card or grade slip is required';
+      } else if (reportCard.size > 5 * 1024 * 1024) {
+        newErrors.reportCard = 'File is too large (max 5MB)';
+      }
     }
     
     // Volunteer specific validations
@@ -324,39 +369,82 @@ const Register: React.FC = () => {
         };
       }
       
-      // Add console.log to debug
-      console.log('Submitting registration with role:', role);
+      // Use FormData for file uploads
+      const formData = new FormData();
       
-      const registrationData = {
-        firstName,
-        middleName,
-        lastName, 
-        extension,
-        gender,
-        name: fullName, // Keep the name field for now for backward compatibility
-        username,
-        email, // Include email for all roles
-        phone, // Add phone to registration data for all roles
-        password,
-        dateOfBirth,
-        role, // Make sure role is properly sent to the backend
-        faceData: faceVerified ? faceData : null,
-        // Scholar specific fields
-        guardianName: role === 'scholar' ? guardianName : undefined,
-        guardianPhone: role === 'scholar' ? guardianPhone : undefined, 
-        address: role === 'scholar' ? address : undefined,
-        educationLevel: role === 'scholar' ? educationLevel : undefined,
-        school: role === 'scholar' ? school : undefined,
-        parentsIncome: role === 'scholar' ? parentsIncome : undefined,
-        // Volunteer specific fields
-        skills: role === 'volunteer' ? skills : undefined,
-        disability: role === 'volunteer' ? (hasDisability ? disabilityInfo : null) : undefined
-      };
-
+      // Add basic fields
+      formData.append('firstName', firstName);
+      formData.append('middleName', middleName || '');
+      formData.append('lastName', lastName);
+      formData.append('extension', extension || '');
+      formData.append('gender', gender);
+      formData.append('name', fullName);
+      formData.append('username', username);
+      formData.append('email', email);
+      formData.append('phone', phone);
+      formData.append('password', password);
+      formData.append('dateOfBirth', dateOfBirth);
+      formData.append('role', role || '');
+      
+      if (faceVerified && faceData) {
+        formData.append('faceData', faceData);
+      }
+      
+      // Add scholar specific fields
+      if (role === 'scholar') {
+        formData.append('guardianName', guardianName);
+        formData.append('guardianPhone', guardianPhone);
+        formData.append('address', address);
+        formData.append('educationLevel', educationLevel);
+        formData.append('school', school);
+        formData.append('parentsIncome', parentsIncome);
+        
+        // Append document files
+        if (schoolRegistrationForm) {
+          formData.append('schoolRegistrationForm', schoolRegistrationForm);
+        }
+        if (psaDocument) {
+          formData.append('psaDocument', psaDocument);
+        }
+        if (parentsId) {
+          formData.append('parentsId', parentsId);
+        }
+        if (reportCard) {
+          formData.append('reportCard', reportCard);
+        }
+      }
+      
+      // Add volunteer specific fields
+      if (role === 'volunteer') {
+        if (skills.length > 0) {
+          formData.append('skills', JSON.stringify(skills));
+        }
+        
+        if (hasDisability !== null) {
+          formData.append('disability', JSON.stringify(hasDisability ? disabilityInfo : null));
+        }
+      }
+      
       // Log data to debug
-      console.log('Registration data sent to server:', JSON.stringify(registrationData));
+      console.log('Registration data sent to server:', {
+        role,
+        firstName,
+        lastName,
+        email,
+        // Don't log files directly
+        documentUploads: role === 'scholar' ? {
+          schoolRegistration: schoolRegistrationForm?.name,
+          psa: psaDocument?.name,
+          parentsId: parentsId?.name,
+          reportCard: reportCard?.name
+        } : null
+      });
       
-      const response = await api.post('/register', registrationData);
+      const response = await api.post('/register', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       
       // Different success message based on role
       if (role === 'scholar') {
@@ -399,6 +487,28 @@ const Register: React.FC = () => {
   };
 
   const handleRoleSelect = (selectedRole: 'volunteer' | 'scholar' | 'sponsor') => {
+    // Check eligibility if selecting scholar role
+    if (selectedRole === 'scholar') {
+      // Ask user if they are from Payatas area
+      const isFromPayatas = window.confirm(
+        "KMFI Scholar Program Eligibility Check\n\n" +
+        "Scholars must be residents of Payatas, Quezon City to be eligible.\n\n" +
+        "Are you a resident of Payatas area?"
+      );
+      
+      if (!isFromPayatas) {
+        // User is not from Payatas - show alert and redirect to homepage
+        alert(
+          "We're sorry, but KMFI's scholar program is currently only available to residents of Payatas, Quezon City.\n\n" +
+          "Thank you for your interest. You may still explore other ways to get involved with our organization."
+        );
+        
+        // Navigate back to homepage
+        navigate('/');
+        return; // Stop the function execution here
+      }
+    }
+    
     // Reset form fields when changing roles
     setFirstName('');
     setMiddleName('');
@@ -800,98 +910,158 @@ const Register: React.FC = () => {
         
         {/* Scholar specific fields */}
         {role === 'scholar' && (
-          <div className="form-section">
-            <h5>Scholar Information</h5>
-            <div className="form-group">
-              <label htmlFor="guardianName">Guardian Name *</label>
-              <input
-                type="text"
-                id="guardianName"
-                value={guardianName}
-                onChange={(e) => setGuardianName(e.target.value)}
-                placeholder="Guardian's full name"
-                className={errors.guardianName ? 'error-input' : ''}
-              />
-              {errors.guardianName && <span className="error-text">{errors.guardianName}</span>}
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="guardianPhone">Guardian Phone *</label>
-              <input
-                type="tel"
-                id="guardianPhone"
-                value={guardianPhone}
-                onChange={(e) => setGuardianPhone(e.target.value)}
-                placeholder="Guardian's phone number"
-                className={errors.guardianPhone ? 'error-input' : ''}
-              />
-              {errors.guardianPhone && <span className="error-text">{errors.guardianPhone}</span>}
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="address">Address *</label>
-              <textarea
-                id="address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Complete address"
-                rows={3}
-                className={errors.address ? 'error-input' : ''}
-              />
-              {errors.address && <span className="error-text">{errors.address}</span>}
-            </div>
-
-            {/* Parents' Income Field - Add it before the education fields */}
-            <div className="form-group">
-              <label htmlFor="parentsIncome">Parents' total monthly income *</label>
-              <select
-                id="parentsIncome"
-                value={parentsIncome}
-                onChange={(e) => setParentsIncome(e.target.value)}
-                className={errors.parentsIncome ? 'error-input' : ''}
-              >
-                <option value="">Select income range</option>
-                <option value="below P10,000">below P10,000</option>
-                <option value="P10,001 - P15,000">P10,001 - P15,000</option>
-                <option value="P15,001 - P20,000">P15,001 - P20,000</option>
-                <option value="P20,001 - P25,000">P20,001 - P25,000</option>
-                <option value="P25,001 - P30,000">P25,001 - P30,000</option>
-                <option value="P30,001 and above">P30,001 and above</option>
-              </select>
-              {errors.parentsIncome && <span className="error-text">{errors.parentsIncome}</span>}
-            </div>
-            
-            <div className="form-group-row">
+          <>
+            <div className="form-section">
+              <h5>Scholar Information</h5>
               <div className="form-group">
-                <label htmlFor="educationLevel">Education Level *</label>
-                <select
-                  id="educationLevel"
-                  value={educationLevel}
-                  onChange={(e) => setEducationLevel(e.target.value)}
-                  className={errors.educationLevel ? 'error-input' : ''}
-                >
-                  <option value="">Select Education Level</option>
-                  {educationLevels.map((level) => (
-                    <option key={level} value={level}>{level}</option>
-                  ))}
-                </select>
-                {errors.educationLevel && <span className="error-text">{errors.educationLevel}</span>}
+                <label htmlFor="guardianName">Guardian Name *</label>
+                <input
+                  type="text"
+                  id="guardianName"
+                  value={guardianName}
+                  onChange={(e) => setGuardianName(e.target.value)}
+                  placeholder="Guardian's full name"
+                  className={errors.guardianName ? 'error-input' : ''}
+                />
+                {errors.guardianName && <span className="error-text">{errors.guardianName}</span>}
               </div>
               
               <div className="form-group">
-                <label htmlFor="school">School *</label>
+                <label htmlFor="guardianPhone">Guardian Phone *</label>
                 <input
-                  type="text"
-                  id="school"
-                  value={school}
-                  onChange={(e) => setSchool(e.target.value)}
-                  placeholder="School name"
-                  className={errors.school ? 'error-input' : ''}
+                  type="tel"
+                  id="guardianPhone"
+                  value={guardianPhone}
+                  onChange={(e) => setGuardianPhone(e.target.value)}
+                  placeholder="Guardian's phone number"
+                  className={errors.guardianPhone ? 'error-input' : ''}
                 />
-                {errors.school && <span className="error-text">{errors.school}</span>}
+                {errors.guardianPhone && <span className="error-text">{errors.guardianPhone}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="address">Address *</label>
+                <textarea
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Complete address"
+                  rows={3}
+                  className={errors.address ? 'error-input' : ''}
+                />
+                {errors.address && <span className="error-text">{errors.address}</span>}
+              </div>
+
+              {/* Parents' Income Field - Add it before the education fields */}
+              <div className="form-group">
+                <label htmlFor="parentsIncome">Parents' total monthly income *</label>
+                <select
+                  id="parentsIncome"
+                  value={parentsIncome}
+                  onChange={(e) => setParentsIncome(e.target.value)}
+                  className={errors.parentsIncome ? 'error-input' : ''}
+                >
+                  <option value="">Select income range</option>
+                  <option value="below P10,000">below P10,000</option>
+                  <option value="P10,001 - P15,000">P10,001 - P15,000</option>
+                  <option value="P15,001 - P20,000">P15,001 - P20,000</option>
+                  <option value="P20,001 - P25,000">P20,001 - P25,000</option>
+                  <option value="P25,001 - P30,000">P25,001 - P30,000</option>
+                  <option value="P30,001 and above">P30,001 and above</option>
+                </select>
+                {errors.parentsIncome && <span className="error-text">{errors.parentsIncome}</span>}
+              </div>
+              
+              <div className="form-group-row">
+                <div className="form-group">
+                  <label htmlFor="educationLevel">Education Level *</label>
+                  <select
+                    id="educationLevel"
+                    value={educationLevel}
+                    onChange={(e) => setEducationLevel(e.target.value)}
+                    className={errors.educationLevel ? 'error-input' : ''}
+                  >
+                    <option value="">Select Education Level</option>
+                    {educationLevels.map((level) => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                  {errors.educationLevel && <span className="error-text">{errors.educationLevel}</span>}
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="school">School *</label>
+                  <input
+                    type="text"
+                    id="school"
+                    value={school}
+                    onChange={(e) => setSchool(e.target.value)}
+                    placeholder="School name"
+                    className={errors.school ? 'error-input' : ''}
+                  />
+                  {errors.school && <span className="error-text">{errors.school}</span>}
+                </div>
               </div>
             </div>
-          </div>
+            
+            {/* New Document Upload Section */}
+            <div className="form-section">
+              <h5>Required Documents</h5>
+              <p className="document-info">Please upload the following required documents (PDF, JPG, or PNG files, max 5MB each):</p>
+              
+              <div className="form-group">
+                <label htmlFor="schoolRegistrationForm">School Registration Form *</label>
+                <input
+                  type="file"
+                  id="schoolRegistrationForm"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setSchoolRegistrationForm(e.target.files?.[0] || null)}
+                  className={errors.schoolRegistrationForm ? 'error-input' : ''}
+                />
+                {schoolRegistrationForm && <span className="file-name">{schoolRegistrationForm.name}</span>}
+                {errors.schoolRegistrationForm && <span className="error-text">{errors.schoolRegistrationForm}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="psaDocument">PSA Birth Certificate *</label>
+                <input
+                  type="file"
+                  id="psaDocument"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setPsaDocument(e.target.files?.[0] || null)}
+                  className={errors.psaDocument ? 'error-input' : ''}
+                />
+                {psaDocument && <span className="file-name">{psaDocument.name}</span>}
+                {errors.psaDocument && <span className="error-text">{errors.psaDocument}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="parentsId">Parent's ID *</label>
+                <input
+                  type="file"
+                  id="parentsId"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setParentsId(e.target.files?.[0] || null)}
+                  className={errors.parentsId ? 'error-input' : ''}
+                />
+                {parentsId && <span className="file-name">{parentsId.name}</span>}
+                {errors.parentsId && <span className="error-text">{errors.parentsId}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="reportCard">Latest Report Card/Grade Slip *</label>
+                <input
+                  type="file"
+                  id="reportCard"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setReportCard(e.target.files?.[0] || null)}
+                  className={errors.reportCard ? 'error-input' : ''}
+                />
+                {reportCard && <span className="file-name">{reportCard.name}</span>}
+                {errors.reportCard && <span className="error-text">{errors.reportCard}</span>}
+              </div>
+            </div>
+          </>
         )}
         
         {/* Volunteer specific fields */}

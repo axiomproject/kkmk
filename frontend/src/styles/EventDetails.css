@@ -218,6 +218,11 @@
   align-items: center;
   z-index: 1000;
   font-family: "Poppins", sans-serif;
+  inset: 0;
+  align-items: flex-start;
+  padding: 20px;
+  overflow-y: auto;
+  pointer-events: all;
 }
 
 .requirements-modal-content {
@@ -229,6 +234,14 @@
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15);
+  background: #FEF6E4;
+  width: 60%;
+  max-width: 800px;
+  padding: 35px;
+  border-radius: 8px;
+  position: relative;
+  margin: auto;
+  margin-top: calc(var(--scroll-y, 0px) + 100px);
 }
 
 .requirements-modal-header {

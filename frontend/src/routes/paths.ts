@@ -40,6 +40,8 @@ export const PATHS = {
     BANK: '/Bank',
     CONTACTS: '/Contacts',
     SPONSOR: '/Sponsor',
+    FORUMPOLL: '/ForumPoll',
+    EVENTFEEDBACK: '/EventFeedback',
     CMS: '/Content',
     SCHOLARS: {
       MANAGEMENT: '/Scholars/Management',

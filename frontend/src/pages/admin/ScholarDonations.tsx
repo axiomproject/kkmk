@@ -21,6 +21,7 @@ interface ScholarDonation {
   rejected_at?: string; // Make sure this field is defined
   rejected_by?: string; // Make sure this field is defined
   rejection_reason?: string;
+  frequency?: 'monthly' | 'quarterly' | 'semi_annual' | 'annual'; // Add frequency field
   
   // Add the scholar_name field that is coming from the API
   scholar_name?: string;
@@ -32,6 +33,24 @@ interface ScholarDonation {
     last_name: string;
   };
 }
+
+// Helper function to format frequency for display
+const formatFrequency = (frequency?: string): string => {
+  if (!frequency) return 'One-time';
+  
+  switch(frequency) {
+    case 'monthly':
+      return 'Monthly';
+    case 'quarterly':
+      return 'Quarterly';
+    case 'semi_annual':
+      return 'Semi-Annual';
+    case 'annual':
+      return 'Annual';
+    default:
+      return frequency.charAt(0).toUpperCase() + frequency.slice(1).replace('_', '-');
+  }
+};
 
 const ScholarDonations: React.FC = () => {
   const [donations, setDonations] = useState<ScholarDonation[]>([]);
@@ -344,6 +363,7 @@ const ScholarDonations: React.FC = () => {
                 <th>Amount</th>
                 <th>Donor</th>
                 <th>Method</th>
+                <th>Frequency</th> {/* Add frequency column header */}
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -375,6 +395,7 @@ const ScholarDonations: React.FC = () => {
                   <td>₱{Number(donation.amount).toLocaleString()}</td>
                   <td>{donation.donor_name || 'Anonymous'}</td>
                   <td>{donation.payment_method}</td>
+                  <td>{formatFrequency(donation.frequency)}</td> {/* Add frequency column */}
                   <td>
                     <span className={`status-badge ${donation.verification_status}`}>
                       {donation.verification_status}
@@ -481,6 +502,10 @@ const ScholarDonations: React.FC = () => {
               <div className="detail-group">
                 <label>Payment Method:</label>
                 <p>{selectedDonation.payment_method}</p>
+              </div>
+              <div className="detail-group">
+                <label>Frequency:</label>
+                <p>{formatFrequency(selectedDonation.frequency)}</p>
               </div>
               <div className="detail-group">
                 <label>Date:</label>

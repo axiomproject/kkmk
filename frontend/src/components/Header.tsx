@@ -5,7 +5,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import '../../styles/Header.css';
 import logo from '../img/kmlogo.png';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PATHS } from '../routes/paths';
 import { User } from '../types/auth';
 import defaultAvatar from '../img/volunteer/defaultProfile.png'; // Add a default avatar image
@@ -118,6 +118,35 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const handleNavigation = (path: string) => {
     onNavigate(path);
     setIsMobileMenuOpen(false); // Close mobile menu after navigation
+  };
+
+  // Updated function to check if applicant is from Payatas area and redirect if ineligible
+  const handleApplyAsScholar = () => {
+    // Ask user if they are from Payatas area
+    const isFromPayatas = window.confirm(
+      "KMFI Scholar Program Eligibility Check\n\n" +
+      "Scholars must be residents of Payatas, Quezon City to be eligible.\n\n" +
+      "Are you a resident of Payatas area?"
+    );
+    
+    if (isFromPayatas) {
+      // User confirmed they are from Payatas - proceed with application
+      onNavigate('Register');
+      
+      // Set the scholar role in localStorage temporarily to ensure it's picked up
+      localStorage.setItem('preselectedRole', 'scholar');
+      
+      setIsMobileMenuOpen(false);
+    } else {
+      // User is not from Payatas - show alert and redirect to homepage
+      alert(
+        "We're sorry, but KMFI's scholar program is currently only available to residents of Payatas, Quezon City.\n\n" +
+        "Thank you for your interest. You may still explore other ways to get involved with our organization."
+      );
+      
+      // Redirect to homepage
+      onNavigate('/');
+    }
   };
 
   // Update click outside handler
@@ -334,6 +363,11 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         <ul className="nav-list">
           {!user ? (
             <div className="mobile-auth-buttons two-buttons">
+              <div className="apply-scholar-button" onClick={() => {
+                handleApplyAsScholar();
+              }}>
+                Apply as Scholar
+              </div>
               <div className="signup-button sign-up" onClick={() => {
                 handleNavigation('Login');
                 setIsMobileMenuOpen(false);
@@ -627,6 +661,9 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
             </div>
         ) : (
           <div className="desktop-auth-buttons">
+            <div className="apply-scholar-button" onClick={handleApplyAsScholar}>
+              Apply as Scholar
+            </div>
             <div className="signup-button sign-up" onClick={() => onNavigate('Login')}>
               Sign Up
             </div>

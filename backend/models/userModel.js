@@ -26,7 +26,8 @@ const createUser = async (
   school = null,
   parentsIncome = null,  // Add parents' income parameter
   skills = null,
-  disability = null     // Add disability parameter
+  disability = null,     // Add disability parameter
+  documentPaths = null   // Add document paths parameter
 ) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -53,6 +54,9 @@ const createUser = async (
     
     // Format disability information as JSON if provided
     const disabilityJson = disability ? JSON.stringify(disability) : null;
+    
+    // Format document paths as JSON if provided
+    const documentPathsJson = documentPaths ? JSON.stringify(documentPaths) : null;
 
     // Replace pool.query with db.query for consistent connection pooling
     const result = await db.query(
@@ -62,9 +66,9 @@ const createUser = async (
         verification_token, is_verified, role, created_at,
         face_descriptors, face_landmarks, has_face_verification,
         guardian_name, guardian_phone, address, education_level, school,
-        parents_income, skills, disability
+        parents_income, skills, disability, document_paths
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27) 
       RETURNING *`,
       [
         firstName, middleName, lastName, extension, gender,
@@ -72,7 +76,7 @@ const createUser = async (
         verificationToken, false, role, new Date(),
         face_descriptors, face_landmarks, faceData !== null,
         guardianName, guardianPhone, address, educationLevel, school,
-        parentsIncome, skillsJson, disabilityJson
+        parentsIncome, skillsJson, disabilityJson, documentPathsJson
       ]
     );
 

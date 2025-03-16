@@ -79,10 +79,30 @@ const AdminSidebar = () => {
       roles: ['admin', 'staff']
     },
     {
-      path: PATHS.ADMIN.ANALYTICS,
+      path: PATHS.ADMIN.ANALYTICS, // Use the analytics path as default
       icon: 'show_chart',
       label: 'Analytics',
-      roles: ['admin'] // Only admin can see analytics
+      roles: ['admin'], // Only admin can see analytics
+      subItems: [
+        {
+          path: PATHS.ADMIN.ANALYTICS,
+          label: 'Overview',
+          icon: 'assessment',
+          roles: ['admin']
+        },
+        {
+          path: PATHS.ADMIN.EVENTFEEDBACK,
+          label: 'Event Feedback',
+          icon: 'feedback',
+          roles: ['admin']
+        },
+        {
+          path: PATHS.ADMIN.FORUMPOLL,
+          label: 'Forum Poll',
+          icon: 'poll',
+          roles: ['admin']
+        },
+      ]
     },
     {
       path: PATHS.ADMIN.MAP,
@@ -209,7 +229,7 @@ const AdminSidebar = () => {
           canAccess(item.roles) && (
             <div
               key={`menu-${index}`}
-              className={`quick-access-item ${isActive(item.path) ? 'active' : ''}`}
+              className={`quick-access-item ${isActive(item.path) || (item.subItems && item.subItems.some(sub => isActive(sub.path))) ? 'active' : ''}`}
               onClick={() => handleQuickAccess(item.path)}
               title={item.label}
             >
@@ -247,10 +267,39 @@ const AdminSidebar = () => {
               {menuItems.map((item, index) => (
                 canAccess(item.roles) && (
                   <li key={index}>
-                    <NavLink to={item.path} onClick={handleNavLinkClick}>
-                      <span className="material-icons">{item.icon}</span>
-                      <span>{item.label}</span>
-                    </NavLink>
+                    {item.subItems ? (
+                      <div className={`sidebar-item-with-subitems ${expandedItems.includes(item.label) ? 'expanded' : ''}`}>
+                        <div 
+                          className="sidebar-item-header"
+                          onClick={() => toggleExpand(item.label)}
+                        >
+                          <span className="material-icons">{item.icon}</span>
+                          <span>{item.label}</span>
+                          <span className="material-icons expand-icon">
+                            {expandedItems.includes(item.label) ? 'expand_less' : 'expand_more'}
+                          </span>
+                        </div>
+                        <ul className="sidebar-subitems">
+                          {item.subItems.map((subItem, subIndex) => (
+                            canAccess(subItem.roles) && (
+                              <li key={`menu-${index}-${subIndex}`}>
+                                <NavLink to={subItem.path} className="subitem-link" onClick={handleNavLinkClick}>
+                                  <span className="material-icons subitem-icon">
+                                    {subItem.icon}
+                                  </span>
+                                  <span>{subItem.label}</span>
+                                </NavLink>
+                              </li>
+                            )
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <NavLink to={item.path} onClick={handleNavLinkClick}>
+                        <span className="material-icons">{item.icon}</span>
+                        <span>{item.label}</span>
+                      </NavLink>
+                    )}
                   </li>
                 )
               ))}

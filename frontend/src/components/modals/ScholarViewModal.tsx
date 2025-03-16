@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../../styles/admin/Modals.css';
 
 interface ScholarViewModalProps {
@@ -9,6 +9,9 @@ interface ScholarViewModalProps {
 const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
   // Debug log to check what data is arriving in view modal
   console.log("Scholar data received in ViewModal:", scholar);
+
+  // State for document preview
+  const [previewDoc, setPreviewDoc] = useState<{ url: string, type: string, title: string } | null>(null);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -62,6 +65,97 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
   };
   
   const nameInfo = formatName();
+
+  // Parse document paths from JSON if available
+  const getDocuments = () => {
+    if (!scholar.document_paths) return null;
+    
+    try {
+      // If it's already an object, use it directly
+      if (typeof scholar.document_paths === 'object' && !Array.isArray(scholar.document_paths)) {
+        return scholar.document_paths;
+      }
+      
+      // Otherwise try to parse it from a JSON string
+      return JSON.parse(scholar.document_paths);
+    } catch (err) {
+      console.error('Error parsing document paths:', err);
+      return null;
+    }
+  };
+
+  const documents = getDocuments();
+
+  // Helper function to get document type from URL
+  const getDocumentType = (url: string) => {
+    if (!url) return 'unknown';
+    const extension = url.split('.').pop()?.toLowerCase();
+    
+    if (extension === 'pdf') return 'pdf';
+    if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) return 'image';
+    return 'unknown';
+  };
+
+  // Helper function to get human-readable document name
+  const getDocumentTitle = (key: string) => {
+    switch (key) {
+      case 'schoolRegistrationForm': return 'School Registration Form';
+      case 'psaDocument': return 'PSA Birth Certificate';
+      case 'parentsId': return 'Parent\'s ID';
+      case 'reportCard': return 'Report Card/Grade Slip';
+      default: return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+    }
+  };
+
+  // Handle document preview
+  const handlePreviewDocument = (url: string, type: string, title: string) => {
+    setPreviewDoc({ url, type, title });
+  };
+
+  // Close document preview
+  const closePreview = () => {
+    setPreviewDoc(null);
+  };
+
+  // Document preview modal
+  const renderDocumentPreview = () => {
+    if (!previewDoc) return null;
+
+    return (
+      <div className="document-preview-overlay" onClick={closePreview}>
+        <div className="document-preview-content" onClick={e => e.stopPropagation()}>
+          <div className="document-preview-header">
+            <h3>{previewDoc.title}</h3>
+            <button className="close-button" onClick={closePreview}>&times;</button>
+          </div>
+          <div className="document-preview-body">
+            {previewDoc.type === 'image' ? (
+              <img src={previewDoc.url} alt={previewDoc.title} className="document-preview-image" />
+            ) : previewDoc.type === 'pdf' ? (
+              <iframe 
+                src={`${previewDoc.url}#toolbar=0`} 
+                title={previewDoc.title} 
+                className="document-preview-pdf"
+              />
+            ) : (
+              <div className="document-preview-unsupported">
+                <p>This document type cannot be previewed.</p>
+                <a href={previewDoc.url} target="_blank" rel="noreferrer" className="download-link">
+                  Download Document
+                </a>
+              </div>
+            )}
+          </div>
+          <div className="document-preview-footer">
+            <a href={previewDoc.url} download className="download-button">
+              Download
+            </a>
+            <button className="close-btn" onClick={closePreview}>Close</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -227,6 +321,53 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
             </div>
           </div>
           
+          {/* Documents Section - Only show if documents are available */}
+          {documents && Object.keys(documents).length > 0 && (
+            <div className="form-section">
+              <div className="form-section-title">Required Documents</div>
+              <div className="document-grid">
+                {Object.entries(documents).map(([key, url]) => {
+                  const documentType = getDocumentType(url as string);
+                  const documentTitle = getDocumentTitle(key);
+                  
+                  return (
+                    <div className="document-item" key={key}>
+                      <div className="document-icon">
+                        {documentType === 'pdf' ? (
+                          <i className="material-icons">description</i>
+                        ) : documentType === 'image' ? (
+                          <i className="material-icons">image</i>
+                        ) : (
+                          <i className="material-icons">insert_drive_file</i>
+                        )}
+                      </div>
+                      <div className="document-details">
+                        <h4>{documentTitle}</h4>
+                        <div className="document-actions">
+                          <button 
+                            className="view-document-btn"
+                            onClick={() => handlePreviewDocument(url as string, documentType, documentTitle)}
+                          >
+                            View
+                          </button>
+                          <a 
+                            href={url as string} 
+                            download 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="download-document-btn"
+                          >
+                            Download
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
           {/* System Information Section */}
           <div className="form-section">
             <div className="form-section-title">System Information</div>
@@ -253,6 +394,8 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
           </div>
         </div>
       </div>
+      {/* Document Preview Modal */}
+      {renderDocumentPreview()}
     </div>
   );
 };

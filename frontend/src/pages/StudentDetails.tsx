@@ -4,7 +4,7 @@ import { scholarApi } from '../services/api';
 import { useAuth } from '../hooks/useAuth'; 
 import '../styles/StudentProfile.css';
 import { formatDate } from '../utils/dateUtils';
-import { FaTimes, FaBookOpen, FaGraduationCap } from 'react-icons/fa';
+import { FaTimes, FaBookOpen, FaGraduationCap, FaChevronDown, FaInfoCircle } from 'react-icons/fa';
 import { FiUpload } from 'react-icons/fi';
 import api from '../config/axios';
 
@@ -37,6 +37,7 @@ interface DonationForm {
   phone: string;
   proof: File | null;
   proofPreview: string;
+  frequency: 'monthly' | 'quarterly' | 'semi_annual' | 'annual'; // Add this new field
 }
 
 const initialDonationForm: DonationForm = {
@@ -47,7 +48,8 @@ const initialDonationForm: DonationForm = {
   email: '',
   phone: '',
   proof: null,
-  proofPreview: ''
+  proofPreview: '',
+  frequency: 'monthly' // Default to monthly
 };
 
 interface PaymentMethod {
@@ -119,6 +121,7 @@ interface DonationSubmission {
   proof: File | null;
   proofPreview: string;
   sponsorId?: number; // Add this field
+  frequency: 'monthly' | 'quarterly' | 'semi_annual' | 'annual'; // Add frequency here too
 }
 
 interface DonationUpdate {
@@ -137,6 +140,7 @@ const StudentDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [donationForm, setDonationForm] = useState<DonationSubmission>({
     scholarId: studentId || '',
     amount: 0,
@@ -146,7 +150,8 @@ const StudentDetails: React.FC = () => {
     message: '',
     paymentMethod: '',
     proof: null,
-    proofPreview: ''
+    proofPreview: '',
+    frequency: 'monthly' // Set default frequency
   });
   const [donationUpdates, setDonationUpdates] = useState<DonationUpdate[]>([]);
 
@@ -176,25 +181,37 @@ const StudentDetails: React.FC = () => {
     // Reset to step 1 when opening the donation modal
     setCurrentStep(1);
     
-    // Pre-populate form with sponsor information when modal is opened
-    if (user && user.role === 'sponsor') {
-      // Create a fresh form state to avoid any stale data
+    // Pre-populate form with sponsor information and set the amount to the student's needed amount
+    if (student) {
       setDonationForm({
         scholarId: studentId || '',
-        amount: 0,
-        name: user.name || '',
-        email: user.email || '',
-        phone: user.phone || '',
+        amount: student.amount_needed, // Automatically set to amount needed
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
         message: '',
         paymentMethod: '',
         proof: null,
-        proofPreview: ''
+        proofPreview: '',
+        frequency: 'monthly' // Set default frequency
       });
     }
     
     const scrollY = window.scrollY;
     document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
     setShowDonationModal(true);
+  };
+
+  const handleDonateRedirect = () => {
+    navigate('/help');
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+  
+  const handleCloseDropdown = () => {
+    setIsDropdownOpen(false);
   };
 
   const handleCloseModal = () => {
@@ -224,6 +241,7 @@ const StudentDetails: React.FC = () => {
       formData.append('phone', donationForm.phone);
       formData.append('message', donationForm.message || '');
       formData.append('paymentMethod', donationForm.paymentMethod);
+      formData.append('frequency', donationForm.frequency); // Add frequency to the form data
   
       // Append proof file if exists
       if (donationForm.proof) {
@@ -253,7 +271,8 @@ const StudentDetails: React.FC = () => {
           message: '',
           paymentMethod: '',
           proof: null,
-          proofPreview: ''
+          proofPreview: '',
+          frequency: 'monthly' // Set default frequency
         });
         setCurrentStep(1);
       }
@@ -304,36 +323,38 @@ const StudentDetails: React.FC = () => {
       case 1:
         return (
           <div className="donation-step">
-            <h3>Choose Amount</h3>
-            <div className="amount-options">
-              {[500, 1000, 2000, 5000].map((amount) => (
-                <button
-                  key={amount}
-                  className={`amount-btn ${donationForm.amount === amount ? 'selected' : ''}`}
-                  onClick={() => setDonationForm(prev => ({ ...prev, amount }))}
-                >
-                  ₱{amount.toLocaleString()}
-                </button>
-              ))}
+            <h3>Scholarship Amount</h3>
+            <div className="fixed-amount-container">
+              <div className="fixed-amount-display">
+                <p>
+                  Full scholarship support for {student?.first_name} costs:
+                </p>
+                <div className="fixed-amount-value">
+                  ₱{student ? student.amount_needed.toLocaleString() : '0'}
+                </div>
+                <p className="fixed-amount-description">
+                  This covers school supplies, uniform, and educational materials for the school year.
+                </p>
+              </div>
             </div>
-            <div className="custom-amount">
-              <input
-                type="number"
-                placeholder="Enter custom amount"
-                value={donationForm.amount === 0 ? '' : donationForm.amount}
-                onChange={(e) => {
-                  const inputValue = e.target.value;
-                  const numericValue = inputValue === '' ? 0 : parseInt(inputValue);
-                  setDonationForm(prev => ({ 
-                    ...prev, 
-                    amount: numericValue
-                  }));
-                }}
-                step="1"
-              />
-              {donationForm.amount > 0 && donationForm.amount < 100 && (
-                <p className="amount-warning">Minimum donation amount is ₱100</p>
-              )}
+            
+            {/* Add sponsorship frequency dropdown */}
+            <div className="frequency-selection">
+              <label htmlFor="sponsorship-frequency">Sponsorship Frequency:</label>
+              <select 
+                id="sponsorship-frequency" 
+                className="frequency-dropdown"
+                value={donationForm.frequency}
+                onChange={(e) => handleFormInputChange('frequency', e.target.value as any)}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly (Every 3 months)</option>
+                <option value="semi_annual">Semi-Annual (Every 6 months)</option>
+                <option value="annual">Annual (Once a year)</option>
+              </select>
+              <p className="frequency-description">
+                Choose how often you'd like to contribute to {student?.first_name}'s education.
+              </p>
             </div>
           </div>
         );
@@ -456,6 +477,7 @@ const StudentDetails: React.FC = () => {
             <div className="donation-summary">
               <h4>Donation Summary</h4>
               <p>Amount: ₱{donationForm.amount.toLocaleString()}</p>
+              <p>Frequency: {donationForm.frequency.replace('_', '-').charAt(0).toUpperCase() + donationForm.frequency.replace('_', '-').slice(1)}</p>
               <p>Name: {donationForm.name}</p>
               <p>Email: {donationForm.email}</p>
               <p>Phone: {donationForm.phone}</p>
@@ -524,8 +546,26 @@ const StudentDetails: React.FC = () => {
   const getButtonText = () => {
     if (!user) return 'Sign Up to Sponsor';
     if (user.role === 'volunteer' || user.role === 'scholar') return 'Contact Admin';
-    return 'Donate Now';
+    return 'Sponsor Now';
   };
+
+  // New render function for dropdown items with tooltips
+  const renderDropdownItem = (
+    label: string,
+    onClick: () => void,
+    tooltipText: string
+  ) => (
+    <button 
+      className="donate-dropdown-item"
+      onClick={onClick}
+    >
+      {label}
+      <div className="info-icon-container">
+        <FaInfoCircle className="info-icon" />
+        <span className="info-tooltip">{tooltipText}</span>
+      </div>
+    </button>
+  );
 
   useEffect(() => {
     const fetchStudentDetails = async () => {
@@ -620,12 +660,36 @@ const StudentDetails: React.FC = () => {
               currentAmount={student.current_amount} 
               amountNeeded={student.amount_needed}
             />
-            <button 
-              className="student-profile-donate-btn"
-              onClick={handleDonateClick}
-            >
-              {getButtonText()}
-            </button>
+            
+            <div className="student-donate-dropdown-container">
+              <button 
+                className="student-profile-donate-btn"
+                onClick={toggleDropdown}
+              >
+                {getButtonText()} <FaChevronDown />
+              </button>
+              
+              {isDropdownOpen && (
+                <div className="donate-dropdown-menu">
+                  {renderDropdownItem(
+                    "Sponsor Now", 
+                    () => {
+                      handleDonateClick();
+                      handleCloseDropdown();
+                    },
+                    "Full scholarship support for this student for the whole year"
+                  )}
+                  {renderDropdownItem(
+                    "Donate Now", 
+                    () => {
+                      handleDonateRedirect();
+                      handleCloseDropdown();
+                    },
+                    "One-time donation to the general fund"
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="student-story-intro">
@@ -666,7 +730,7 @@ const StudentDetails: React.FC = () => {
               {student.other_details ? (
                 <>
                   <div className="story-quote-mark start-quote">"</div>
-                  <div className="story-content">
+                  <div className="story-contentss">
                     {student.other_details}
                   </div>
                   <div className="story-quote-mark end-quote">"</div>
@@ -674,9 +738,32 @@ const StudentDetails: React.FC = () => {
               ) : (
                 <div className="no-story-message">
                   <p>We're still writing {student.first_name}'s story. This young dreamer has great potential and needs your support to achieve their educational goals.</p>
-                  <button className="student-support-cta" onClick={handleDonateClick}>
-                    Support {student.first_name} Now
-                  </button>
+                  <div className="student-donate-dropdown-container">
+                    <button className="student-support-cta dropdown-toggle" onClick={toggleDropdown}>
+                      Support {student.first_name} Now <FaChevronDown />
+                    </button>
+                    
+                    {isDropdownOpen && (
+                      <div className="donate-dropdown-menu">
+                        {renderDropdownItem(
+                          "Sponsor Now", 
+                          () => {
+                            handleDonateClick();
+                            handleCloseDropdown();
+                          },
+                          "Full scholarship support for this student"
+                        )}
+                        {renderDropdownItem(
+                          "Donate Now", 
+                          () => {
+                            handleDonateRedirect();
+                            handleCloseDropdown();
+                          },
+                          "One-time donation to the general fund"
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -699,9 +786,32 @@ const StudentDetails: React.FC = () => {
               ) : (
                 <div className="no-updates">
                   <p>No donation updates yet. Be the first to support {student.first_name}!</p>
-                  <button className="student-support-cta" onClick={handleDonateClick}>
-                    Support Now
-                  </button>
+                  <div className="student-donate-dropdown-container">
+                    <button className="student-support-cta dropdown-toggle" onClick={toggleDropdown}>
+                      Support Now <FaChevronDown />
+                    </button>
+                    
+                    {isDropdownOpen && (
+                      <div className="donate-dropdown-menu">
+                        {renderDropdownItem(
+                          "Sponsor Now", 
+                          () => {
+                            handleDonateClick();
+                            handleCloseDropdown();
+                          },
+                          "Full scholarship support for this student"
+                        )}
+                        {renderDropdownItem(
+                          "Donate Now", 
+                          () => {
+                            handleDonateRedirect();
+                            handleCloseDropdown();
+                          },
+                          "One-time donation to the general fund"
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

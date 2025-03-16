@@ -885,12 +885,12 @@ const InteractiveMap: React.FC = () => {
         </button>
       ) : (
         <>
-          <button 
+          {/* <button 
             className="map-type-btn"
             onClick={() => setShowHeatmap(true)}
           >
             Show Heatmap
-          </button>
+          </button> */}
           <div className="map-filters">
             <select 
               value={activeFilter} 

@@ -410,11 +410,14 @@ router.get('/event-posts/:eventId', async (req, res) => {
   }
 });
 
-// Update the polls analytics endpoint to include event-related polls
+// Update the polls analytics endpoint to handle date filtering properly
 router.get('/polls/analytics', async (req, res) => {
   try {
-    // Replace db.any with db.query
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    console.log('Date filter received:', { startDate, endDate });
+    
+    // Construct query with proper date filtering
+    let query = `
       SELECT 
         fp.id,
         fp.title,
@@ -442,19 +445,34 @@ router.get('/polls/analytics', async (req, res) => {
         fp.category = 'announcements' 
         OR fp.event_id IS NOT NULL
         OR fp.category = 'events'
-      )
+      )`;
+      
+    // Add date filtering if provided
+    const params = [];
+    if (startDate && endDate) {
+      params.push(startDate, endDate);
+      query += ` AND fp.created_at BETWEEN $1 AND $2`;
+      console.log('Adding date filter to query:', { startDate, endDate });
+    }
+    
+    query += `
       AND (
         fp.author_id IN (SELECT id FROM admin_users)
         OR fp.author_id IN (SELECT id FROM staff_users)
       )
       GROUP BY fp.id, p.id
       ORDER BY fp.created_at DESC
-    `);
+    `;
 
+    const result = await db.query(query, params);
+    console.log(`Returning ${result.rows.length} poll results`);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching poll analytics:', error);
-    res.status(500).json({ error: 'Failed to fetch poll analytics' });
+    res.status(500).json({ 
+      error: 'Failed to fetch poll analytics', 
+      details: error.message 
+    });
   }
 });
 
@@ -477,6 +495,108 @@ router.get('/debug-profile-photos', async (req, res) => {
   } catch (error) {
     console.error('Error fetching debug profile photos:', error);
     res.status(500).json({ error: 'Failed to fetch profile data' });
+  }
+});
+
+// Add new analytics endpoint with date filtering support
+router.get('/analytics', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const dateFilter = startDate && endDate ? 'created_at BETWEEN $1 AND $2' : '';
+    const params = startDate && endDate ? [startDate, endDate] : [];
+
+    // Get total posts with date filtering
+    let postsQuery = `SELECT COUNT(*) as total FROM forum_posts`;
+    if (dateFilter) {
+      postsQuery += ` WHERE ${dateFilter}`;
+    }
+    const postsResult = await db.query(postsQuery, params);
+    const totalPosts = parseInt(postsResult.rows[0].total);
+
+    // Get total comments with date filtering
+    let commentsQuery = `SELECT COUNT(*) as total FROM forum_comments`;
+    if (dateFilter) {
+      commentsQuery += ` WHERE ${dateFilter}`;
+    }
+    const commentsResult = await db.query(commentsQuery, params);
+    const totalComments = parseInt(commentsResult.rows[0].total);
+
+    // Get total likes with date filtering
+    let likesQuery = `
+      SELECT (
+        (SELECT COUNT(*) FROM post_likes ${dateFilter ? `WHERE ${dateFilter}` : ''}) +
+        (SELECT COUNT(*) FROM comment_likes ${dateFilter ? `WHERE ${dateFilter}` : ''})
+      ) as total
+    `;
+    const likesResult = await db.query(likesQuery, dateFilter ? params.concat(params) : []);
+    const totalLikes = parseInt(likesResult.rows[0].total);
+
+    // Posts per week with date filtering
+    let postsPerWeekQuery = `
+      WITH weeks AS (
+        SELECT generate_series(
+          date_trunc('week', ${dateFilter ? '$1::timestamp' : 'CURRENT_DATE - INTERVAL \'4 weeks\''})::date,
+          date_trunc('week', ${dateFilter ? '$2::timestamp' : 'CURRENT_DATE'})::date,
+          '1 week'::interval
+        ) as week_start
+      )
+      SELECT
+        to_char(week_start, 'Mon DD') as week_label,
+        COALESCE(
+          (
+            SELECT COUNT(*)
+            FROM forum_posts
+            WHERE created_at >= week_start
+              AND created_at < week_start + '1 week'::interval
+              ${dateFilter ? `AND ${dateFilter}` : ''}
+          ),
+          0
+        ) as post_count
+      FROM weeks
+      ORDER BY week_start
+    `;
+    
+    const postsPerWeekResult = await db.query(postsPerWeekQuery, 
+      dateFilter ? [startDate, endDate, startDate, endDate] : []);
+
+    // Top categories with date filtering
+    let topCategoriesQuery = `
+      SELECT 
+        c.name as category_name,
+        COUNT(p.id) as post_count
+      FROM 
+        forum_categories c
+      LEFT JOIN 
+        forum_posts p ON p.category_id = c.id
+        ${dateFilter ? `AND ${dateFilter}` : ''}
+      GROUP BY 
+        c.name
+      ORDER BY 
+        post_count DESC
+      LIMIT 5
+    `;
+    const topCategoriesResult = await db.query(topCategoriesQuery, params);
+
+    // Get engagement rates with date filtering
+    // ... other queries with similar date filtering
+
+    res.json({
+      totalPosts,
+      totalComments,
+      totalLikes,
+      postsPerWeek: {
+        labels: postsPerWeekResult.rows.map(row => row.week_label),
+        data: postsPerWeekResult.rows.map(row => parseInt(row.post_count))
+      },
+      topCategories: {
+        labels: topCategoriesResult.rows.map(row => row.category_name),
+        data: topCategoriesResult.rows.map(row => parseInt(row.post_count))
+      },
+      // Add other data here...
+    });
+  } catch (error) {
+    console.error('Error getting forum analytics:', error);
+    res.status(500).json({ error: 'Failed to get forum analytics' });
   }
 });
 
