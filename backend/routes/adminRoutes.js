@@ -138,17 +138,24 @@ router.post('/scholars/bulk-delete', roleAuth(['admin', 'staff']), scholarContro
 // Add this new endpoint
 router.get('/scholar-count', authMiddleware, async (req, res) => {
   try {
-    // Replace db.one with db.query
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    let query = `
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role = 'scholar'
-    `);
+    `;
     
-    // Convert string to number explicitly
-    const count = parseInt(result.rows[0].count, 10) || 0;
-    
-    res.json({ count });
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      query += ` AND created_at >= $1 AND created_at <= $2`;
+      const result = await db.query(query, [startDate, endDate]);
+      const count = parseInt(result.rows[0].count, 10) || 0;
+      res.json({ count });
+    } else {
+      const result = await db.query(query);
+      const count = parseInt(result.rows[0].count, 10) || 0;
+      res.json({ count });
+    }
   } catch (error) {
     console.error('Error getting scholar count:', error);
     res.status(500).json({ error: 'Failed to get scholar count' });
@@ -177,16 +184,23 @@ router.get('/scholar-reports', async (req, res) => {
 // Update this endpoint to simply sum quantities without status check
 router.get('/items-distributed', authMiddleware, async (req, res) => {
   try {
-    // Replace db.one with db.query
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    let query = `
       SELECT COALESCE(SUM(quantity), 0) as total_items
       FROM item_distributions
-    `);
+    `;
     
-    // Convert string to number explicitly
-    const count = parseInt(result.rows[0].total_items, 10) || 0;
-    
-    res.json({ count });
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      query += ` WHERE distributed_at >= $1 AND distributed_at <= $2`;
+      const result = await db.query(query, [startDate, endDate]);
+      const count = parseInt(result.rows[0].total_items, 10) || 0;
+      res.json({ count });
+    } else {
+      const result = await db.query(query);
+      const count = parseInt(result.rows[0].total_items, 10) || 0;
+      res.json({ count });
+    }
   } catch (error) {
     console.error('Error getting items distributed count:', error);
     res.status(500).json({ error: 'Failed to get items distributed count' });
@@ -284,16 +298,23 @@ router.delete('/events/:id', eventController.deleteEvent);
 // Add new endpoint for events count
 router.get('/events-count', authMiddleware, async (req, res) => {
   try {
-    // Replace db.one with db.query
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    let query = `
       SELECT COUNT(*) as count 
       FROM events
-    `);
+    `;
     
-    // Convert string to number explicitly
-    const count = parseInt(result.rows[0].count, 10) || 0;
-    
-    res.json({ count });
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      query += ` WHERE date >= $1 AND date <= $2`;
+      const result = await db.query(query, [startDate, endDate]);
+      const count = parseInt(result.rows[0].count, 10) || 0;
+      res.json({ count });
+    } else {
+      const result = await db.query(query);
+      const count = parseInt(result.rows[0].count, 10) || 0;
+      res.json({ count });
+    }
   } catch (error) {
     console.error('Error getting events count:', error);
     res.status(500).json({ error: 'Failed to get events count' });
@@ -324,8 +345,8 @@ router.get('/new-users-count', authMiddleware, async (req, res) => {
 // Update generous donors endpoint to only show donors who have made donations in the current month
 router.get('/generous-donors', async (req, res) => {
   try {
-    // Replace db.any with db.query
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    let baseQuery = `
       WITH combined_donations AS (
         -- First, handle registered users' donations separately
         SELECT 
@@ -336,7 +357,16 @@ router.get('/generous-donors', async (req, res) => {
         FROM users u
         LEFT JOIN scholar_donations sd ON u.id = sd.sponsor_id 
         WHERE sd.verification_status = 'verified'
-        AND DATE_TRUNC('month', sd.created_at) = DATE_TRUNC('month', CURRENT_DATE)
+    `;
+    
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      baseQuery += ` AND sd.created_at >= $1 AND sd.created_at <= $2`;
+    } else {
+      baseQuery += ` AND DATE_TRUNC('month', sd.created_at) = DATE_TRUNC('month', CURRENT_DATE)`;
+    }
+    
+    baseQuery += `
         GROUP BY u.id, u.name, u.profile_photo
 
         UNION ALL
@@ -349,7 +379,16 @@ router.get('/generous-donors', async (req, res) => {
           SUM(md.amount) as total_donations
         FROM monetary_donations md
         WHERE md.verification_status = 'verified'
-        AND DATE_TRUNC('month', md.created_at) = DATE_TRUNC('month', CURRENT_DATE)
+    `;
+    
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      baseQuery += ` AND md.created_at >= $1 AND md.created_at <= $2`;
+    } else {
+      baseQuery += ` AND DATE_TRUNC('month', md.created_at) = DATE_TRUNC('month', CURRENT_DATE)`;
+    }
+    
+    baseQuery += `
         GROUP BY md.full_name
       )
       SELECT 
@@ -362,7 +401,12 @@ router.get('/generous-donors', async (req, res) => {
       GROUP BY id, name, profile_photo
       ORDER BY total_donations DESC
       LIMIT 4
-    `);
+    `;
+    
+    // Execute query with or without date parameters
+    const result = startDate && endDate 
+      ? await db.query(baseQuery, [startDate, endDate])
+      : await db.query(baseQuery);
 
     const donorsWithFormattedAmount = result.rows.map(donor => ({
       ...donor,
@@ -382,13 +426,29 @@ router.get('/generous-donors', async (req, res) => {
 // Update donations summary endpoint to match Bank and ScholarDonations logic
 router.get('/donations-summary', async (req, res) => {
   try {
-    // Replace db.one with db.query
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    
+    let baseQuery = `
       WITH monthly_totals AS (
         SELECT 
           DATE_TRUNC('month', month) as month_start,
           SUM(total) as total_amount
         FROM (
+    `;
+    
+    if (startDate && endDate) {
+      // Modified query for date filtering
+      baseQuery = `
+        WITH period_totals AS (
+          SELECT 
+            'current' as period,
+            SUM(total) as total_amount
+          FROM (
+      `;
+    }
+    
+    // Common subquery part
+    baseQuery += `
           -- Get verified scholar donations
           SELECT 
             created_at as month,
@@ -404,6 +464,55 @@ router.get('/donations-summary', async (req, res) => {
             amount as total
           FROM monetary_donations
           WHERE verification_status = 'verified'
+    `;
+    
+    if (startDate && endDate) {
+      // Complete the custom date range query
+      baseQuery += `
+        ) all_donations
+        WHERE month >= $1 AND month <= $2
+        
+        UNION ALL
+        
+        -- Previous period of same length for comparison
+        SELECT 
+          'previous' as period,
+          SUM(total) as total_amount
+        FROM (
+          SELECT 
+            created_at as month,
+            amount as total
+          FROM scholar_donations
+          WHERE verification_status = 'verified'
+          
+          UNION ALL
+          
+          SELECT 
+            created_at as month,
+            amount as total
+          FROM monetary_donations
+          WHERE verification_status = 'verified'
+        ) all_donations
+        -- Calculate the previous period based on date range difference
+        WHERE month >= $1::timestamp - ($2::timestamp - $1::timestamp)
+          AND month < $1
+      )
+      SELECT 
+        (SELECT total_amount FROM period_totals WHERE period = 'current') as current_period,
+        (SELECT total_amount FROM period_totals WHERE period = 'previous') as previous_period,
+        CASE 
+          WHEN (SELECT total_amount FROM period_totals WHERE period = 'previous') = 0 THEN 0
+          ELSE (
+            (((SELECT total_amount FROM period_totals WHERE period = 'current') - 
+              (SELECT total_amount FROM period_totals WHERE period = 'previous')) * 100.0) /
+            NULLIF((SELECT total_amount FROM period_totals WHERE period = 'previous'), 0)
+          )
+        END as percentage_change
+      `;
+      
+    } else {
+      // Complete the default month-based query
+      baseQuery += `
         ) all_donations
         WHERE month >= DATE_TRUNC('month', NOW() - INTERVAL '1 month')
         GROUP BY DATE_TRUNC('month', month)
@@ -443,14 +552,23 @@ router.get('/donations-summary', async (req, res) => {
             ), 0), 0)
           )
         END as percentage_change
-    `);
-
+      `;
+    }
+    
+    // Execute query with or without date parameters
+    const result = startDate && endDate 
+      ? await db.query(baseQuery, [startDate, endDate])
+      : await db.query(baseQuery);
+    
+    const row = result.rows[0];
+    const currentTotal = parseFloat(startDate && endDate ? row.current_period : row.current_month) || 0;
+    
     res.json({
-      current_total: parseFloat(result.rows[0].current_month).toLocaleString('en-PH', {
+      current_total: currentTotal.toLocaleString('en-PH', {
         style: 'currency',
         currency: 'PHP'
       }),
-      percentage_change: parseFloat(result.rows[0].percentage_change || 0).toFixed(2)
+      percentage_change: parseFloat(row.percentage_change || 0).toFixed(2)
     });
   } catch (error) {
     console.error('Error getting donations summary:', error);
@@ -461,34 +579,70 @@ router.get('/donations-summary', async (req, res) => {
 // Add new endpoint for donation time distribution
 router.get('/donation-time-stats', async (req, res) => {
   try {
-    // Replace db.one with db.query
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    let baseQuery = `
       WITH all_donations AS (
         SELECT created_at
         FROM scholar_donations
         WHERE verification_status = 'verified'
+    `;
+    
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      baseQuery += ` AND created_at >= $1 AND created_at <= $2`;
+    } else {
+      baseQuery += ` AND created_at >= CURRENT_DATE - INTERVAL '30 days'`;
+    }
+    
+    baseQuery += `
         UNION ALL
         SELECT created_at
         FROM monetary_donations
         WHERE verification_status = 'verified'
+    `;
+    
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      baseQuery += ` AND created_at >= $1 AND created_at <= $2`;
+    } else {
+      baseQuery += ` AND created_at >= CURRENT_DATE - INTERVAL '30 days'`;
+    }
+    
+    baseQuery += `
       ),
       time_periods AS (
         SELECT
           COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM created_at) >= 5 AND EXTRACT(HOUR FROM created_at) < 12) as morning,
           COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM created_at) >= 12 AND EXTRACT(HOUR FROM created_at) < 16) as afternoon,
-          COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM created_at) >= 16 AND EXTRACT(HOUR FROM created_at) >= 21) as evening
+          COUNT(*) FILTER (WHERE EXTRACT(HOUR FROM created_at) >= 16 AND EXTRACT(HOUR FROM created_at) < 21) as evening
         FROM all_donations
-        WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
       )
       SELECT
         morning,
         afternoon,
         evening,
         morning + afternoon + evening as total,
+    `;
+    
+    // Add date formatting based on filter
+    if (startDate && endDate) {
+      baseQuery += `
+        $1::text as start_date,
+        $2::text as end_date
+      `;
+    } else {
+      baseQuery += `
         TO_CHAR(CURRENT_DATE - INTERVAL '30 days', 'DD Mon, YYYY') as start_date,
         TO_CHAR(CURRENT_DATE, 'DD Mon, YYYY') as end_date
-      FROM time_periods
-    `);
+      `;
+    }
+    
+    baseQuery += `FROM time_periods`;
+    
+    // Execute query with or without date parameters
+    const result = startDate && endDate 
+      ? await db.query(baseQuery, [startDate, endDate])
+      : await db.query(baseQuery);
 
     const row = result.rows[0];
     res.json({
@@ -507,60 +661,165 @@ router.get('/donation-time-stats', async (req, res) => {
   }
 });
 
-// Add new endpoint for donation trends
+// Completely rewrite donation-trends endpoint to fix syntax error
 router.get('/donation-trends', async (req, res) => {
   try {
-    // Replace db.any with db.query
-    const results = await db.query(`
-      WITH RECURSIVE months AS (
+    const { startDate, endDate } = req.query;
+    
+    if (startDate && endDate) {
+      // Completely revised approach for date filtering
+      const dateDiff = `
+        SELECT ($2::date - $1::date) AS days_diff
+      `;
+      
+      const diffResult = await db.query(dateDiff, [startDate, endDate]);
+      const daysDiff = parseInt(diffResult.rows[0].days_diff);
+      
+      let periodType, interval;
+      if (daysDiff <= 7) {
+        periodType = 'day';
+        interval = '1 day';
+      } else if (daysDiff <= 60) {
+        periodType = 'week';
+        interval = '1 week';
+      } else {
+        periodType = 'month';
+        interval = '1 month';
+      }
+      
+      // First, create a series of dates based on the interval
+      const seriesQuery = `
+        SELECT generate_series(
+          date_trunc('${periodType}', $1::timestamp),
+          date_trunc('${periodType}', $2::timestamp),
+          '${interval}'::interval
+        ) as period_start
+      `;
+      
+      const seriesResult = await db.query(seriesQuery, [startDate, endDate]);
+      const periods = seriesResult.rows.map(r => r.period_start);
+      
+      // Next, get donations for the date range
+      const donationsQuery = `
         SELECT 
-          DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months') as month
-        UNION ALL
-        SELECT 
-          DATE_TRUNC('month', month + INTERVAL '1 month')
-        FROM months
-        WHERE month < DATE_TRUNC('month', CURRENT_DATE)
-      ),
-      monthly_totals AS (
-        SELECT 
-          DATE_TRUNC('month', created_at) as month,
+          date_trunc('${periodType}', created_at) as period_start,
           SUM(amount) as total
         FROM (
-          SELECT amount, created_at 
-          FROM scholar_donations 
-          WHERE verification_status = 'verified'
+          SELECT created_at, amount
+          FROM scholar_donations
+          WHERE verification_status = 'verified' 
+          AND created_at BETWEEN $1 AND $2
+          
           UNION ALL
-          SELECT amount, created_at 
-          FROM monetary_donations 
+          
+          SELECT created_at, amount
+          FROM monetary_donations
           WHERE verification_status = 'verified'
+          AND created_at BETWEEN $1 AND $2
         ) all_donations
-        GROUP BY DATE_TRUNC('month', created_at)
-      )
-      SELECT 
-        TO_CHAR(m.month, 'Mon') as month_label,
-        COALESCE(mt.total, 0) as amount
-      FROM months m
-      LEFT JOIN monthly_totals mt ON m.month = mt.month
-      ORDER BY m.month ASC
-    `);
+        GROUP BY 1
+        ORDER BY 1
+      `;
+      
+      const donationsResult = await db.query(donationsQuery, [startDate, endDate]);
+      const donationsByPeriod = new Map();
+      
+      // Create a map of period start -> total donation
+      donationsResult.rows.forEach(row => {
+        donationsByPeriod.set(row.period_start.toISOString(), parseFloat(row.total));
+      });
+      
+      // Format the results with proper labels and fill in missing periods with zeros
+      const formattedResults = periods.map(period => {
+        let label;
+        if (periodType === 'day') {
+          label = new Date(period).toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+        } else if (periodType === 'week') {
+          const weekNum = Math.ceil(new Date(period).getDate() / 7);
+          const month = new Date(period).toLocaleDateString('en-US', { month: 'short' });
+          label = `Week ${weekNum}, ${month}`;
+        } else {
+          label = new Date(period).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        }
+        
+        return {
+          period_label: label,
+          amount: donationsByPeriod.get(period.toISOString()) || 0
+        };
+      });
+      
+      // Calculate percentage change
+      const currentTotal = formattedResults.length > 0 ? formattedResults[formattedResults.length - 1].amount : 0;
+      const previousTotal = formattedResults.length > 1 ? formattedResults[formattedResults.length - 2].amount : 0;
+      
+      const percentageChange = previousTotal === 0 ? 0 :
+        ((currentTotal - previousTotal) / previousTotal * 100);
+      
+      res.json({
+        labels: formattedResults.map(r => r.period_label),
+        data: formattedResults.map(r => r.amount),
+        current_total: currentTotal.toLocaleString('en-PH', {
+          style: 'currency',
+          currency: 'PHP'
+        }),
+        percentage_change: percentageChange.toFixed(2)
+      });
+      
+    } else {
+      // Default 6-month view (keep this part unchanged)
+      const baseQuery = `
+        WITH RECURSIVE months AS (
+          SELECT 
+            DATE_TRUNC('month', CURRENT_DATE - INTERVAL '5 months') as month
+          UNION ALL
+          SELECT 
+            DATE_TRUNC('month', month + INTERVAL '1 month')
+          FROM months
+          WHERE month < DATE_TRUNC('month', CURRENT_DATE)
+        ),
+        monthly_totals AS (
+          SELECT 
+            DATE_TRUNC('month', created_at) as month,
+            SUM(amount) as total
+          FROM (
+            SELECT amount, created_at 
+            FROM scholar_donations 
+            WHERE verification_status = 'verified'
+            UNION ALL
+            SELECT amount, created_at 
+            FROM monetary_donations 
+            WHERE verification_status = 'verified'
+          ) all_donations
+          GROUP BY DATE_TRUNC('month', created_at)
+        )
+        SELECT 
+          TO_CHAR(m.month, 'Mon') as month_label,
+          COALESCE(mt.total, 0) as amount
+        FROM months m
+        LEFT JOIN monthly_totals mt ON m.month = mt.month
+        ORDER BY m.month ASC
+      `;
 
-    // Get current and previous month totals from the results
-    const currentMonthTotal = parseFloat(results.rows[results.rows.length - 1].amount);
-    const previousMonthTotal = parseFloat(results.rows[results.rows.length - 2]?.amount || 0);
-    
-    // Calculate percentage change
-    const percentageChange = previousMonthTotal === 0 ? 0 :
-      ((currentMonthTotal - previousMonthTotal) / previousMonthTotal * 100);
+      const results = await db.query(baseQuery);
+      
+      // Get current and previous period totals from the results
+      const currentPeriodTotal = parseFloat(results.rows[results.rows.length - 1]?.amount || 0);
+      const previousPeriodTotal = parseFloat(results.rows[results.rows.length - 2]?.amount || 0);
+      
+      // Calculate percentage change
+      const percentageChange = previousPeriodTotal === 0 ? 0 :
+        ((currentPeriodTotal - previousPeriodTotal) / previousPeriodTotal * 100);
 
-    res.json({
-      labels: results.rows.map(r => r.month_label),
-      data: results.rows.map(r => parseFloat(r.amount)),
-      current_total: currentMonthTotal.toLocaleString('en-PH', {
-        style: 'currency',
-        currency: 'PHP'
-      }),
-      percentage_change: percentageChange.toFixed(2)
-    });
+      res.json({
+        labels: results.rows.map(r => r.month_label),
+        data: results.rows.map(r => parseFloat(r.amount)),
+        current_total: currentPeriodTotal.toLocaleString('en-PH', {
+          style: 'currency',
+          currency: 'PHP'
+        }),
+        percentage_change: percentageChange.toFixed(2)
+      });
+    }
   } catch (error) {
     console.error('Error getting donation trends:', error);
     res.status(500).json({ error: 'Failed to get donation trends' });
@@ -570,27 +829,56 @@ router.get('/donation-trends', async (req, res) => {
 // Fix daily traffic endpoint to properly read donations
 router.get('/daily-traffic', async (req, res) => {
   try {
-    // Replace db.one with db.query
-    const result = await db.query(`
-      WITH RECURSIVE time_slots AS (
-        SELECT 
-          generate_series(
+    const { startDate, endDate } = req.query;
+    let baseQuery;
+    
+    if (startDate && endDate) {
+      // For custom date range
+      baseQuery = `
+        WITH time_slots AS (
+          SELECT generate_series(
+            date_trunc('day', $1::timestamp) + interval '5 hours',
+            date_trunc('day', $2::timestamp) + interval '21 hours',
+            interval '4 hours'
+          ) as slot_start
+        ),
+        all_donations AS (
+          SELECT created_at 
+          FROM scholar_donations 
+          WHERE created_at BETWEEN $1 AND $2
+          AND verification_status = 'verified'
+          UNION ALL
+          SELECT created_at 
+          FROM monetary_donations
+          WHERE created_at BETWEEN $1 AND $2
+          AND verification_status = 'verified'
+        ),
+      `;
+    } else {
+      // Default query for current day
+      baseQuery = `
+        WITH RECURSIVE time_slots AS (
+          SELECT generate_series(
             date_trunc('day', CURRENT_DATE) + interval '5 hours',
             date_trunc('day', CURRENT_DATE) + interval '21 hours',
             interval '4 hours'
           ) as slot_start
-      ),
-      all_donations AS (
-        SELECT created_at 
-        FROM scholar_donations 
-        WHERE DATE(created_at) = CURRENT_DATE
-        AND verification_status = 'verified'
-        UNION ALL
-        SELECT created_at 
-        FROM monetary_donations
-        WHERE DATE(created_at) = CURRENT_DATE
-        AND verification_status = 'verified'
-      ),
+        ),
+        all_donations AS (
+          SELECT created_at 
+          FROM scholar_donations 
+          WHERE DATE(created_at) = CURRENT_DATE
+          AND verification_status = 'verified'
+          UNION ALL
+          SELECT created_at 
+          FROM monetary_donations
+          WHERE DATE(created_at) = CURRENT_DATE
+          AND verification_status = 'verified'
+        ),
+      `;
+    }
+    
+    baseQuery += `
       slot_counts AS (
         SELECT 
           slot_start,
@@ -626,7 +914,12 @@ router.get('/daily-traffic', async (req, res) => {
         (SELECT total FROM today_total) as today_total,
         (SELECT total FROM yesterday_total) as yesterday_total
       FROM slot_counts
-    `);
+    `;
+
+    // Execute query with or without date parameters
+    const result = startDate && endDate 
+      ? await db.query(baseQuery, [startDate, endDate])
+      : await db.query(baseQuery);
 
     const row = result.rows[0];
     const todayTotal = parseInt(row.today_total) || 0;
@@ -827,25 +1120,45 @@ router.get('/items-distributed-stats', async (req, res) => {
 // Add new endpoints for feedback analytics
 router.get('/feedback-analytics', authMiddleware, async (req, res) => {
   try {
+    const { startDate, endDate } = req.query;
+    
+    // Fix the date filter condition syntax
+    const dateFilter = startDate && endDate ? 'created_at BETWEEN $1 AND $2' : '';
+    const params = startDate && endDate ? [startDate, endDate] : [];
+    
     // Get overall statistics with proper type casting
-    const overallStatsResult = await db.query(`
+    let overallStatsQuery = `
       SELECT 
         COALESCE(AVG(rating)::numeric, 0) as average_rating,
         COUNT(*) as total_feedback,
         COUNT(DISTINCT event_id) as events_with_feedback
       FROM event_feedback
-    `);
+    `;
+    
+    if (dateFilter) {
+      overallStatsQuery += ` WHERE ${dateFilter}`;
+    }
+    
+    // Execute query with or without date parameters
+    const overallStatsResult = await db.query(overallStatsQuery, params);
     const overallStats = overallStatsResult.rows[0];
     
     // Convert string to number explicitly
     overallStats.average_rating = parseFloat(overallStats.average_rating) || 0;
 
-    // Get word frequency
-    const wordFrequencyResult = await db.query(`
+    // Get word frequency with date filter
+    let wordFrequencyQuery = `
       WITH words AS (
         SELECT regexp_split_to_table(lower(comment), '\\s+') as word
         FROM event_feedback
         WHERE comment IS NOT NULL
+    `;
+    
+    if (dateFilter) {
+      wordFrequencyQuery += ` AND ${dateFilter}`;
+    }
+    
+    wordFrequencyQuery += `
       )
       SELECT word, COUNT(*) as frequency
       FROM words
@@ -853,11 +1166,13 @@ router.get('/feedback-analytics', authMiddleware, async (req, res) => {
       GROUP BY word
       ORDER BY frequency DESC
       LIMIT 50
-    `);
+    `;
+    
+    const wordFrequencyResult = await db.query(wordFrequencyQuery, params);
     const wordFrequency = wordFrequencyResult.rows;
 
-    // Get event statistics
-    const eventStatsResult = await db.query(`
+    // Get event statistics with date filter
+    let eventStatsQuery = `
       SELECT 
         e.id,
         e.title,
@@ -873,10 +1188,19 @@ router.get('/feedback-analytics', authMiddleware, async (req, res) => {
         ) FILTER (WHERE ef.id IS NOT NULL), '[]') as feedback_details
       FROM events e
       LEFT JOIN event_feedback ef ON e.id = ef.event_id
+    `;
+    
+    if (dateFilter) {
+      eventStatsQuery += ` AND ef.${dateFilter}`;
+    }
+    
+    eventStatsQuery += `
       LEFT JOIN users u ON ef.user_id = u.id
       GROUP BY e.id, e.title
       ORDER BY e.date DESC
-    `);
+    `;
+    
+    const eventStatsResult = await db.query(eventStatsQuery, params);
     const eventStats = eventStatsResult.rows;
 
     // Convert average_rating to number for each event
@@ -884,14 +1208,20 @@ router.get('/feedback-analytics', authMiddleware, async (req, res) => {
       event.average_rating = parseFloat(event.average_rating) || 0;
     });
 
-    // Get sentiment statistics
-    const sentimentStatsResult = await db.query(`
+    // Get sentiment statistics with date filter
+    let sentimentStatsQuery = `
       SELECT 
         COUNT(*) FILTER (WHERE rating >= 4) as positive_feedback,
         COUNT(*) FILTER (WHERE rating = 3) as neutral_feedback,
         COUNT(*) FILTER (WHERE rating <= 2) as negative_feedback
       FROM event_feedback
-    `);
+    `;
+    
+    if (dateFilter) {
+      sentimentStatsQuery += ` WHERE ${dateFilter}`;
+    }
+    
+    const sentimentStatsResult = await db.query(sentimentStatsQuery, params);
     const sentimentStats = sentimentStatsResult.rows[0];
 
     const results = {
@@ -911,14 +1241,24 @@ router.get('/feedback-analytics', authMiddleware, async (req, res) => {
 // Add these new endpoints for user counts
 router.get('/new-sponsors-count', async (req, res) => {
   try {
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    let query = `
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role = 'sponsor'
-      AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
-      AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
-    `);
-    res.json({ count: parseInt(result.rows[0].count) });
+    `;
+    
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      query += ` AND created_at >= $1 AND created_at <= $2`;
+      const result = await db.query(query, [startDate, endDate]);
+      res.json({ count: parseInt(result.rows[0].count) });
+    } else {
+      query += ` AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
+                AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'`;
+      const result = await db.query(query);
+      res.json({ count: parseInt(result.rows[0].count) });
+    }
   } catch (error) {
     console.error('Error getting new sponsors count:', error);
     res.status(500).json({ error: 'Failed to get new sponsors count' });
@@ -927,14 +1267,24 @@ router.get('/new-sponsors-count', async (req, res) => {
 
 router.get('/new-volunteers-count', async (req, res) => {
   try {
-    const result = await db.query(`
+    const { startDate, endDate } = req.query;
+    let query = `
       SELECT COUNT(*) as count 
       FROM users 
       WHERE role = 'volunteer'
-      AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
-      AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'
-    `);
-    res.json({ count: parseInt(result.rows[0].count) });
+    `;
+    
+    // Add date filtering if dates are provided
+    if (startDate && endDate) {
+      query += ` AND created_at >= $1 AND created_at <= $2`;
+      const result = await db.query(query, [startDate, endDate]);
+      res.json({ count: parseInt(result.rows[0].count) });
+    } else {
+      query += ` AND created_at >= DATE_TRUNC('month', CURRENT_DATE)
+                AND created_at < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'`;
+      const result = await db.query(query);
+      res.json({ count: parseInt(result.rows[0].count) });
+    }
   } catch (error) {
     console.error('Error getting new volunteers count:', error);
     res.status(500).json({ error: 'Failed to get new volunteers count' });

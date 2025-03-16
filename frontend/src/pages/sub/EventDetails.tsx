@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react"; // Add useRef
 import { useParams, useNavigate } from "react-router-dom";
 import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaPhoneAlt, FaEnvelope, FaTimes } from "react-icons/fa";
 import api from '../../config/axios'; // Replace axios import
@@ -37,10 +37,23 @@ const EventDetails: React.FC = () => {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [participantStatus, setParticipantStatus] = useState<string>('');
+  // Add new state variable for rejection status
+  const [isRejected, setIsRejected] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string>('');
   
   // Add state for requirements modal
   const [showRequirementsModal, setShowRequirementsModal] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
+  
+  // Remove previous scroll tracking approach
+  // const [scrollY, setScrollY] = useState(0);
+  // const modalRef = useRef<HTMLDivElement>(null);
+  // const scrollThreshold = 300; // Adjust this value as needed
+
+  // We don't need to track scroll position globally since we capture it when needed
+  useEffect(() => {
+    // Empty effect to maintain component structure
+  }, []);
 
   // Updated function to properly handle image paths
   const getImageUrl = (path: string | null) => {
@@ -103,6 +116,14 @@ const EventDetails: React.FC = () => {
   const checkParticipation = async () => {
     if (!user) return;
     try {
+      // Check if user is rejected from this event
+      const rejectionResponse = await api.get(`/events/${eventId}/check-rejection`);
+      if (rejectionResponse.data.isRejected) {
+        setIsRejected(true);
+        setRejectionReason(rejectionResponse.data.reason || 'No specific reason provided.');
+        return; // Exit early if user is rejected
+      }
+
       const response = await api.get(`/events/${eventId}/check-participation`);
       setHasJoined(response.data.hasJoined);
       setParticipantStatus(response.data.status || ''); // Add this line
@@ -188,7 +209,11 @@ const EventDetails: React.FC = () => {
       return;
     }
 
-    // Instead of directly joining, show requirements modal first
+    // Capture scroll position and set CSS variable - similar to Community.tsx
+    const scrollY = window.scrollY;
+    document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
+    
+    // Show requirements modal
     setShowRequirementsModal(true);
   };
 
@@ -198,29 +223,40 @@ const EventDetails: React.FC = () => {
       setIsJoining(true);
       setJoinError(null);
       
-      const response = await api.post(`/events/${eventId}/join`);
+      try {
+        const response = await api.post(`/events/${eventId}/join`);
 
-      // Update local event data with new volunteer count
-      if (event) {
-        const updatedEvent = response.data.event;
-        setEvent({
-          ...event,
-          currentVolunteers: updatedEvent.current_volunteers,
-        });
+        // Update local event data with new volunteer count
+        if (event) {
+          const updatedEvent = response.data.event;
+          setEvent({
+            ...event,
+            currentVolunteers: updatedEvent.current_volunteers,
+          });
+        }
+
+        console.log('Join response:', response.data);
+        await fetchEventDetails();
+        await checkParticipation(); // Add immediate check after joining
+        setHasJoined(true);
+        
+        // Reset modal state
+        setShowRequirementsModal(false);
+        setTermsAgreed(false);
+      } catch (error: any) {
+        console.error('Failed to join event:', error.response || error);
+        
+        // Check if this is a rejection error (status 403 with specific message)
+        if (error.response?.status === 403 && 
+            error.response?.data?.error?.includes('cannot join this event because your previous request was declined')) {
+          setIsRejected(true);
+          setRejectionReason(error.response.data.reason || 'Your previous request to join was declined by an administrator.');
+          setJoinError('You cannot join this event because your previous request was declined.');
+        } else {
+          // Handle other errors
+          setJoinError(error.response?.data?.error || 'Failed to join event');
+        }
       }
-
-      console.log('Join response:', response.data);
-      await fetchEventDetails();
-      await checkParticipation(); // Add immediate check after joining
-      setHasJoined(true);
-      
-      // Reset modal state
-      setShowRequirementsModal(false);
-      setTermsAgreed(false);
-      
-    } catch (error: any) {
-      console.error('Failed to join event:', error.response || error);
-      setJoinError(error.response?.data?.error || 'Failed to join event');
     } finally {
       setIsJoining(false);
     }
@@ -260,6 +296,7 @@ const EventDetails: React.FC = () => {
   // Update the buttonText function
   const buttonText = () => {
     if (!event) return '';
+    if (isRejected) return 'Joining Restricted';
     if (event.status === 'CLOSED') return 'Event Closed';
     if (volunteersNeeded <= 0 && !hasJoined) return 'Fully Booked';
     if (hasJoined) {
@@ -273,8 +310,14 @@ const EventDetails: React.FC = () => {
     return 'Join';
   };
 
-  // Update handleButtonClick to show modal instead
+  // Update handleButtonClick to check for rejection
   const handleButtonClick = () => {
+    // If user has been rejected, show the rejection reason
+    if (isRejected) {
+      alert(`You cannot join this event. ${rejectionReason}`);
+      return;
+    }
+    
     // Add handling for sponsor and scholar roles
     if (user && (user.role === 'sponsor' || user.role === 'scholar')) {
       // You can customize this message or action
@@ -299,7 +342,12 @@ const EventDetails: React.FC = () => {
         alert('Your registration is pending approval. Please wait for admin confirmation.');
         return;
       }
-      handleUnjoinEvent();
+      
+      // Add confirmation before leaving the event
+      const confirmLeave = window.confirm("Are you sure you want to leave this event?");
+      if (confirmLeave) {
+        handleUnjoinEvent();
+      }
     } else {
       // Show modal instead of directly joining
       handleVolunteerSignUp();
@@ -446,9 +494,17 @@ const formatRequirements = (requirements: string) => {
           ) : (
             <p><strong>Thank you!</strong> We've reached our volunteer goal</p>
           )}
+          {isRejected && (
+            <div className="event-rejection-message">
+              <p>You cannot join this event because your previous request was declined.</p>
+              {rejectionReason && <p><strong>Reason:</strong> {rejectionReason}</p>}
+            </div>
+          )}
           <button 
-            className={`volunteer-button2 ${hasJoined ? (participantStatus === 'PENDING' ? 'pending-button' : 'leave-button') : ''}`}
-            disabled={event.status === 'CLOSED' || (volunteersNeeded <= 0 && !hasJoined) || isJoining || (hasJoined && participantStatus === 'PENDING')}
+            className={`volunteer-button2 ${hasJoined ? (participantStatus === 'PENDING' ? 'pending-button' : 'leave-button') : 
+              isRejected ? 'rejected-button' : ''}`}
+            disabled={event.status === 'CLOSED' || (volunteersNeeded <= 0 && !hasJoined) || 
+              isJoining || (hasJoined && participantStatus === 'PENDING') || isRejected}
             onClick={handleButtonClick}
           >
             {isJoining ? (hasJoined ? 'Leaving...' : 'Joining...') : buttonText()}
@@ -473,9 +529,17 @@ const formatRequirements = (requirements: string) => {
           >
             <motion.div 
               className="requirements-modal-content"
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1,
+                transition: { 
+                  type: "spring", 
+                  stiffness: 300, 
+                  damping: 30 
+                }
+              }}
+              exit={{ opacity: 0, scale: 0.9 }}
             >
               <div className="requirements-modal-header">
                 <h2>Event Requirements</h2>

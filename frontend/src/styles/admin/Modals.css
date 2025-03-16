@@ -222,3 +222,221 @@
     margin-bottom: 1rem;
   }
 }
+
+/* Add these styles to your existing Modals.css file */
+
+/* Document Grid */
+.document-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 15px;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: #f9f9f9;
+  transition: all 0.2s ease;
+}
+
+.document-item:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  border-color: #ccc;
+  background-color: #f0f0f0;
+}
+
+.document-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  margin-right: 12px;
+  color: #fff;
+  background-color: #5a6268;
+}
+
+.document-icon .material-icons {
+  font-size: 24px;
+}
+
+.document-details {
+  flex: 1;
+}
+
+.document-details h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.document-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.view-document-btn,
+.download-document-btn {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+  border: 1px solid #ccc;
+}
+
+.view-document-btn {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.download-document-btn {
+  background-color: transparent;
+  color: #444;
+}
+
+.view-document-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.download-document-btn:hover {
+  background-color: #f0f0f0;
+}
+
+/* Document Preview Modal */
+.document-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.document-preview-content {
+  background-color: #fff;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.document-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.document-preview-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.document-preview-body {
+  flex: 1;
+  overflow: auto;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.document-preview-image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.document-preview-pdf {
+  width: 100%;
+  height: 70vh;
+  border: none;
+}
+
+.document-preview-unsupported {
+  text-align: center;
+  padding: 30px;
+}
+
+.document-preview-unsupported p {
+  margin-bottom: 15px;
+  color: #666;
+}
+
+.download-link {
+  color: #0066cc;
+  text-decoration: none;
+  padding: 8px 15px;
+  border: 1px solid #0066cc;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.download-link:hover {
+  background-color: #0066cc;
+  color: #fff;
+}
+
+.document-preview-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 15px 20px;
+  border-top: 1px solid #e0e0e0;
+  gap: 10px;
+}
+
+.download-button {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.download-button:hover {
+  background-color: #0055b3;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+  .document-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+  
+  .document-preview-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .document-preview-pdf {
+    height: 60vh;
+  }
+}
+
+@media screen and (max-width: 576px) {
+  .document-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,6 +1,5 @@
 .feedback-analytics-container {
   padding: 2rem;
-  background: #f8f9fa;
 }
 
 .feedback-header {
@@ -257,4 +256,283 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+/* Date Filter Styles for Event Feedback */
+.feedback-filter-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+  padding: 0 20px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.feedback-date-filter-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #4A5568;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.feedback-date-filter-button:hover {
+  background-color: #F7FAFC;
+  border-color: #CBD5E0;
+}
+
+.feedback-date-filter-button span {
+  font-weight: 500;
+}
+
+.feedback-date-reset-button {
+  background-color: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedback-date-reset-button:hover {
+  background-color: #F7FAFC;
+  color: #4A5568;
+}
+
+.feedback-date-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 20px;
+  width: 320px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  z-index: 100;
+  margin-top: 8px;
+  border: 1px solid #E2E8F0;
+  animation: feedbackFadeIn 0.2s ease;
+}
+
+@keyframes feedbackFadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.feedback-date-filter-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.feedback-date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feedback-date-input-group label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4A5568;
+}
+
+.feedback-date-picker {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #F7FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #2D3748;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.feedback-date-picker:focus {
+  border-color: #FF3D00;
+  box-shadow: 0 0 0 2px rgba(255, 61, 0, 0.1);
+}
+
+.feedback-date-filter-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.feedback-apply-filter-button {
+  flex: 1;
+  padding: 10px 15px;
+  background-color: #FF3D00;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedback-apply-filter-button:hover {
+  background-color: #E63600;
+}
+
+.feedback-cancel-filter-button {
+  flex: 1;
+  padding: 10px 15px;
+  background-color: white;
+  color: #4A5568;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedback-cancel-filter-button:hover {
+  background-color: #F7FAFC;
+}
+
+.feedback-filter-active-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #FFF5F2;
+  border-radius: 8px;
+  padding: 10px 15px;
+  margin: 0 20px 20px;
+  border-left: 4px solid #FF3D00;
+}
+
+.feedback-filter-active-bar span {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #4A5568;
+}
+
+/* Export Button Styling */
+.feedback-export-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #EE3F24;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.feedback-export-button:hover {
+  background-color: #D83921;
+  transform: translateY(-1px);
+}
+
+.feedback-export-button svg {
+  margin-right: 5px;
+}
+
+/* Add loading overlay for export process */
+.feedback-export-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1010;
+}
+
+.feedback-export-loading-content {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.feedback-export-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #FF3D00;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+/* Print styles for when users print directly from browser */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .feedback-analytics-container,
+  .feedback-analytics-container * {
+    visibility: visible;
+  }
+  
+  .feedback-analytics-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 15px !important;
+  }
+  
+  .feedback-filter-container,
+  .feedback-filters,
+  button {
+    display: none !important;
+  }
+  
+  .stats-grid {
+    page-break-inside: avoid;
+  }
+  
+  .charts-section {
+    page-break-inside: avoid;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sentiment-chart,
+  .word-cloud-container {
+    page-break-inside: avoid;
+    width: 100% !important;
+    height: auto !important;
+    margin-bottom: 30px !important;
+  }
+  
+  .event-feedback-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
 }

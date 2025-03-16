@@ -805,8 +805,7 @@ header .title a {
 }
 
 .desktop-auth-buttons {
-  display: flex;
-  gap: 1rem;
+  display: flex;  
 }
 
 .notification-actions {
@@ -921,4 +920,38 @@ header .title a {
 /* Make the button more visible for very short notifications */
 .notification-item:hover .expand-button {
   opacity: 1;
+}
+
+/* Add styling for the Apply as Scholar button */
+.apply-scholar-button {
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: 600;
+  color: rgb(249, 191, 0);
+  font-family: "Poppins";
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.apply-scholar-button:hover {
+  color: rgb(213, 165, 7);
+}
+
+/* Add mobile-specific styling for the button */
+@media (max-width: 1024px) {
+  .mobile-auth-buttons .apply-scholar-button {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    min-width: fit-content;
+    white-space: nowrap;
+  }
+  
+  .mobile-auth-buttons.two-buttons {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }

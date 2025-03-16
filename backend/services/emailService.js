@@ -601,6 +601,61 @@ const sendDonationRejectionEmail = async (email, donorName, scholarName, amount,
   }
 };
 
+// Add new function for pending participation notifications
+const sendParticipantPendingEmail = async (email, name, eventTitle, eventDate) => {
+  // Format the date for display
+  const formattedDate = new Date(eventDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const mailOptions = {
+    from: {
+      name: 'KKMK Events',
+      address: process.env.EMAIL_USER
+    },
+    to: email,
+    subject: `Your participation request for "${eventTitle}" is pending approval`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #333;">Thank you, ${name}!</h1>
+        <p>Your request to join the event <strong>"${eventTitle}"</strong> on <strong>${formattedDate}</strong> has been received.</p>
+        <p>Your participation is currently <strong style="color: #FF9800;">pending approval</strong> from our administrators.</p>
+        <p>We'll notify you once your request has been reviewed. This usually takes 1-2 business days.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL}/events" 
+             style="background-color: #4CAF50; 
+                    color: white; 
+                    padding: 12px 25px; 
+                    text-decoration: none; 
+                    border-radius: 5px;
+                    font-weight: bold;">
+            View All Events
+          </a>
+        </div>
+        
+        <p>If you have any questions, please don't hesitate to contact us.</p>
+        <p>Thank you for your interest in volunteering!</p>
+        
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Pending participation email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending pending participation email:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -612,5 +667,6 @@ module.exports = {
   sendReportCardRenewalEmail, // Add the new function to exports
   sendDonationVerificationEmail, // Add the new function to exports
   sendDonationRejectionEmail, // Add the new export
+  sendParticipantPendingEmail, // Add the new function to exports
   sendMail
 };

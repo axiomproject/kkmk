@@ -295,6 +295,7 @@
   width: 100%;
   max-width: 200px;
   margin-bottom: 10px;
+  justify-self: center;
 }
 
 .marker-event-image {
@@ -2816,6 +2817,16 @@
 /* Keep leaflet attribution */
 .leaflet-control-attribution {
   display: block !important;
+}
+
+/* Hide the Leaflet attribution watermark */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+/* Override previous style that explicitly kept attribution visible */
+.leaflet-control-attribution {
+  display: none !important;
 }
 
 /* ... rest of existing styles ... */

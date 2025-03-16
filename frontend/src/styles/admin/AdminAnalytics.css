@@ -2887,3 +2887,344 @@ canvas.chartjs-render-monitor {
 
 /* ...existing code... */
 
+/* Date Filter Styles */
+.sta-date-filter-container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+  padding: 0 20px;
+  gap: 10px;
+}
+
+.sta-date-filter-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #4A5568;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.sta-date-filter-button:hover {
+  background-color: #F7FAFC;
+  border-color: #CBD5E0;
+}
+
+.sta-date-filter-button span {
+  font-weight: 500;
+}
+
+.sta-date-reset-button {
+  background-color: transparent;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #718096;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sta-date-reset-button:hover {
+  background-color: #F7FAFC;
+  color: #4A5568;
+}
+
+/* Fix the date filter dropdown positioning */
+.sta-date-filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0; /* Change from right: 20px to left: 0 */
+  width: 320px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  z-index: 100;
+  margin-top: 8px;
+  border: 1px solid #E2E8F0;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sta-date-filter-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.sta-date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sta-date-input-group label {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4A5568;
+}
+
+.sta-date-picker {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #F7FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #2D3748;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.sta-date-picker:focus {
+  border-color: #FF3D00;
+  box-shadow: 0 0 0 2px rgba(255, 61, 0, 0.1);
+}
+
+/* Override default react-datepicker styles */
+.react-datepicker__input-container input {
+  width: 100%;
+  padding: 10px 12px;
+  background-color: #F7FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #2D3748;
+}
+
+.sta-date-filter-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sta-apply-filter-button {
+  flex: 1;
+  padding: 10px 15px;
+  background-color: #FF3D00;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sta-apply-filter-button:hover {
+  background-color: #E63600;
+}
+
+.sta-cancel-filter-button {
+  flex: 1;
+  padding: 10px 15px;
+  background-color: white;
+  color: #4A5568;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sta-cancel-filter-button:hover {
+  background-color: #F7FAFC;
+}
+
+.sta-filter-active-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #FFF5F2;
+  border-radius: 8px;
+  padding: 10px 15px;
+  margin: 0 20px 20px;
+  border-left: 4px solid #FF3D00;
+}
+
+.sta-filter-active-bar span {
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: #4A5568;
+}
+
+/* Loading and Error States */
+.analytics-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  width: 100%;
+}
+
+.analytics-loading .spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #FF3D00;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.analytics-loading p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  color: #4A5568;
+}
+
+.analytics-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  width: 100%;
+  padding: 20px;
+  background-color: #FFF5F5;
+  border-radius: 8px;
+  border: 1px solid #FED7D7;
+}
+
+.analytics-error p {
+  font-family: 'Poppins', sans-serif;
+  font-size: 16px;
+  color: #E53E3E;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.retry-button {
+  padding: 10px 20px;
+  background-color: #FF3D00;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-button:hover {
+  background-color: #E63600;
+}
+
+/* ...existing code... */
+
+/* Export Button Styling */
+.sta-export-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #EE3F24;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.sta-export-button:hover {
+  background-color: #D83921;
+  transform: translateY(-1px);
+}
+
+.sta-export-button svg {
+  margin-right: 5px;
+}
+
+/* Update date filter container to accommodate export button */
+.sta-date-filter-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+  padding: 0 20px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Mobile responsiveness for export button */
+@media (max-width: 768px) {
+  .sta-date-filter-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .sta-export-button {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+}
+
+/* Add loading overlay for export process */
+.sta-export-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1010;
+}
+
+.sta-export-loading-content {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sta-export-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #FF3D00;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+/* ...existing code... */
+

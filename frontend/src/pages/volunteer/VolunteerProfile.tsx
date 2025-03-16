@@ -20,7 +20,7 @@ import {
 import { FiEdit, FiUpload, FiMapPin, FiMessageSquare, FiArrowRight } from 'react-icons/fi'; // Add FiArrowRight
 import ProcessTimeline from '../../components/ProcessTimeline';
 import { FaStar } from 'react-icons/fa';
-import { ThemeSelector } from '../../components/ThemeSelector';
+// import { ThemeSelector } from '../../components/ThemeSelector';
 
 interface UserData {
   name: string;
@@ -970,30 +970,6 @@ const VolunteerProfile: React.FC = () => {
     }
   };
 
-  const handleCloseFeedback = () => {
-    // Add current event to dismissed list
-    if (currentFeedbackEvent) {
-      setDismissedFeedback(prev => new Set([...prev, currentFeedbackEvent.id]));
-    }
-    
-    // Close the modal
-    setShowFeedbackModal(false);
-    
-    // Move to next event if available
-    const remainingEvents = pendingFeedbackEvents.filter(
-      event => event.id !== currentFeedbackEvent?.id && !dismissedFeedback.has(event.id)
-    );
-    
-    if (remainingEvents.length > 0) {
-      setCurrentFeedbackEvent(remainingEvents[0]);
-      // Reset form
-      setRating(0);
-      setFeedbackComment("");
-    } else {
-      setCurrentFeedbackEvent(null);
-    }
-  };
-
   // Add ScholarProgressBar component
   const ScholarProgressBar: React.FC<{ currentAmount: number; amountNeeded: number }> = ({ currentAmount, amountNeeded }) => {
     const percentage = Math.min((currentAmount / amountNeeded) * 100, 100);
@@ -1232,8 +1208,8 @@ const VolunteerProfile: React.FC = () => {
               )}
             </div>
 
-            <h1>Theme</h1>
-            <ThemeSelector />
+            {/* <h1>Theme</h1> */}
+            {/* <ThemeSelector /> */}
 
             <h1>Socials</h1>
             <div className="socials">
@@ -1652,15 +1628,12 @@ const VolunteerProfile: React.FC = () => {
 
     {showFeedbackModal && currentFeedbackEvent && (
       <div className="popup-overlay feedback">
-        <div className="feedback-popup" onClick={e => e.stopPropagation()}>
-          <span 
-            className="modal-close" 
-            onClick={handleCloseFeedback}
-            title="Skip feedback"
-          >×</span>
+        <div className="feedback-popup">
+          {/* Removed close button to make feedback mandatory */}
           
           <h2>Event Feedback</h2>
           <p>Please share your experience at:<br/>{currentFeedbackEvent.title}</p>
+          <p className="mandatory-notice">Feedback is required to continue.</p>
           
           <div className="rating-container">
             {[1, 2, 3, 4, 5].map((star) => (

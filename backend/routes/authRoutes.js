@@ -17,6 +17,14 @@ const {
 const eventController = require('../controllers/eventController');
 const authMiddleware = require('../middleware/authMiddleware');
 const db = require('../config/db');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const userModel = require('../models/userModel');
+const emailService = require('../services/emailService');
+const authenticateToken = require('../middleware/authenticateToken');
 
 const router = express.Router();
 
@@ -330,10 +338,188 @@ router.put('/events/:eventId/participants/:userId/reject', authMiddleware, async
   }
 });
 
+// Configure multer storage for document uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    let uploadPath = 'uploads/scholar-documents';
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    // Create a unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+// Set file filter for documents
+const fileFilter = (req, file, cb) => {
+  // Accept only specific file types
+  if (
+    file.mimetype === 'application/pdf' || 
+    file.mimetype === 'image/jpeg' || 
+    file.mimetype === 'image/png'
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid file type. Only PDF, JPEG, and PNG are allowed.'), false);
+  }
+};
+
+// Configure multer upload
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: fileFilter
+});
+
+// Setup fields for document uploads
+const documentUpload = upload.fields([
+  { name: 'schoolRegistrationForm', maxCount: 1 },
+  { name: 'psaDocument', maxCount: 1 },
+  { name: 'parentsId', maxCount: 1 },
+  { name: 'reportCard', maxCount: 1 }
+]);
+
 // Add logging middleware for debugging registration requests
-router.post('/register', (req, res, next) => {
-  console.log('Registration request received with role:', req.body.role);
-  return register(req, res, next);
+router.post('/register', documentUpload, async (req, res) => {
+  try {
+    const {
+      firstName,
+      middleName,
+      lastName,
+      extension,
+      gender,
+      name,
+      username,
+      email,
+      phone,
+      password,
+      dateOfBirth,
+      role,
+      faceData,
+      guardianName,
+      guardianPhone,
+      address,
+      educationLevel,
+      school,
+      parentsIncome,
+    } = req.body;
+
+    // Parse skills and disability data
+    let skills = null;
+    if (req.body.skills) {
+      try {
+        skills = JSON.parse(req.body.skills);
+      } catch (e) {
+        console.error('Error parsing skills JSON:', e);
+      }
+    }
+    
+    let disability = null;
+    if (req.body.disability) {
+      try {
+        disability = JSON.parse(req.body.disability);
+      } catch (e) {
+        console.error('Error parsing disability JSON:', e);
+      }
+    }
+    
+    // Handle document file paths
+    const documentPaths = {};
+    if (req.files) {
+      Object.keys(req.files).forEach(fieldname => {
+        if (req.files[fieldname] && req.files[fieldname].length > 0) {
+          documentPaths[fieldname] = `/uploads/scholar-documents/${req.files[fieldname][0].filename}`;
+        }
+      });
+    }
+
+    // Create user
+    const { user, verificationToken } = await userModel.createUser(
+      firstName,
+      middleName,
+      lastName,
+      extension,
+      gender,
+      name,
+      username,
+      email,
+      phone,
+      password,
+      dateOfBirth,
+      role,
+      faceData,
+      guardianName,
+      guardianPhone,
+      address,
+      educationLevel,
+      school,
+      parentsIncome,
+      skills,
+      disability,
+      documentPaths // Pass document paths to be stored in the database
+    );
+
+    // Send verification email
+    if (email) {
+      try {
+        await emailService.sendVerificationEmail(email, verificationToken);
+      } catch (error) {
+        console.error('Failed to send verification email:', error);
+        // Continue without failing the registration
+      }
+    }
+
+    res.status(201).json({
+      message: 'User registered successfully. Please check your email to verify your account.',
+      userId: user.id,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    
+    // Check for specific error types
+    if (error.message.includes('duplicate key') && error.message.includes('username')) {
+      return res.status(409).json({ 
+        error: 'Username already taken',
+        field: 'username',
+        detail: 'This username is already in use. Please choose another one.'
+      });
+    }
+    
+    if (error.message.includes('duplicate key') && error.message.includes('email')) {
+      return res.status(409).json({ 
+        error: 'Email already registered',
+        field: 'email',
+        detail: 'This email address is already registered. Please use a different email or try to log in.'
+      });
+    }
+    
+    // If error was caused by multer
+    if (error.message.includes('Invalid file type')) {
+      return res.status(400).json({ 
+        error: 'Invalid file type',
+        detail: 'Only PDF, JPEG, and PNG files are allowed for document uploads.'
+      });
+    }
+    
+    if (error.message.includes('File too large')) {
+      return res.status(400).json({
+        error: 'File too large',
+        detail: 'File size exceeds the 5MB limit.'
+      });
+    }
+    
+    res.status(500).json({ error: 'Registration failed' });
+  }
 });
 
 router.post('/login', login);

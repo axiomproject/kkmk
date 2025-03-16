@@ -187,23 +187,52 @@ router.put('/events/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-// Update join event route to use auth middleware
+// Update join event route to use auth middleware and check for previous rejections
 router.post('/:id/join', authMiddleware, async (req, res) => {
   try {
     const eventId = req.params.id;
     const userId = req.user.id; // Get user ID from auth middleware
 
+    // Check if the rejection tracking table exists before querying it
+    try {
+      const tableExists = await db.query(`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables 
+          WHERE table_name = 'event_rejected_users'
+        );
+      `);
+      
+      if (tableExists.rows[0].exists) {
+        // Check if the user was previously rejected from this event
+        const rejectionCheck = await db.query(
+          'SELECT id FROM event_rejected_users WHERE event_id = $1 AND user_id = $2',
+          [eventId, userId]
+        );
+        
+        if (rejectionCheck.rows.length > 0) {
+          return res.status(403).json({ 
+            error: 'You cannot join this event because your previous request was declined.' 
+          });
+        }
+      }
+    } catch (checkError) {
+      console.error('Error checking rejection status:', checkError);
+      // Continue with the join process even if the check fails
+    }
+
     // First, get event and user information for notification
-    const eventResult = await db.query('SELECT title FROM events WHERE id = $1', [eventId]);
-    const userResult = await db.query('SELECT name, profile_photo FROM users WHERE id = $1', [userId]);
+    const eventResult = await db.query('SELECT title, date FROM events WHERE id = $1', [eventId]);
+    const userResult = await db.query('SELECT name, profile_photo, email FROM users WHERE id = $1', [userId]);
     
     if (eventResult.rows.length === 0) {
       return res.status(404).json({ error: 'Event not found' });
     }
     
     const eventTitle = eventResult.rows[0].title;
+    const eventDate = eventResult.rows[0].date;
     const userName = userResult.rows[0]?.name || 'A user';
     const userPhoto = userResult.rows[0]?.profile_photo;
+    const userEmail = userResult.rows[0]?.email;
 
     const event = await EventModel.joinEvent(eventId, userId);
     
@@ -219,7 +248,6 @@ router.post('/:id/join', authMiddleware, async (req, res) => {
     try {
       console.log('Attempting to send admin notifications...');
       
-      // Debug available admin IDs before notification
       const adminIds = await notificationUtils.notifyAllAdmins(
         'event_participant',
         `${userName} has joined event: "${eventTitle}"`,
@@ -234,6 +262,21 @@ router.post('/:id/join', authMiddleware, async (req, res) => {
     } catch (notificationError) {
       console.error('Failed to send admin notification:', notificationError);
       // Don't fail the request if notification sending fails
+    }
+    
+    // Send email to participant about their pending status
+    try {
+      const emailService = require('../services/emailService');
+      await emailService.sendParticipantPendingEmail(
+        userEmail,
+        userName,
+        eventTitle,
+        eventDate
+      );
+      console.log(`Pending participation email sent to ${userName} (${userEmail})`);
+    } catch (emailError) {
+      console.error('Failed to send pending participation email:', emailError);
+      // Don't fail the request if email sending fails
     }
     
     res.json({ 
@@ -327,6 +370,44 @@ router.get('/:id/check-participation', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error checking participation:', error);
     res.status(500).json({ error: 'Failed to check participation status' });
+  }
+});
+
+// Add new endpoint to check if a user has been rejected from an event
+router.get('/:id/check-rejection', authMiddleware, async (req, res) => {
+  try {
+    const eventId = req.params.id;
+    const userId = req.user.id;
+
+    // Check if the rejection tracking table exists
+    const tableExists = await db.query(`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.tables 
+        WHERE table_name = 'event_rejected_users'
+      );
+    `);
+    
+    if (tableExists.rows[0].exists) {
+      // Check if the user was previously rejected from this event
+      const result = await db.query(
+        'SELECT reason, created_at FROM event_rejected_users WHERE event_id = $1 AND user_id = $2',
+        [eventId, userId]
+      );
+      
+      if (result.rows.length > 0) {
+        return res.json({
+          isRejected: true,
+          reason: result.rows[0].reason,
+          rejectedAt: result.rows[0].created_at
+        });
+      }
+    }
+    
+    // If no rejection found
+    res.json({ isRejected: false });
+  } catch (error) {
+    console.error('Error checking rejection status:', error);
+    res.status(500).json({ error: 'Failed to check rejection status' });
   }
 });
 
@@ -482,7 +563,7 @@ router.put('/:id/participants/:userId/approve', authMiddleware, async (req, res)
   }
 });
 
-// Add new endpoint to reject a participant
+// Update reject participant endpoint to track rejections with better error handling
 router.put('/:id/participants/:userId/reject', authMiddleware, async (req, res) => {
   try {
     // Check if user is admin or staff
@@ -493,8 +574,9 @@ router.put('/:id/participants/:userId/reject', authMiddleware, async (req, res) 
     const eventId = req.params.id;
     const userId = req.params.userId;
     const { reason } = req.body; // Optional rejection reason
+    const adminId = req.user.id; // Get admin ID for tracking
 
-    // First, check if the participant exists and is in PENDING status
+    // First, check if the participant exists
     const participantResult = await db.query(
       'SELECT ep.*, e.title as event_title, u.email as user_email, u.name as user_name FROM event_participants ep JOIN events e ON ep.event_id = e.id JOIN users u ON ep.user_id = u.id WHERE ep.event_id = $1 AND ep.user_id = $2',
       [eventId, userId]
@@ -511,6 +593,30 @@ router.put('/:id/participants/:userId/reject', authMiddleware, async (req, res) 
       'DELETE FROM event_participants WHERE event_id = $1 AND user_id = $2',
       [eventId, userId]
     );
+
+    // Try to record the rejection in the event_rejected_users table
+    try {
+      // First check if the table exists
+      const tableExists = await db.query(`
+        SELECT EXISTS (
+          SELECT 1 FROM information_schema.tables 
+          WHERE table_name = 'event_rejected_users'
+        );
+      `);
+      
+      // If the table exists, insert the record
+      if (tableExists.rows[0].exists) {
+        await db.query(
+          'INSERT INTO event_rejected_users (event_id, user_id, admin_id, reason) VALUES ($1, $2, $3, $4)',
+          [eventId, userId, adminId, reason || 'No specific reason provided']
+        );
+      } else {
+        console.warn('event_rejected_users table does not exist yet. Skipping rejection tracking.');
+      }
+    } catch (trackingError) {
+      console.error('Failed to record rejection in database:', trackingError);
+      // Continue with the rejection process even if tracking fails
+    }
 
     // Update event's current_volunteers count
     await db.query(

@@ -43,6 +43,8 @@ import ScholarReports from '../pages/admin/ScholarReports';
 import AdminMap from '../pages/admin/Maps'; // Add this import
 import CMS from '../pages/admin/ContentEditor'; // Add this import
 import Scholarslocation from '../pages/admin/scholars/Scholarslocation'; // Add this import
+import FORUMPOLL from '../components/analytics/ForumAnalytics';
+import EVENTFEEDBACK from '../components/EventFeedbackAnalytics';
 
 interface RoleRouteProps {
   element: React.ReactNode;
@@ -203,6 +205,14 @@ const router = createBrowserRouter([
       {
         path: '/Contacts',
         element: <RoleRoute element={<Contacts/>} allowedRoles={['admin', 'staff']} />
+      },
+      {
+        path: PATHS.ADMIN.EVENTFEEDBACK,
+        element: <RoleRoute element={<EVENTFEEDBACK />} allowedRoles={['admin', 'staff']} />
+      },
+      {
+        path: PATHS.ADMIN.FORUMPOLL,
+        element: <RoleRoute element={<FORUMPOLL />} allowedRoles={['admin', 'staff']} />
       },
       {
         path: PATHS.ADMIN.CMS,

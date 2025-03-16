@@ -2033,3 +2033,203 @@ select:focus {
 }
 
 /* ... rest of existing code ... */
+
+/* Add these styles to your existing CSS file */
+
+/* FAQ Section Styling */
+.faq-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.faq-section h2 {
+  color: #ffbb00;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.faq-category {
+  margin-bottom: 2rem;
+}
+
+.faq-category h3 {
+  color: #ffbb00;
+  border-bottom: 2px solid #004aad;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.faq-item {
+  margin-bottom: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+/* Add a special style for linked FAQ items */
+.faq-item:target {
+  border-color: #ffbb00;
+  box-shadow: 0 0 10px rgba(0, 74, 173, 0.2);
+  scroll-margin-top: 100px; /* Space for fixed headers */
+}
+
+.faq-question {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.faq-question:hover {
+  background-color: #f0f0f0;
+}
+
+.faq-question.active {
+  background-color: #e6f0ff;
+}
+
+.faq-question h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.faq-answer {
+  padding: 1rem;
+  background-color: #fff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.faq-answer p {
+  margin-top: 0;
+  color: #444;
+}
+
+.faq-answer ul, .faq-answer ol {
+  margin-left: 1.5rem;
+  color: #444;
+}
+
+.faq-answer li {
+  margin-bottom: 0.5rem;
+}
+
+/* Updated FAQ Section Styling - Minimal with fixed width dropdowns */
+.faq-section.minimal {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.faq-section.minimal h2 {
+  color: #242424;
+  margin-bottom: 2rem;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.faq-section.minimal .faq-category {
+  margin-bottom: 2rem;
+}
+
+.faq-section.minimal .faq-category h3 {
+  color: #f3b509;
+  border-bottom: 2px solid #ca9709;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.faq-section.minimal .faq-item {
+  margin-bottom: 1rem;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+/* Add a special style for linked FAQ items */
+.faq-section.minimal .faq-item:target {
+  border-left: 4px solid #004aad;
+  padding-left: 1rem;
+  scroll-margin-top: 120px; /* Space for fixed headers */
+}
+
+.faq-section.minimal .faq-question {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.03); /* Very subtle background */
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.faq-section.minimal .faq-question:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.faq-section.minimal .faq-question.active {
+  background-color: rgba(0, 74, 173, 0.08);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.faq-section.minimal .faq-question h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.faq-section.minimal .faq-answer {
+  padding: 1.5rem 1rem;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+/* Fixed width for FAQ answers */
+.faq-section.minimal .faq-answer.fixed-width {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.faq-section.minimal .faq-answer p {
+  margin-top: 0;
+  color: #444;
+  line-height: 1.6;
+}
+
+.faq-section.minimal .faq-answer ul, 
+.faq-section.minimal .faq-answer ol {
+  margin-left: 1.5rem;
+  color: #444;
+  padding-bottom: 0.5rem;
+}
+
+.faq-section.minimal .faq-answer li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+/* Add smooth transitions */
+.faq-section.minimal .faq-answer {
+  transition: all 0.3s ease;
+}
+
+/* Icon styling */
+.faq-section.minimal .faq-question svg {
+  color: #004aad;
+  font-size: 1rem;
+}
+
+/* ...rest of existing code... */

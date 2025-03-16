@@ -25,25 +25,62 @@ const ScholarDonationModel = {
         }
       }
 
-      // Insert the donation with scholar_id pointing directly to user_id
-      const result = await db.query(`
-        INSERT INTO scholar_donations (
-          scholar_id, sponsor_id, donor_name, donor_email, donor_phone,
-          amount, payment_method, proof_image, message, verification_status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING *
-      `, [
-        data.scholarId,
-        data.sponsorId || null,
-        data.donorName || data.name || null,
-        data.email,
-        data.phone,
-        data.amount,
-        data.paymentMethod,
-        data.proofOfPayment || null,
-        data.message || '',
-        'pending'
-      ]);
+      // Check if frequency column exists in the table
+      let hasFrequencyColumn = false;
+      try {
+        const columnCheck = await db.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'scholar_donations' AND column_name = 'frequency'
+        `);
+        hasFrequencyColumn = columnCheck.rows.length > 0;
+      } catch (checkError) {
+        console.error('Error checking for frequency column:', checkError);
+      }
+
+      // Use different SQL based on whether frequency column exists
+      let result;
+      if (hasFrequencyColumn) {
+        result = await db.query(`
+          INSERT INTO scholar_donations (
+            scholar_id, sponsor_id, donor_name, donor_email, donor_phone,
+            amount, payment_method, proof_image, message, verification_status, frequency
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          RETURNING *
+        `, [
+          data.scholarId,
+          data.sponsorId || null,
+          data.donorName || data.name || null,
+          data.email,
+          data.phone,
+          data.amount,
+          data.paymentMethod,
+          data.proofOfPayment || null,
+          data.message || '',
+          'pending',
+          data.frequency || 'monthly' // Default to monthly if not provided
+        ]);
+      } else {
+        // Fallback query without the frequency column
+        result = await db.query(`
+          INSERT INTO scholar_donations (
+            scholar_id, sponsor_id, donor_name, donor_email, donor_phone,
+            amount, payment_method, proof_image, message, verification_status
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          RETURNING *
+        `, [
+          data.scholarId,
+          data.sponsorId || null,
+          data.donorName || data.name || null,
+          data.email,
+          data.phone,
+          data.amount,
+          data.paymentMethod,
+          data.proofOfPayment || null,
+          data.message || '',
+          'pending'
+        ]);
+      }
       
       return result.rows[0];
     } catch (error) {

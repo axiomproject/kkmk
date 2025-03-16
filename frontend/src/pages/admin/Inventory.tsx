@@ -617,7 +617,7 @@ const AdminInventory: React.FC = () => {
   const [editingItem, setEditingItem] = useState<RegularDonation | InKindDonation | undefined>();
   const [distributeItem, setDistributeItem] = useState<RegularDonation | InKindDonation | null>(null);
   const [addingType, setAddingType] = useState<'regular' | 'in-kind'>('regular');
-  const [activeView, setActiveView] = useState<'pending' | 'regular' | 'in-kind'>('pending');
+  const [activeView, setActiveView] = useState<'pending' | 'regular' | 'in-kind' | 'expiring'>('pending');
   const [distributions, setDistributions] = useState<Distribution[]>([]);
   const [inventoryPage, setInventoryPage] = useState(1);
   const [queuePage, setQueuePage] = useState(1);
@@ -1426,10 +1426,21 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
     calculateExpiringItems();
   }, [regularItems, inkindItems]);
 
-  // Add this new function to render expiring items
+  // Update this function to be a complete tab view
   const renderExpiringItems = () => {
     if (expiringItems.length === 0) {
-      return null;
+      return (
+        <div className="inventory-section">
+          <div className="table-header">
+            <div className="header-left">
+              <h2 className="table-title">Items Nearing Expiration or Expired</h2>
+            </div>
+          </div>
+          <div className="inventory-table">
+            <p style={{ padding: "20px", textAlign: "center" }}>No expiring or expired items found.</p>
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -1438,17 +1449,54 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
           <div className="header-left">
             <h2 className="table-title">Items Nearing Expiration or Expired</h2>
           </div>
+          <div className="header-actions">
+            <button className="export-btn" onClick={() => {
+              // Create export for expiring items
+              try {
+                const exportData = expiringItems.map(item => ({
+                  'Item Name': item.item,
+                  'Category': item.category,
+                  'Quantity': item.quantity,
+                  'Unit': item.unit,
+                  'Type': item.type,
+                  'Expiration Date': new Date(item.expirationDate || '').toLocaleDateString(),
+                  'Days Until Expiration': item.isExpired ? 'EXPIRED' : `${item.daysUntilExpiration} days`,
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Expiring Items');
+                XLSX.writeFile(wb, `expiring_items_${new Date().toISOString().split('T')[0]}.xlsx`);
+              } catch (error) {
+                console.error('Export error:', error);
+              }
+            }}>
+              Export
+            </button>
+          </div>
         </div>
         <div className="inventory-table">
           <table>
             <thead>
               <tr>
-                <th>Item Name</th>
-                <th>Category</th>
-                <th>Quantity</th>
-                <th>Unit</th>
-                <th>Type</th>
-                <th>Expiration Date</th>
+                <th onClick={() => handleSort('item')} className="sortable-header">
+                  Item Name <span className="material-icons sort-icon">{getSortIcon('item')}</span>
+                </th>
+                <th onClick={() => handleSort('category')} className="sortable-header">
+                  Category <span className="material-icons sort-icon">{getSortIcon('category')}</span>
+                </th>
+                <th onClick={() => handleSort('quantity')} className="sortable-header">
+                  Quantity <span className="material-icons sort-icon">{getSortIcon('quantity')}</span>
+                </th>
+                <th onClick={() => handleSort('unit')} className="sortable-header">
+                  Unit <span className="material-icons sort-icon">{getSortIcon('unit')}</span>
+                </th>
+                <th onClick={() => handleSort('type')} className="sortable-header">
+                  Type <span className="material-icons sort-icon">{getSortIcon('type')}</span>
+                </th>
+                <th onClick={() => handleSort('expirationDate')} className="sortable-header">
+                  Expiration Date <span className="material-icons sort-icon">{getSortIcon('expirationDate')}</span>
+                </th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -1741,17 +1789,23 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
             >
               In-kind Donations
             </button>
+            <button 
+              className={`inventory-tab-button ${activeView === 'expiring' ? 'active' : ''}`}
+              onClick={() => setActiveView('expiring')}
+            >
+              Expiring Items
+            </button>
           </div>
         
         </div>
       </div>
 
       <div className="inventory-tables-container">
-        {renderExpiringItems()} {/* Add this line before other tables */}
+        {activeView === 'expiring' && renderExpiringItems()} {/* Add this line before other tables */}
         {activeView === 'pending' ? (
           renderVerificationQueue()
         ) : (
-          renderInventoryTable(activeView)
+          activeView === 'expiring' ? null : renderInventoryTable(activeView as 'regular' | 'in-kind')
         )}
         {renderDistributionHistory()}
       </div>
@@ -1826,3 +1880,4 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
   );
 };
 export default AdminInventory;
+ 
