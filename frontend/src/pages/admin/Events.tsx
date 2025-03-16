@@ -416,6 +416,10 @@ const AdminEvents: React.FC = () => {
   };
 
 const handleShow = (event?: EventType) => {
+  // Capture scroll position before opening modal
+  const scrollY = window.scrollY;
+  document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
+  
   if (event) {
     // Add explicit console logs to troubleshoot the requirements field
     console.log('Event object in handleShow:', JSON.stringify(event, null, 2));
@@ -675,25 +679,29 @@ const handleDelete = async (id: number) => {
   }
 };
 
-  const fetchParticipants = async (eventId: number) => {
-    try {
-      setLoadingParticipants(true);
-      
-      // Update API call to request skills and disability information
-      const response = await axios.get(`/api/events/${eventId}/participants`, {
-        params: { includeDetails: true } // Add parameter to request additional fields
-      });
-      
-      console.log('Fetched participants with details:', response.data);
-      setSelectedEventParticipants(response.data);
-      setSelectedEvent(events.find(event => event.id === eventId) || null);
-      setShowParticipantsModal(true);
-    } catch (error) {
-      console.error('Failed to fetch participants:', error);
-    } finally {
-      setLoadingParticipants(false);
-    }
-  };
+const fetchParticipants = async (eventId: number) => {
+  // Capture scroll position before opening modal
+  const scrollY = window.scrollY;
+  document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
+  
+  try {
+    setLoadingParticipants(true);
+    
+    // Update API call to request skills and disability information
+    const response = await axios.get(`/api/events/${eventId}/participants`, {
+      params: { includeDetails: true } // Add parameter to request additional fields
+    });
+    
+    console.log('Fetched participants with details:', response.data);
+    setSelectedEventParticipants(response.data);
+    setSelectedEvent(events.find(event => event.id === eventId) || null);
+    setShowParticipantsModal(true);
+  } catch (error) {
+    console.error('Failed to fetch participants:', error);
+  } finally {
+    setLoadingParticipants(false);
+  }
+};
 
   // Update handleRemoveParticipant to include a reason prompt
   const handleRemoveParticipant = async (eventId: number, userId: number) => {
@@ -2225,3 +2233,4 @@ useEffect(() => {
       </div>  );};
 
 export default AdminEvents;
+

@@ -142,7 +142,24 @@ const ScholarDonations: React.FC = () => {
   };
 
   const handleVerify = async (id: number) => {
-    if (!window.confirm('Verify this donation?')) return;
+    // Find the donation with the given ID
+    const donation = donations.find(d => d.id === id);
+    if (!donation) return;
+    
+    // Determine scholar name to display in confirmation
+    let scholarName = 'Unknown Scholar';
+    
+    if (donation.scholar_name) {
+      scholarName = donation.scholar_name;
+    } else if (donation.scholar_first_name) {
+      scholarName = donation.scholar_first_name + 
+        (donation.scholar_last_name ? ' ' + donation.scholar_last_name : '');
+    } else if (donation.scholar && donation.scholar.first_name) {
+      scholarName = donation.scholar.first_name + 
+        (donation.scholar.last_name ? ' ' + donation.scholar.last_name : '');
+    }
+    
+    if (!window.confirm(`Verify this donation for ${scholarName}?`)) return;
     
     try {
       setIsProcessing(true);

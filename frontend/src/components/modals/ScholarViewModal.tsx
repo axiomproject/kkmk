@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/admin/Modals.css';
 
 interface ScholarViewModalProps {
@@ -9,6 +9,23 @@ interface ScholarViewModalProps {
 const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
   // Debug log to check what data is arriving in view modal
   console.log("Scholar data received in ViewModal:", scholar);
+  
+  // Add specific debugging for document_paths
+  useEffect(() => {
+    console.log("Document paths value:", scholar.document_paths);
+    console.log("Document paths type:", typeof scholar.document_paths);
+    
+    // If it's a string that looks like JSON, try to parse it
+    if (typeof scholar.document_paths === 'string' && 
+        (scholar.document_paths.startsWith('{') || scholar.document_paths.startsWith('['))) {
+      try {
+        const parsed = JSON.parse(scholar.document_paths);
+        console.log("Parsed document paths:", parsed);
+      } catch (err) {
+        console.error("Failed to parse document_paths JSON:", err);
+      }
+    }
+  }, [scholar.document_paths]);
 
   // State for document preview
   const [previewDoc, setPreviewDoc] = useState<{ url: string, type: string, title: string } | null>(null);
@@ -68,16 +85,34 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
 
   // Parse document paths from JSON if available
   const getDocuments = () => {
-    if (!scholar.document_paths) return null;
+    if (!scholar.document_paths) {
+      console.log("No document_paths available");
+      
+      // If we're in development mode, create placeholders for testing
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Creating placeholder documents for testing");
+        return {
+          schoolRegistrationForm: "https://example.com/sample.pdf",
+          psaDocument: "https://picsum.photos/800/600",
+          reportCard: "https://example.com/sample-report.pdf"
+        };
+      }
+      
+      return null;
+    }
     
     try {
       // If it's already an object, use it directly
       if (typeof scholar.document_paths === 'object' && !Array.isArray(scholar.document_paths)) {
+        console.log("Using document_paths as object:", scholar.document_paths);
         return scholar.document_paths;
       }
       
       // Otherwise try to parse it from a JSON string
-      return JSON.parse(scholar.document_paths);
+      console.log("Attempting to parse document_paths from string");
+      const parsed = JSON.parse(scholar.document_paths);
+      console.log("Successfully parsed document_paths:", parsed);
+      return parsed;
     } catch (err) {
       console.error('Error parsing document paths:', err);
       return null;
@@ -85,6 +120,7 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
   };
 
   const documents = getDocuments();
+  console.log("Final documents object:", documents);
 
   // Helper function to get document type from URL
   const getDocumentType = (url: string) => {
@@ -126,8 +162,18 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
         <div className="document-preview-content" onClick={e => e.stopPropagation()}>
           <div className="document-preview-header">
             <h3>{previewDoc.title}</h3>
-            <button className="close-button" onClick={closePreview}>&times;</button>
+        
           </div>
+          
+          {/* Add a prominent close button in the top right corner */}
+          <button 
+            className="document-preview-top-close" 
+            onClick={closePreview}
+            title="Close preview"
+          >
+            <i className="material-icons">close</i>
+          </button>
+          
           <div className="document-preview-body">
             {previewDoc.type === 'image' ? (
               <img src={previewDoc.url} alt={previewDoc.title} className="document-preview-image" />
@@ -150,7 +196,6 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
             <a href={previewDoc.url} download className="download-button">
               Download
             </a>
-            <button className="close-btn" onClick={closePreview}>Close</button>
           </div>
         </div>
       </div>
@@ -165,6 +210,57 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
           <button className="close-button" onClick={onClose}>&times;</button>
         </div>
         <div className="modal-body scholar-form">
+          {/* Document Section - Always shown, with message if no documents */}
+          <div className="form-section">
+            <div className="form-section-title">Required Documents</div>
+            {documents && Object.keys(documents).length > 0 ? (
+              <div className="document-grid">
+                {Object.entries(documents).map(([key, url]) => {
+                  const documentType = getDocumentType(url as string);
+                  const documentTitle = getDocumentTitle(key);
+                  
+                  return (
+                    <div className="document-item" key={key}>
+                      <div className="document-icon">
+                        {documentType === 'pdf' ? (
+                          <i className="material-icons">description</i>
+                        ) : documentType === 'image' ? (
+                          <i className="material-icons">image</i>
+                        ) : (
+                          <i className="material-icons">insert_drive_file</i>
+                        )}
+                      </div>
+                      <div className="document-details">
+                        <h4>{documentTitle}</h4>
+                        <div className="document-actionss">
+                          <button 
+                            className="view-document-btn"
+                            onClick={() => handlePreviewDocument(url as string, documentType, documentTitle)}
+                          >
+                            View
+                          </button>
+                          <a 
+                            href={url as string} 
+                            download 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="download-document-btn"
+                          >
+                            Download
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="no-documents-message">
+                No documents uploaded by this scholar.
+              </div>
+            )}
+          </div>
+          
           {/* Personal Information Section */}
           <div className="form-section">
             <div className="form-section-title">Personal Information</div>
@@ -320,53 +416,6 @@ const ScholarViewModal = ({ scholar, onClose }: ScholarViewModalProps) => {
               </div>
             </div>
           </div>
-          
-          {/* Documents Section - Only show if documents are available */}
-          {documents && Object.keys(documents).length > 0 && (
-            <div className="form-section">
-              <div className="form-section-title">Required Documents</div>
-              <div className="document-grid">
-                {Object.entries(documents).map(([key, url]) => {
-                  const documentType = getDocumentType(url as string);
-                  const documentTitle = getDocumentTitle(key);
-                  
-                  return (
-                    <div className="document-item" key={key}>
-                      <div className="document-icon">
-                        {documentType === 'pdf' ? (
-                          <i className="material-icons">description</i>
-                        ) : documentType === 'image' ? (
-                          <i className="material-icons">image</i>
-                        ) : (
-                          <i className="material-icons">insert_drive_file</i>
-                        )}
-                      </div>
-                      <div className="document-details">
-                        <h4>{documentTitle}</h4>
-                        <div className="document-actions">
-                          <button 
-                            className="view-document-btn"
-                            onClick={() => handlePreviewDocument(url as string, documentType, documentTitle)}
-                          >
-                            View
-                          </button>
-                          <a 
-                            href={url as string} 
-                            download 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="download-document-btn"
-                          >
-                            Download
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
           
           {/* System Information Section */}
           <div className="form-section">

@@ -11,7 +11,7 @@ const createUser = async (
   lastName,
   extension,
   gender,
-  name, // Keeping for backward compatibility
+  name, // We'll ignore this parameter and construct our own
   username, 
   email, 
   phone, // Add phone parameter
@@ -30,6 +30,37 @@ const createUser = async (
   documentPaths = null   // Add document paths parameter
 ) => {
   try {
+    // First check if email or username already exists
+    const existingUser = await db.query(
+      'SELECT email, username FROM users WHERE email = $1 OR username = $2',
+      [email, username]
+    );
+    
+    if (existingUser.rows.length > 0) {
+      const existing = existingUser.rows[0];
+      
+      // Be specific about which field caused the conflict
+      if (existing.email === email) {
+        const error = new Error('Email already registered');
+        error.field = 'email';
+        error.status = 409;
+        throw error;
+      }
+      
+      if (existing.username === username) {
+        const error = new Error('Username already taken');
+        error.field = 'username';
+        error.status = 409;
+        throw error;
+      }
+    }
+
+    // Construct the full name from components
+    // Filter out null/undefined/empty values and join with spaces
+    const fullName = [firstName, middleName, lastName, extension]
+      .filter(part => part && part.trim())
+      .join(' ');
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString('hex');
     
@@ -72,7 +103,8 @@ const createUser = async (
       RETURNING *`,
       [
         firstName, middleName, lastName, extension, gender,
-        name, username, emailValue, phone, hashedPassword, dateOfBirth, 
+        fullName, // Use our constructed fullName instead of the provided name parameter
+        username, emailValue, phone, hashedPassword, dateOfBirth, 
         verificationToken, false, role, new Date(),
         face_descriptors, face_landmarks, faceData !== null,
         guardianName, guardianPhone, address, educationLevel, school,
@@ -82,6 +114,18 @@ const createUser = async (
 
     return { user: result.rows[0], verificationToken };
   } catch (error) {
+    // Enhance error with field information if it's a database constraint error
+    if (error.code === '23505') { // PostgreSQL unique constraint violation code
+      if (error.constraint === 'users_email_key') {
+        error.field = 'email';
+        error.status = 409;
+        error.message = 'Email already registered';
+      } else if (error.constraint === 'users_username_key') {
+        error.field = 'username';
+        error.status = 409;
+        error.message = 'Username already taken';
+      }
+    }
     throw error;
   }
 };
@@ -133,7 +177,7 @@ const updateUserDetails = async (
   lastName,
   extension,
   gender,
-  name,
+  name, // We'll ignore this parameter and construct our own
   email, 
   username, 
   dateOfBirth, 
@@ -149,7 +193,7 @@ const updateUserDetails = async (
   disability
 ) => {
   // First get the current user data to ensure we don't override the email with null
-  const userResult = await db.query('SELECT email, role FROM users WHERE id = $1', [userId]);
+  const userResult = await db.query('SELECT email, role, first_name, middle_name, last_name, name_extension FROM users WHERE id = $1', [userId]);
   
   if (userResult.rows.length === 0) {
     return null; // User not found
@@ -161,6 +205,17 @@ const updateUserDetails = async (
   // Use the current email if no new email is provided
   const emailToUse = email || currentEmail;
 
+  // Determine what values to use for name components, using current values as fallback
+  const firstNameToUse = firstName || userResult.rows[0].first_name;
+  const middleNameToUse = middleName || userResult.rows[0].middle_name;
+  const lastNameToUse = lastName || userResult.rows[0].last_name;
+  const extensionToUse = extension || userResult.rows[0].name_extension;
+
+  // Construct the full name from components - filter out null/undefined/empty values
+  const fullName = [firstNameToUse, middleNameToUse, lastNameToUse, extensionToUse]
+    .filter(part => part && part.trim())
+    .join(' ');
+
   // Format skills as JSON if provided
   const skillsJson = skills ? JSON.stringify(skills) : null;
   
@@ -170,9 +225,6 @@ const updateUserDetails = async (
   // Build the query based on role
   let query;
   let params;
-
-  // Construct the full name from parts if provided
-  const fullName = name || [firstName, middleName, lastName, extension].filter(Boolean).join(' ');
   
   if (userRole === 'scholar') {
     query = `
@@ -182,7 +234,7 @@ const updateUserDetails = async (
           last_name = COALESCE($3, last_name),
           name_extension = COALESCE($4, name_extension),
           gender = COALESCE($5, gender),
-          name = COALESCE($6, name),
+          name = $6, /* Always update the name field with our constructed fullName */
           email = $7, 
           username = COALESCE($8, username),
           date_of_birth = COALESCE($9, date_of_birth),
@@ -200,13 +252,15 @@ const updateUserDetails = async (
                 guardian_name, guardian_phone, address, education_level, school`;
     
     params = [
-      firstName, middleName, lastName, extension, gender, fullName,
+      firstName, middleName, lastName, extension, gender, 
+      fullName, // Use our constructed fullName instead of the provided name parameter
       emailToUse, username, dateOfBirth, phone, intro, knownAs,
       guardianName, guardianPhone, address, educationLevel, school,
       userId
     ];
   } 
   else if (userRole === 'volunteer') {
+    // ...Similar changes for volunteer...
     query = `
       UPDATE users 
       SET first_name = COALESCE($1, first_name),
@@ -214,7 +268,7 @@ const updateUserDetails = async (
           last_name = COALESCE($3, last_name),
           name_extension = COALESCE($4, name_extension),
           gender = COALESCE($5, gender),
-          name = COALESCE($6, name),
+          name = $6, /* Always update the name field with our constructed fullName */
           email = $7, 
           username = COALESCE($8, username),
           date_of_birth = COALESCE($9, date_of_birth),
@@ -228,13 +282,14 @@ const updateUserDetails = async (
                 username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone, skills, disability`;
     
     params = [
-      firstName, middleName, lastName, extension, gender, fullName,
+      firstName, middleName, lastName, extension, gender, 
+      fullName, // Use our constructed fullName instead of the provided name parameter
       emailToUse, username, dateOfBirth, phone, intro, knownAs,
       skillsJson, disabilityJson, userId
     ];
   }
   else {
-    // Default update for sponsor or any other role
+    // ...And for other roles...
     query = `
       UPDATE users 
       SET first_name = COALESCE($1, first_name),
@@ -242,7 +297,7 @@ const updateUserDetails = async (
           last_name = COALESCE($3, last_name),
           name_extension = COALESCE($4, name_extension),
           gender = COALESCE($5, gender),
-          name = COALESCE($6, name),
+          name = $6, /* Always update the name field with our constructed fullName */
           email = $7, 
           username = COALESCE($8, username),
           date_of_birth = COALESCE($9, date_of_birth),
@@ -254,7 +309,8 @@ const updateUserDetails = async (
                 username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone`;
     
     params = [
-      firstName, middleName, lastName, extension, gender, fullName,
+      firstName, middleName, lastName, extension, gender, 
+      fullName, // Use our constructed fullName instead of the provided name parameter
       emailToUse, username, dateOfBirth, phone, intro, knownAs,
       userId
     ];

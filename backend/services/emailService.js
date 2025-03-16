@@ -601,6 +601,63 @@ const sendDonationRejectionEmail = async (email, donorName, scholarName, amount,
   }
 };
 
+const sendReportCardVerificationEmail = async (recipientEmail, recipientName, gradingPeriod) => {
+  try {
+    const mailOptions = {
+      from: {
+        name: 'KKMK Support',
+        address: process.env.EMAIL_USER
+      },
+      to: recipientEmail,
+      subject: 'Your Report Card Has Been Verified ✅',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4CAF50;">Report Card Verified!</h1>
+          
+          <p>Dear ${recipientName},</p>
+          
+          <p>Great news! Your report card for the ${formatGradingPeriod(gradingPeriod)} has been verified successfully.</p>
+          
+          <p>Details:</p>
+          <ul>
+            <li>Status: <strong style="color: #4CAF50;">Verified</strong></li>
+            <li>Grading Period: <strong>${formatGradingPeriod(gradingPeriod)}</strong></li>
+            <li>Verification Date: ${new Date().toLocaleDateString()}</li>
+          </ul>
+          
+          <p>Thank you for keeping your academic records up to date.</p>
+          
+          <hr style="border: 1px solid #eee; margin: 20px 0;">
+          <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Report card verification email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending report card verification email:', error);
+    // Don't throw - we don't want to interrupt the verification process
+    return null;
+  }
+};
+
+// Helper function to format grading period
+const formatGradingPeriod = (period) => {
+  const periodMap = {
+    '1st': 'First Grading',
+    '2nd': 'Second Grading',
+    '3rd': 'Third Grading',
+    '4th': 'Fourth Grading',
+    '1st_sem': 'First Semester',
+    '2nd_sem': 'Second Semester',
+    '3rd_sem': 'Third Semester'
+  };
+  return periodMap[period] || period;
+};
+
+
 // Add new function for pending participation notifications
 const sendParticipantPendingEmail = async (email, name, eventTitle, eventDate) => {
   // Format the date for display
@@ -656,17 +713,397 @@ const sendParticipantPendingEmail = async (email, name, eventTitle, eventDate) =
   }
 };
 
+const sendDonationSubmissionEmail = async (email, donorName, items, submissionDate) => {
+  const formattedDate = new Date(submissionDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric'
+  });
+
+  const itemsList = items.map(item => `
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.itemName}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.quantity} ${item.unit}(s)</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.category}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.type === 'regular' ? 'Regular' : 'In-kind'}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.frequency || 'N/A'}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.expirationDate ? new Date(item.expirationDate).toLocaleDateString() : 'N/A'}</td>
+    </tr>
+  `).join('');
+
+  const mailOptions = {
+    from: {
+      name: 'KMFI Foundation',
+      address: process.env.EMAIL_USER
+    },
+    to: email,
+    subject: 'Donation Form Submitted Successfully',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #4CAF50;">Thank You for Your Donation!</h1>
+        
+        <p>Dear ${donorName},</p>
+        
+        <p>Your donation form was successfully submitted on ${formattedDate}.</p>
+        
+        <h3>Donated Items:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="padding: 8px; border: 1px solid #ddd;">Item</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Quantity</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Category</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Type</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Frequency</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Expiration Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsList}
+          </tbody>
+        </table>
+
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h4 style="margin-top: 0;">Next Steps:</h4>
+          <ol>
+            <li>Our team will review your donation within 1-2 business days.</li>
+            <li>You will receive another email once your items are received at our foundation.</li>
+            <li>For in-kind donations, please ensure items are properly packaged for delivery.</li>
+          </ol>
+        </div>
+
+        <p><strong>Note:</strong> Expected processing time is 2-3 business days from the date of verification.</p>
+        
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">
+          If you have any questions about your donation, please contact us.<br>
+          This is an automated email. Please do not reply to this message.
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Donation submission email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending donation submission email:', error);
+    return null;
+  }
+};
+
+const sendDonationItemVerificationEmail = async (email, donorName, items, verificationDate) => {
+  const formattedDate = new Date(verificationDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric'
+  });
+
+  const itemsList = items.map(item => `
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.item}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.quantity} ${item.unit}(s)</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.category}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.type === 'regular' ? 'Regular' : 'In-kind'}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.frequency || 'N/A'}</td>
+    </tr>
+  `).join('');
+
+  const mailOptions = {
+    from: {
+      name: 'KMFI Foundation',
+      address: process.env.EMAIL_USER
+    },
+    to: email,
+    subject: 'Your Donated Items Have Been Received',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #4CAF50;">Donation Received!</h1>
+        
+        <p>Dear ${donorName},</p>
+        
+        <p>We're pleased to inform you that your donated items have been received and verified at our foundation on ${formattedDate}.</p>
+        
+        <h3>Verified Items:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="padding: 8px; border: 1px solid #ddd;">Item</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Quantity</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Category</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Type</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Frequency</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsList}
+          </tbody>
+        </table>
+
+        <p>Your generous donation will help support our community programs and those in need.</p>
+
+        <p>We truly appreciate your support and contribution to our cause.</p>
+
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">
+          For any inquiries about your donation, please contact us.<br>
+          This is an automated email. Please do not reply to this message.
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Donation verification email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending donation verification email:', error);
+    return null;
+  }
+};
+
+const sendDonationItemRejectionEmail = async (email, donorName, items, rejectionReason) => {
+  const itemsList = items.map(item => `
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.item}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.quantity} ${item.unit}(s)</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.category}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.type === 'regular' ? 'Regular' : 'In-kind'}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.frequency || 'N/A'}</td>
+    </tr>
+  `).join('');
+
+  const mailOptions = {
+    from: {
+      name: 'KMFI Foundation',
+      address: process.env.EMAIL_USER
+    },
+    to: email,
+    subject: 'Important Update: Your Donation Status',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #D32F2F;">Donation Status Update</h1>
+        
+        <p>Dear ${donorName},</p>
+        
+        <p>We regret to inform you that we are unable to accept the following donated items at this time:</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="padding: 8px; border: 1px solid #ddd;">Item</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Quantity</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Category</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Type</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Frequency</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsList}
+          </tbody>
+        </table>
+
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h4 style="margin-top: 0;">Reason for Rejection:</h4>
+          <p>${rejectionReason}</p>
+        </div>
+
+        <p>We sincerely appreciate your intention to support our cause. If you would like to discuss alternative donation options or have any questions, please don't hesitate to contact us.</p>
+
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">
+          For any inquiries about your donation status, please contact us.<br>
+          This is an automated email. Please do not reply to this message.
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Donation rejection email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending donation rejection email:', error);
+    return null;
+  }
+};
+
+const sendDistributionNotificationEmail = async (email, scholarName, items, distributionId) => {
+  const itemsList = items.map(item => `
+    <tr>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.itemName}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.quantity} ${item.unit}(s)</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.category}</td>
+      <td style="padding: 8px; border: 1px solid #ddd;">${item.type === 'regular' ? 'Regular' : 'In-kind'}</td>
+    </tr>
+  `).join('');
+
+  const mailOptions = {
+    from: {
+      name: 'KMFI Foundation',
+      address: process.env.EMAIL_USER
+    },
+    to: email,
+    subject: 'New Items Distribution Notice',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #4CAF50;">Items Distribution Notice</h1>
+        
+        <p>Dear ${scholarName},</p>
+        
+        <p>The following items have been distributed to you:</p>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f5f5f5;">
+              <th style="padding: 8px; border: 1px solid #ddd;">Item</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Quantity</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Category</th>
+              <th style="padding: 8px; border: 1px solid #ddd;">Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsList}
+          </tbody>
+        </table>
+
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h4 style="margin-top: 0;">Important:</h4>
+          <p>Please verify receipt of these items by logging into your account and following these steps:</p>
+          <ol>
+            <li>Go to your Profile</li>
+            <li>Find this distribution under "Items Received"</li>
+            <li>Click "Verify Receipt" if you received the items</li>
+            <li>Or click "Report Issue" if there are any problems</li>
+          </ol>
+        </div>
+
+        <p><strong>Distribution ID:</strong> #${distributionId}</p>
+        <p><strong>Note:</strong> Please verify receipt within 48 hours of receiving this notification.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL}/profile" 
+             style="background-color: #4CAF50; 
+                    color: white; 
+                    padding: 12px 25px; 
+                    text-decoration: none; 
+                    border-radius: 5px;
+                    font-weight: bold;">
+            Go to Profile
+          </a>
+        </div>
+
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">
+          If you have any questions about these items, please contact us.<br>
+          This is an automated email. Please do not reply to this message.
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Distribution notification email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending distribution notification email:', error);
+    throw error;
+  }
+};
+
+const sendDistributionVerificationEmail = async (adminEmail, scholarName, status, message, distributionId) => {
+  const mailOptions = {
+    from: {
+      name: 'KMFI Foundation',
+      address: process.env.EMAIL_USER
+    },
+    to: adminEmail,
+    subject: `Distribution Verification Update - ${status.toUpperCase()}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: ${status === 'received' ? '#4CAF50' : '#f44336'};">
+          Distribution ${status === 'received' ? 'Received' : 'Issue Reported'}
+        </h1>
+        
+        <p>Scholar <strong>${scholarName}</strong> has ${
+          status === 'received' ? 'confirmed receipt' : 'reported an issue'
+        } for distribution #${distributionId}.</p>
+        
+        ${message ? `
+          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4 style="margin-top: 0;">Message from Scholar:</h4>
+            <p>${message}</p>
+          </div>
+        ` : ''}
+        
+        <hr style="border: 1px solid #eee; margin: 20px 0;">
+        <p style="color: #666; font-size: 12px;">
+          This is an automated notification. Please check the admin dashboard for more details.
+        </p>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Distribution verification email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending distribution verification email:', error);
+    throw error;
+  }
+};
+
+const sendDistributionDetailedVerificationEmail = async (adminEmail, scholarName, status, message, distributionId, itemDetails) => {
+  const statusText = status === 'received' ? 'verified receipt of' : 'reported an issue with';
+  const emailSubject = `Distribution Verification Update - ${scholarName}`;
+  
+  const htmlContent = `
+    <h2>Distribution Verification Update</h2>
+    <p>Scholar ${scholarName} has ${statusText} their distribution.</p>
+    
+    <h3>Distribution Details:</h3>
+    <ul>
+      <li>Item: ${itemDetails.itemName}</li>
+      <li>Quantity: ${itemDetails.quantity} ${itemDetails.unit}</li>
+      <li>Status: ${status}</li>
+      ${message ? `<li>Message: ${message}</li>` : ''}
+    </ul>
+
+    <p>Distribution ID: ${distributionId}</p>
+  `;
+
+  await sendMail(adminEmail, emailSubject, htmlContent);
+};
+
 module.exports = {
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendParticipantApprovalEmail,
   sendParticipantRejectionEmail,
   sendParticipantRemovalEmail,
+  sendParticipantPendingEmail,
   sendEventReminderEmail,
   sendLocationStatusEmail, // Add the new function to exports
   sendReportCardRenewalEmail, // Add the new function to exports
   sendDonationVerificationEmail, // Add the new function to exports
   sendDonationRejectionEmail, // Add the new export
-  sendParticipantPendingEmail, // Add the new function to exports
+  sendReportCardVerificationEmail, // Add the new export
+  sendDonationSubmissionEmail,
+  sendDonationItemVerificationEmail,
+  sendDonationItemRejectionEmail,
+  sendDistributionNotificationEmail, // Add the new export
+  sendDistributionVerificationEmail, // Add the new export
+  sendDistributionDetailedVerificationEmail, // Add the new detailed verification export
   sendMail
 };

@@ -22,6 +22,9 @@ import ProcessTimeline from '../../components/ProcessTimeline';
 import { FaStar } from 'react-icons/fa';
 // import { ThemeSelector } from '../../components/ThemeSelector';
 
+// Add API base URL constant
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
+
 interface UserData {
   name: string;
   username: string;
@@ -96,6 +99,22 @@ interface ItemDistribution {
   unit: string;
   distributedAt: string;
   itemType: 'regular' | 'in-kind';
+  status: 'pending' | 'received' | 'not_received';
+  verificationDate?: string;
+  message?: string;
+}
+
+// Add these interfaces after the existing interfaces
+interface GradingPeriodOption {
+  value: string;
+  label: string;
+}
+
+interface ReportCardStatus {
+  id: number;
+  status: string;
+  needs_renewal: boolean;
+  verification_step: number;
 }
 
 const VolunteerProfile: React.FC = () => {
@@ -308,33 +327,36 @@ const VolunteerProfile: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Add check for existing report card
     const checkReportCardStatus = async () => {
       try {
-        const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const response = await api.get(`/scholars/report-card/${user.id}`);
         
-        // First, check for any active (pending/in_review) submission
-        const activeResponse = await api.get(
-          `/scholars/report-card/${user.id}/active`
-        );
-        
-        // Then, check for any submission regardless of status
-        const submissionResponse = await api.get(
-          `/scholars/report-card/${user.id}`
-        );
-
-        const reportCard = submissionResponse.data;
-        
-        setHasActiveSubmission(!!activeResponse.data);
-        setHasSubmittedReport(!!reportCard && reportCard.status !== 'renewal_requested');
-        
-        // If there's a submission, set the verification step
-        if (reportCard) {
-          setVerificationStep(reportCard.verification_step || 1);
+        if (!response.data) {
+          setHasSubmittedReport(false);
+          setVerificationStep(0);
+          setReportCardStatus(null);
+          return;
         }
+
+        const reportCard = response.data;
+        console.log('Report card status:', reportCard);
+
+        setReportCardStatus(reportCard);
+        
+        // Update this logic to consider verification_step = 0 as needing renewal
+        setHasSubmittedReport(
+          !(reportCard.status === 'rejected' || 
+            reportCard.needs_renewal || 
+            (reportCard.status === 'pending' && reportCard.verification_step === 0))
+        );
+        
+        setVerificationStep(reportCard.verification_step || 0);
       } catch (error) {
         console.error('Error checking report card status:', error);
+        setHasSubmittedReport(false);
+        setVerificationStep(0);
+        setReportCardStatus(null);
       }
     };
 
@@ -784,10 +806,17 @@ const VolunteerProfile: React.FC = () => {
   };
 
   const handleReportCardSubmission = () => {
-    if (hasActiveSubmission) {
-      alert('You already have a report card under review. Please wait for the current submission to be processed.');
+    // First check if user can submit
+    const canSubmit = !hasSubmittedReport && 
+      (!reportCardStatus || 
+       reportCardStatus.status === 'rejected' || 
+       reportCardStatus.needs_renewal);
+  
+    if (!canSubmit) {
+      alert('You have already submitted a report card. Please wait for admin review.');
       return;
     }
+  
     setIsReportCardModalOpen(true);
   };
 
@@ -818,18 +847,30 @@ const VolunteerProfile: React.FC = () => {
       return;
     }
 
+    if (!selectedGradingPeriod) {
+      alert('Please select the grading period');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const token = localStorage.getItem('token');
 
-      const { data } = await api.post<ReportCardSubmissionResponse>(
+      // Add debug log
+      console.log('Submitting report card with:', {
+        gradeLevel: selectedGradeLevel,
+        gradingPeriod: selectedGradingPeriod
+      });
+
+      const response = await api.post(
         '/scholars/report-card',
         {
           userId: user.id,
           frontImage: reportCardFront,
           backImage: reportCardBack,
-          gradeLevel: selectedGradeLevel // Add grade level to the payload
+          gradeLevel: selectedGradeLevel,
+          gradingPeriod: selectedGradingPeriod // Make sure this is included
         },
         {
           headers: {
@@ -839,26 +880,27 @@ const VolunteerProfile: React.FC = () => {
         }
       );
 
-      // Update local storage with new user state
-      const updatedUser = {
-        ...user,
-        hasSubmittedReport: true,
-        verificationStep: 1
-      };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      if (response.data) {
+        const updatedUser = {
+          ...user,
+          hasSubmittedReport: true,
+          verificationStep: 1
+        };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
 
-      // Update component state
-      setHasSubmittedReport(true);
-      setVerificationStep(1);
-      setIsReportCardModalOpen(false);
-      setReportCardFront(null);
-      setReportCardBack(null);
-      setSelectedGradeLevel(''); // Reset grade level
+        setHasSubmittedReport(true);
+        setVerificationStep(1);
+        setIsReportCardModalOpen(false);
+        setReportCardFront(null);
+        setReportCardBack(null);
+        setSelectedGradeLevel('');
+        setSelectedGradingPeriod(''); // Clear grading period as well
 
-      alert('Report card submitted successfully!');
-    } catch (error) {
+        alert('Report card submitted successfully!');
+      }
+    } catch (error: any) {
       console.error('Error submitting report card:', error);
-      alert('Failed to submit report card. Please try again.');
+      alert('Failed to submit report card: ' + (error.response?.data?.message || error.message || 'Please try again'));
     } finally {
       setIsSubmitting(false);
     }
@@ -970,6 +1012,30 @@ const VolunteerProfile: React.FC = () => {
     }
   };
 
+  const handleCloseFeedback = () => {
+    // Add current event to dismissed list
+    if (currentFeedbackEvent) {
+      setDismissedFeedback(prev => new Set([...prev, currentFeedbackEvent.id]));
+    }
+    
+    // Close the modal
+    setShowFeedbackModal(false);
+    
+    // Move to next event if available
+    const remainingEvents = pendingFeedbackEvents.filter(
+      event => event.id !== currentFeedbackEvent?.id && !dismissedFeedback.has(event.id)
+    );
+    
+    if (remainingEvents.length > 0) {
+      setCurrentFeedbackEvent(remainingEvents[0]);
+      // Reset form
+      setRating(0);
+      setFeedbackComment("");
+    } else {
+      setCurrentFeedbackEvent(null);
+    }
+  };
+
   // Add ScholarProgressBar component
   const ScholarProgressBar: React.FC<{ currentAmount: number; amountNeeded: number }> = ({ currentAmount, amountNeeded }) => {
     const percentage = Math.min((currentAmount / amountNeeded) * 100, 100);
@@ -1008,49 +1074,242 @@ const VolunteerProfile: React.FC = () => {
         <h2 className="distributions-header">Items Received</h2>
         
         {loadingDistributions ? (
-          <div className="distributions-loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading items...</p>
-          </div>
-        ) : scholarDistributions && scholarDistributions.length > 0 ? (
-          <>
-            <div className="distributions-list">
-              {scholarDistributions.map((item) => (
-                <div key={item.id} className="distribution-item">
-                  <div className="distribution-header">
-                    <h3>{item.itemName}</h3>
-                    <span className={`distribution-category category-${item.category?.toLowerCase().replace(/\s+/g, '-') || 'other'}`}>
-                      {item.category || 'Other'}
-                    </span>
-                  </div>
-                  <div className="distribution-details">
-                    <p>
-                      <strong>Quantity:</strong> 
-                      <span>{item.quantity} {item.unit}</span>
-                    </p>
-                    <p>
-                      <strong>Received:</strong> 
-                      <span>{formatDate(item.distributedAt)}</span>
-                    </p>
-                    <div className={`distribution-type ${item.itemType}`}>
-                      {item.itemType === 'regular' ? 'Regular Donation' : 'In-kind Donation'}
+          <div className="distributions-loading">Loading distributions...</div>
+        ) : scholarDistributions.length > 0 ? (
+          <div className="distributions-list">
+            {scholarDistributions.map((item) => (
+              <div key={item.id} className="distribution-item">
+                <div className="distribution-details">
+                  <h3>{item.itemName}</h3>
+                  <p>Quantity: {item.quantity} {item.unit}</p>
+                  <p>Category: {item.category}</p>
+                  <p>Distributed on: {formatDate(item.distributedAt)}</p>
+                </div>
+                
+                {item.status === 'pending' && (
+                  <div className="distribution-verification">
+                    <p>Please verify if you received this item:</p>
+                    <div className="verification-buttons">
+                      <button 
+                        type="button"
+                        className="verify-button received"
+                        onClick={() => handleVerifyDistribution(item.id, 'received')}
+                      >
+                        <span>✓</span> I Received This
+                      </button>
+                      <button 
+                        type="button"
+                        className="verify-button not-received"
+                        onClick={() => handleVerifyDistribution(item.id, 'not_received')}
+                      >
+                        <span>✕</span> I Did Not Receive This
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </>
+                )}
+                
+                {item.status && item.status !== 'pending' && (
+                  <div className={`verification-status ${item.status}`}>
+                    <div className="status-text">
+                      {item.status === 'received' ? 'Item Received ✓' : 'Item Not Received ✕'}
+                    </div>
+                    {item.verificationDate && (
+                      <div className="verification-date">
+                        Verified on: {formatDate(item.verificationDate)}
+                      </div>
+                    )}
+                    {item.message && (
+                      <div className="verification-message">
+                        Note: {item.message}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className="no-distributions-container">
-            <p className="no-distributions-text">
-              You haven't received any items yet.
-            </p>
-          
+          <div className="no-distributions">
+            <p>No items have been distributed to you yet.</p>
           </div>
         )}
       </div>
     );
   };
+
+  const [selectedGradingPeriod, setSelectedGradingPeriod] = useState<string>('');
+
+  // Add this function to get grading period options based on grade level
+  const getGradingPeriodOptions = (gradeLevel: string): GradingPeriodOption[] => {
+    if (!gradeLevel) return [];
+
+    if (gradeLevel.startsWith('grade') && parseInt(gradeLevel.replace('grade', '')) <= 10) {
+      return [
+        { value: '1st', label: '1st Grading' },
+        { value: '2nd', label: '2nd Grading' },
+        { value: '3rd', label: '3rd Grading' },
+        { value: '4th', label: '4th Grading' },
+      ];
+    } else if (gradeLevel.startsWith('grade')) {
+      // For grades 11-12 (Senior High)
+      return [
+        { value: '1st_sem', label: '1st Semester' },
+        { value: '2nd_sem', label: '2nd Semester' },
+      ];
+    } else if (gradeLevel === 'college') {
+      return [
+        { value: '1st_sem', label: '1st Semester' },
+        { value: '2nd_sem', label: '2nd Semester' },
+        { value: '3rd_sem', label: '3rd Semester' },
+      ];
+    }
+    return [];
+  };
+
+  // Update the handleGradeLevelChange function
+  const handleGradeLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newGradeLevel = e.target.value;
+    setSelectedGradeLevel(newGradeLevel);
+    setSelectedGradingPeriod(''); // Reset grading period when grade level changes
+  };
+
+  // Update the report card section JSX
+  const renderReportCardButton = () => {
+    // Only show submit button if no submission or previous was rejected/needs renewal
+    const canSubmit = !hasSubmittedReport && 
+      (!reportCardStatus || 
+       reportCardStatus.status === 'rejected' || 
+       reportCardStatus.needs_renewal);
+  
+    if (canSubmit) {
+      return (
+        <button 
+          onClick={handleReportCardSubmission}
+          className="report-card-button"
+        >
+          Submit Report Card
+        </button>
+      );
+    }
+  
+    // In all other cases (including pending), show view progress button
+    return (
+      <button 
+        onClick={handleViewProgress}
+        className="view-progress-button"
+      >
+        View Progress
+      </button>
+    );
+  };
+
+  // Add a new state for report card status
+  const [reportCardStatus, setReportCardStatus] = useState<{
+    status: string;
+    needs_renewal: boolean;
+  } | null>(null);
+
+  // Update the useEffect that checks report card status
+  useEffect(() => {
+    const checkReportCardStatus = async () => {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const response = await api.get(`/scholars/report-card/${user.id}`);
+        
+        if (!response.data) {
+          setHasSubmittedReport(false);
+          setVerificationStep(0);
+          setReportCardStatus(null);
+          return;
+        }
+
+        const reportCard = response.data;
+        console.log('Report card status:', reportCard);
+
+        setReportCardStatus(reportCard);
+        
+        // Only set hasSubmittedReport to false if report was rejected or needs renewal
+        setHasSubmittedReport(
+          !(reportCard.status === 'rejected' || reportCard.needs_renewal)
+        );
+        
+        setVerificationStep(reportCard.verification_step || 0);
+      } catch (error) {
+        console.error('Error checking report card status:', error);
+        setHasSubmittedReport(false);
+        setVerificationStep(0);
+        setReportCardStatus(null);
+      }
+    };
+
+    if (userType === 'scholar') {
+      checkReportCardStatus();
+    }
+  }, [userType]);
+
+  // Update the handleVerifyDistribution function
+const handleVerifyDistribution = async (
+  distributionId: number, 
+  status: 'received' | 'not_received', 
+  message?: string
+) => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const token = localStorage.getItem('token');
+    
+    if (!window.confirm(`Are you sure you want to mark this item as ${status === 'received' ? 'received' : 'not received'}?`)) {
+      return;
+    }
+
+    // If marking as not received, prompt for a reason
+    let reasonMessage = message;
+    if (status === 'not_received' && !message) {
+      const reason = window.prompt('Please provide a reason why you did not receive this item:');
+      if (!reason) {
+        alert('Please provide a reason for not receiving the item.');
+        return;
+      }
+      reasonMessage = reason;
+    }
+
+    const response = await api.put(
+      `/inventory/distributions/${distributionId}/verify`,
+      {
+        scholarId: user.id,
+        status,
+        message: reasonMessage
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    if (response.data.success) {
+      // Update local state to reflect the change
+      setScholarDistributions(prev => prev.map(dist => {
+        if (dist.id === distributionId) {
+          return {
+            ...dist,
+            status,
+            verificationDate: new Date().toISOString(),
+            message: reasonMessage || ''
+          };
+        }
+        return dist;
+      }));
+
+      alert(
+        status === 'received' 
+          ? 'Successfully verified receipt!' 
+          : 'Item marked as not received. Our team will follow up on this.'
+      );
+    }
+  } catch (error) {
+    console.error('Error verifying distribution:', error);
+    alert('Failed to verify distribution. Please try again.');
+  }
+};
+
 
   return (
     <div className="page-wrapper">
@@ -1090,28 +1349,7 @@ const VolunteerProfile: React.FC = () => {
             {userType === 'scholar' && (
               <>
                 <div className="report-card-section">
-                  {hasActiveSubmission ? (
-                    <button 
-                      onClick={handleViewProgress}
-                      className="view-progress-button"
-                    >
-                      View Progress
-                    </button>
-                  ) : hasSubmittedReport ? (
-                    <button 
-                      onClick={handleViewProgress}
-                      className="view-progress-button"
-                    >
-                      View Progress
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={handleReportCardSubmission}
-                      className="report-card-button"
-                    >
-                      Submit Report Card
-                    </button>
-                  )}
+                  {renderReportCardButton()}
                 </div>
                 <div className="location-section">
                   <button 
@@ -1208,8 +1446,8 @@ const VolunteerProfile: React.FC = () => {
               )}
             </div>
 
-            {/* <h1>Theme</h1> */}
-            {/* <ThemeSelector /> */}
+            {/* <h1>Theme</h1>
+            <ThemeSelector /> */}
 
             <h1>Socials</h1>
             <div className="socials">
@@ -1507,7 +1745,7 @@ const VolunteerProfile: React.FC = () => {
 
         {isModalOpen && (
           <div className={`popup-overlay ${isClosing ? 'closing' : ''}`} onClick={closeModal}>
-            <div className={`popup ${isClosing ? 'closing' : ''}`} onClick={e => e.stopPropagation()}>
+              <div className={`popup ${isClosing ? 'closing' : ''}`} onClick={e => e.stopPropagation()} style={{ backgroundColor: '#FEF6E4' }}>
               <h2>Select a photo to change</h2>
               <div className="popup-buttons">
                 {selectedPhotoType === "profile" && (
@@ -1538,7 +1776,7 @@ const VolunteerProfile: React.FC = () => {
 
         {isReportCardModalOpen && (
           <div className="popup-overlay">
-            <div className="popup report-card-popup">
+  <div className="popup report-card-popup" style={{ backgroundColor: '#FEF6E4' }}>
               {!hasSubmittedReport ? (
                 // Existing report card upload UI
                 <>
@@ -1549,7 +1787,7 @@ const VolunteerProfile: React.FC = () => {
                     <h3>Select Your Grade Level</h3>
                     <select 
                       value={selectedGradeLevel} 
-                      onChange={(e) => setSelectedGradeLevel(e.target.value)}
+                      onChange={handleGradeLevelChange}
                       className="grade-level-dropdown"
                     >
                       <option value="">Select Grade Level</option>
@@ -1559,6 +1797,24 @@ const VolunteerProfile: React.FC = () => {
                         </option>
                       ))}
                     </select>
+
+                    {selectedGradeLevel && (
+                      <div className="grading-period-selection">
+                        <h3>Select Grading Period</h3>
+                        <select
+                          value={selectedGradingPeriod}
+                          onChange={(e) => setSelectedGradingPeriod(e.target.value)}
+                          className="grading-period-dropdown"
+                        >
+                          <option value="">Select Grading Period</option>
+                          {getGradingPeriodOptions(selectedGradeLevel).map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="report-card-upload-container">
@@ -1628,12 +1884,15 @@ const VolunteerProfile: React.FC = () => {
 
     {showFeedbackModal && currentFeedbackEvent && (
       <div className="popup-overlay feedback">
-        <div className="feedback-popup">
-          {/* Removed close button to make feedback mandatory */}
+        <div className="feedback-popup" onClick={e => e.stopPropagation()}>
+          <span 
+            className="modal-close" 
+            onClick={handleCloseFeedback}
+            title="Skip feedback"
+          >×</span>
           
           <h2>Event Feedback</h2>
           <p>Please share your experience at:<br/>{currentFeedbackEvent.title}</p>
-          <p className="mandatory-notice">Feedback is required to continue.</p>
           
           <div className="rating-container">
             {[1, 2, 3, 4, 5].map((star) => (

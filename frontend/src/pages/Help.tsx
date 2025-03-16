@@ -359,6 +359,9 @@ const Help: React.FC = () => {
           contactNumber: formData.contactNumber || ''
         };
 
+        // Create an array to store all submitted items
+        const submittedItems = [];
+
         for (const item of cartItems) {
           const donation = {
             ...donorData,
@@ -366,13 +369,23 @@ const Help: React.FC = () => {
             quantity: item.quantity,
             unit: item.unit,
             category: item.category,
+            type: item.type,
+            expirationDate: item.expirationDate,
             ...(item.frequency && { frequency: item.frequency }),
-            ...(item.expirationDate && { expirationDate: item.expirationDate })
           };
 
           const endpoint = item.type === 'regular' ? '/inventory/regular' : '/inventory/inkind';
           await api.post(endpoint, donation);
+          submittedItems.push(item);
         }
+
+        // Send submission notification email
+        await api.post('/notifications/donation-submission', {
+          email: formData.email,
+          donorName: formData.fullName,
+          items: submittedItems,
+          submissionDate: new Date()
+        });
 
         alert('All donations submitted successfully!');
         

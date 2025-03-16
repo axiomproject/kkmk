@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiUpload } from 'react-icons/fi';
 import { FaSearch, FaTimes } from 'react-icons/fa';
+import { useParams, useNavigate, useLocation } from 'react-router-dom'; // Add these imports
 import '../../../styles/Scholar.css';
 import api from '../../../config/axios'; // Replace axios import
 
@@ -120,6 +121,10 @@ const ProgressBar: React.FC<{ currentAmount: number; amountNeeded: number }> = (
 };
 
 const ScholarProfile: React.FC = () => {
+  const params = useParams(); // Get URL parameters
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const [scholars, setScholars] = useState<Scholar[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<ScholarForm>(initialFormState);
@@ -134,6 +139,7 @@ const ScholarProfile: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showAssignUserModal, setShowAssignUserModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [directViewMode, setDirectViewMode] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchScholars = async () => {
@@ -156,13 +162,41 @@ const ScholarProfile: React.FC = () => {
         }));
         
         setScholars(transformedData);
+        
+        // Check if we need to view a specific scholar from URL params
+        const viewId = params.id;
+        if (viewId) {
+          // Find the scholar in the loaded data
+          const scholarToView = transformedData.find(
+            (scholar: Scholar) => scholar.id === parseInt(viewId)
+          );
+          
+          if (scholarToView) {
+            handleViewScholar(parseInt(viewId));
+            setDirectViewMode(true);
+          } else {
+            // If not found in the loaded data, fetch directly
+            try {
+              await handleViewScholar(parseInt(viewId));
+              setDirectViewMode(true);
+            } catch (err) {
+              console.error("Failed to load scholar:", err);
+              alert("Could not find the requested scholar profile.");
+            }
+          }
+        }
       } catch (error) {
         console.error('Error fetching scholars:', error);
       }
     };
 
     fetchScholars();
-  }, []);
+    
+    // Check URL path for view mode - Update to match the expected path
+    if (location.pathname.includes('/Scholars/Profile/')) {
+      setDirectViewMode(true);
+    }
+  }, [params.id, location.pathname]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -281,141 +315,150 @@ const ScholarProfile: React.FC = () => {
     }
   };
 
-  const handleViewScholar = async (id: number) => {
-    try {
-      const scholarData = await fetchScholarById(id);
-      
-      setSelectedScholar({
-        id: scholarData.id,
-        first_name: scholarData.firstName,
-        last_name: scholarData.lastName,
-        address: scholarData.address,
-        date_of_birth: scholarData.dateOfBirth,
-        education_level: scholarData.gradeLevel,
-        school: scholarData.school,
-        guardian_name: scholarData.guardianName,
-        guardian_phone: scholarData.guardianPhone,
-        gender: scholarData.gender,
-        favorite_subject: scholarData.favoriteSubject,
-        favorite_activity: scholarData.favoriteActivity,
-        favorite_color: scholarData.favoriteColor,
-        other_details: scholarData.otherDetails,
-        image_url: scholarData.imagePreview,
-        profile_photo: undefined,
-        status: scholarData.status,
-        is_active: scholarData.status !== 'inactive',
-        is_verified: scholarData.isVerified || false,
-        current_amount: scholarData.currentAmount,
-        amount_needed: scholarData.amountNeeded,
-        created_at: new Date().toISOString(),
-        user_id: scholarData.userId,
-        assigned_user: scholarData.assignedUser
-      });
-      
-      setIsViewMode(true);
-    } catch (error) {
-      console.error('Error fetching scholar details:', error);
-      alert('Failed to load scholar details');
-    }
-  };
+const handleViewScholar = async (id: number) => {
+  try {
+    const scholarData = await fetchScholarById(id);
+    
+    // Capture scroll position before opening modal
+    const scrollY = window.scrollY;
+    document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
+    
+    setSelectedScholar({
+      id: scholarData.id,
+      first_name: scholarData.firstName,
+      last_name: scholarData.lastName,
+      address: scholarData.address,
+      date_of_birth: scholarData.dateOfBirth,
+      education_level: scholarData.gradeLevel,
+      school: scholarData.school,
+      guardian_name: scholarData.guardianName,
+      guardian_phone: scholarData.guardianPhone,
+      gender: scholarData.gender,
+      favorite_subject: scholarData.favoriteSubject,
+      favorite_activity: scholarData.favoriteActivity,
+      favorite_color: scholarData.favoriteColor,
+      other_details: scholarData.otherDetails,
+      image_url: scholarData.imagePreview,
+      profile_photo: undefined,
+      status: scholarData.status,
+      is_active: scholarData.status !== 'inactive',
+      is_verified: scholarData.isVerified || false,
+      current_amount: scholarData.currentAmount,
+      amount_needed: scholarData.amountNeeded,
+      created_at: new Date().toISOString(),
+      user_id: scholarData.userId,
+      assigned_user: scholarData.assignedUser
+    });
+    
+    setIsViewMode(true);
+  } catch (error) {
+    console.error('Error fetching scholar details:', error);
+    alert('Failed to load scholar details');
+    throw error; // Rethrow for handling in the calling function
+  }
+};
 
-  const handleEditScholar = async (id: number) => {
-    try {
-      const scholarData = await fetchScholarById(id);
-      
-      setFormData({
-        firstName: scholarData.firstName,
-        lastName: scholarData.lastName,
-        address: scholarData.address,
-        dateOfBirth: scholarData.dateOfBirth,
-        gradeLevel: scholarData.gradeLevel,
-        school: scholarData.school,
-        guardianName: scholarData.guardianName,
-        guardianPhone: scholarData.guardianPhone,
-        gender: scholarData.gender,
-        favoriteSubject: scholarData.favoriteSubject,
-        favoriteActivity: scholarData.favoriteActivity,
-        favoriteColor: scholarData.favoriteColor,
-        otherDetails: scholarData.otherDetails,
-        image: null,
-        imagePreview: scholarData.imagePreview,
-        status: scholarData.status,
-        assignedUserId: scholarData.userId,
-        currentAmount: scholarData.currentAmount,
-        amountNeeded: scholarData.amountNeeded
-      });
-      
-      setSelectedScholar({
-        id: scholarData.id,
-        first_name: scholarData.firstName,
-        last_name: scholarData.lastName,
-        address: scholarData.address,
-        date_of_birth: scholarData.dateOfBirth,
-        education_level: scholarData.gradeLevel,
-        school: scholarData.school,
-        guardian_name: scholarData.guardianName,
-        guardian_phone: scholarData.guardianPhone,
-        gender: scholarData.gender,
-        favorite_subject: scholarData.favoriteSubject,
-        favorite_activity: scholarData.favoriteActivity,
-        favorite_color: scholarData.favoriteColor,
-        other_details: scholarData.otherDetails,
-        image_url: scholarData.imagePreview,
-        profile_photo: undefined,
-        status: scholarData.status,
-        is_active: scholarData.status !== 'inactive',
-        is_verified: scholarData.isVerified || false,
-        current_amount: scholarData.currentAmount,
-        amount_needed: scholarData.amountNeeded,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        user_id: scholarData.userId,
-        assigned_user: scholarData.assignedUser
-      });
-      
-      setIsEditMode(true);
-    } catch (error) {
-      console.error('Error fetching scholar details:', error);
-      alert('Failed to load scholar details');
-    }
-  };
+const handleEditScholar = async (id: number) => {
+  try {
+    const scholarData = await fetchScholarById(id);
+    
+    // Capture scroll position before opening modal
+    const scrollY = window.scrollY;
+    document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
+    
+    setFormData({
+      firstName: scholarData.firstName,
+      lastName: scholarData.lastName,
+      address: scholarData.address,
+      dateOfBirth: scholarData.dateOfBirth,
+      gradeLevel: scholarData.gradeLevel,
+      school: scholarData.school,
+      guardianName: scholarData.guardianName,
+      guardianPhone: scholarData.guardianPhone,
+      gender: scholarData.gender,
+      favoriteSubject: scholarData.favoriteSubject,
+      favoriteActivity: scholarData.favoriteActivity,
+      favoriteColor: scholarData.favoriteColor,
+      otherDetails: scholarData.otherDetails,
+      image: null,
+      imagePreview: scholarData.imagePreview,
+      status: scholarData.status,
+      assignedUserId: scholarData.userId,
+      currentAmount: scholarData.currentAmount,
+      amountNeeded: scholarData.amountNeeded
+    });
+    
+    setSelectedScholar({
+      id: scholarData.id,
+      first_name: scholarData.firstName,
+      last_name: scholarData.lastName,
+      address: scholarData.address,
+      date_of_birth: scholarData.dateOfBirth,
+      education_level: scholarData.gradeLevel,
+      school: scholarData.school,
+      guardian_name: scholarData.guardianName,
+      guardian_phone: scholarData.guardianPhone,
+      gender: scholarData.gender,
+      favorite_subject: scholarData.favoriteSubject,
+      favorite_activity: scholarData.favoriteActivity,
+      favorite_color: scholarData.favoriteColor,
+      other_details: scholarData.otherDetails,
+      image_url: scholarData.imagePreview,
+      profile_photo: undefined,
+      status: scholarData.status,
+      is_active: scholarData.status !== 'inactive',
+      is_verified: scholarData.isVerified || false,
+      current_amount: scholarData.currentAmount,
+      amount_needed: scholarData.amountNeeded,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      user_id: scholarData.userId,
+      assigned_user: scholarData.assignedUser
+    });
+    
+    setIsEditMode(true);
+  } catch (error) {
+    console.error('Error fetching scholar details:', error);
+    alert('Failed to load scholar details');
+  }
+};
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedScholar) return;
+const handleUpdate = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!selectedScholar) return;
 
-    try {
-      const formDataToSend = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'image' && value) {
-          formDataToSend.append('image', value);
-        } else if (key !== 'imagePreview') {
-          formDataToSend.append(key, value as string);
-        }
-      });
+  try {
+    const formDataToSend = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === 'image' && value) {
+        formDataToSend.append('image', value);
+      } else if (key !== 'imagePreview') {
+        formDataToSend.append(key, value as string);
+      }
+    });
 
-      const response = await fetch(`${API_URL}/api/scholars/${selectedScholar.id}`, {
-        method: 'PUT',
-        body: formDataToSend,
-        credentials: 'include'
-      });
+    const response = await fetch(`${API_URL}/api/scholars/${selectedScholar.id}`, {
+      method: 'PUT',
+      body: formDataToSend,
+      credentials: 'include'
+    });
 
-      if (!response.ok) throw new Error('Failed to update scholar');
+    if (!response.ok) throw new Error('Failed to update scholar');
 
-      // Refresh scholar list
-      const updatedScholars = await fetch(`${API_URL}/api/scholars`, {
-        credentials: 'include'
-      }).then(res => res.json());
-      
-      setScholars(updatedScholars);
-      setIsEditMode(false);
-      setSelectedScholar(null);
-      alert('Scholar updated successfully!');
-    } catch (error) {
-      console.error('Error updating scholar:', error);
-      alert('Failed to update scholar');
-    }
-  };
+    // Refresh scholar list
+    const updatedScholars = await fetch(`${API_URL}/api/scholars`, {
+      credentials: 'include'
+    }).then(res => res.json());
+    
+    setScholars(updatedScholars);
+    setIsEditMode(false);
+    setSelectedScholar(null);
+    alert('Scholar updated successfully!');
+  } catch (error) {
+    console.error('Error updating scholar:', error);
+    alert('Failed to update scholar');
+  }
+};
 
   const handleScholarSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setScholarSearchTerm(e.target.value);
@@ -659,6 +702,16 @@ const ScholarProfile: React.FC = () => {
     </div>
   );
 
+const handleOpenAssignUserModal = (scholar: Scholar) => {
+  // Capture scroll position before opening modal
+  const scrollY = window.scrollY;
+  document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
+  
+  setSelectedScholar(scholar);
+  setShowAssignUserModal(true);
+  fetchScholarUsers();
+};
+
   const renderScholarCardActions = (scholar: Scholar) => (
     <div className="admin-scholar-card-actions">
       <button 
@@ -675,11 +728,7 @@ const ScholarProfile: React.FC = () => {
       </button>
       <button 
         className="admin-scholar-assign-btn"
-        onClick={() => {
-          setSelectedScholar(scholar);
-          setShowAssignUserModal(true);
-          fetchScholarUsers();
-        }}
+        onClick={() => handleOpenAssignUserModal(scholar)}
       >
         Assign User
       </button>
@@ -714,7 +763,8 @@ const ScholarProfile: React.FC = () => {
     if (!selectedScholar) return null;
 
     return (
-      <div className="admin-scholar-modal-overlay" onClick={() => setIsViewMode(false)}>
+      <div className="admin-scholar-modal-overlay" 
+           onClick={() => directViewMode ? navigate("/admin/maps") : setIsViewMode(false)}>
         <div className="admin-scholar-modal" onClick={e => e.stopPropagation()}>
           <h2>Scholar Details</h2>
           <div className="admin-scholar-details">
@@ -750,12 +800,22 @@ const ScholarProfile: React.FC = () => {
               <p><strong>Amount Needed:</strong> ₱{(selectedScholar.amount_needed || 0).toLocaleString()}</p>
             </div>
           </div>
-          <button 
-            className="admin-scholar-close-btn"
-            onClick={() => setIsViewMode(false)}
-          >
-            Close
-          </button>
+          <div className="admin-scholar-modal-actions">
+            {directViewMode && (
+              <button 
+                className="admin-scholar-back-btn"
+                onClick={() => navigate("/Maps")}
+              >
+                Back to Map
+              </button>
+            )}
+            <button 
+              className="admin-scholar-close-btn"
+              onClick={() => directViewMode ? navigate("/Scholars/Management") : setIsViewMode(false)}
+            >
+              {directViewMode ? 'Go to Scholar List' : 'Close'}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -806,159 +866,164 @@ const ScholarProfile: React.FC = () => {
 
   return (
     <div className="admin-scholar-container">
-      <div className="admin-scholar-header">
-        <h1>Scholar Profiles</h1>
-        <div className="admin-scholar-actions">
-          <input 
-            type="text" 
-            placeholder="Search scholars..." 
-            className="admin-scholar-search" 
-            value={scholarSearchTerm}
-            onChange={handleScholarSearch}
-          />
-          <select 
-            className="admin-scholar-filter"
-            value={statusFilter}
-            onChange={handleStatusFilter}
-          >
-            <option value="all">All Scholars</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="graduated">Graduated</option>
-          </select>
-        
-        </div>
-      </div>
-
-      <div className="admin-scholar-sections">
-        {/* Active Scholars */}
-        <div className="admin-scholar-grid">
-          {filteredScholars
-            .filter(scholar => 
-              (statusFilter === 'all' || statusFilter === 'active') && 
-              scholar.status === 'active' && 
-              scholar.is_active
-            )
-            .map((scholar) => (
-              <div key={scholar.id} className="admin-scholar-card">
-                {/* ...existing card content... */}
-                <img 
-                src={getImageUrl(scholar)} 
-                alt={`${scholar.first_name} ${scholar.last_name}`} 
-                className="admin-scholar-image"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/images/default-avatar.jpg';
-                }}
+      {/* Don't show the header and list when in direct view mode */}
+      {!directViewMode && (
+        <>
+          <div className="admin-scholar-header">
+            <h1>Scholar Profiles</h1>
+            <div className="admin-scholar-actions">
+              <input 
+                type="text" 
+                placeholder="Search scholars..." 
+                className="admin-scholar-search" 
+                value={scholarSearchTerm}
+                onChange={handleScholarSearch}
               />
-              <div className="admin-scholar-info">
-                <h3>{scholar.first_name} {scholar.last_name}</h3>
-                <div className="admin-scholar-badges">
-                  {scholar.is_verified && 
-                    <span className="admin-scholar-verified-badge">Verified</span>
-                  }
-                </div>
-                <ProgressBar 
-                  currentAmount={scholar.current_amount || 0} 
-                  amountNeeded={scholar.amount_needed || 1}
-                />
-                <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
-                <p>Education Level: {scholar.education_level}</p>
-                <p>School: {scholar.school}</p>
-                {renderAssignedUser(scholar)}
-                {renderScholarCardActions(scholar)}
-              </div>
-              </div>
-          ))}
-        </div>
+              <select 
+                className="admin-scholar-filter"
+                value={statusFilter}
+                onChange={handleStatusFilter}
+              >
+                <option value="all">All Scholars</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="graduated">Graduated</option>
+              </select>
+            
+            </div>
+          </div>
 
-        {/* Inactive Scholars */}
-        {filteredScholars.some(scholar => !scholar.is_active || scholar.status === 'inactive') && (
-          <>
-            <h2 className="section-title">For Endorsement</h2>
+          <div className="admin-scholar-sections">
+            {/* Active Scholars */}
             <div className="admin-scholar-grid">
               {filteredScholars
-                .filter(scholar => !scholar.is_active || scholar.status === 'inactive')
+                .filter(scholar => 
+                  (statusFilter === 'all' || statusFilter === 'active') && 
+                  scholar.status === 'active' && 
+                  scholar.is_active
+                )
                 .map((scholar) => (
-                  <div key={scholar.id} className="admin-scholar-card inactive">
+                  <div key={scholar.id} className="admin-scholar-card">
                     {/* ...existing card content... */}
                     <img 
-                src={getImageUrl(scholar)} 
-                alt={`${scholar.first_name} ${scholar.last_name}`} 
-                className="admin-scholar-image"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/images/default-avatar.jpg';
-                }}
-              />
-              <div className="admin-scholar-info">
-                <h3>{scholar.first_name} {scholar.last_name}</h3>
-                <div className="admin-scholar-badges">
-                  {scholar.is_verified && 
-                    <span className="admin-scholar-verified-badge">Verified</span>
-                  }
-                </div>
-                <ProgressBar 
-                  currentAmount={scholar.current_amount || 0} 
-                  amountNeeded={scholar.amount_needed || 1}
-                />
-                <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
-                <p>Year Level: {scholar.education_level}</p>
-                <p>School: {scholar.school}</p>
-                {renderAssignedUser(scholar)}
-                {renderScholarCardActions(scholar)}
-              </div>
+                    src={getImageUrl(scholar)} 
+                    alt={`${scholar.first_name} ${scholar.last_name}`} 
+                    className="admin-scholar-image"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/images/default-avatar.jpg';
+                    }}
+                  />
+                  <div className="admin-scholar-info">
+                    <h3>{scholar.first_name} {scholar.last_name}</h3>
+                    <div className="admin-scholar-badges">
+                      {scholar.is_verified && 
+                        <span className="admin-scholar-verified-badge">Verified</span>
+                      }
+                    </div>
+                    <ProgressBar 
+                      currentAmount={scholar.current_amount || 0} 
+                      amountNeeded={scholar.amount_needed || 1}
+                    />
+                    <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
+                    <p>Education Level: {scholar.education_level}</p>
+                    <p>School: {scholar.school}</p>
+                    {renderAssignedUser(scholar)}
+                    {renderScholarCardActions(scholar)}
+                  </div>
                   </div>
               ))}
             </div>
-          </>
-        )}
 
-        {/* Graduated Scholars */}
-        {filteredScholars.some(scholar => scholar.status === 'graduated') && (
-          <>
-            <h2 className="graduated-section-title">Graduated Scholars</h2>
-            <div className="admin-scholar-grid">
-              {filteredScholars
-                .filter(scholar => scholar.status === 'graduated')
-                .map((scholar) => (
-                  <div key={scholar.id} className="admin-scholar-card graduated">
-                    {/* ...existing card content... */}
-                    <img 
-                src={getImageUrl(scholar)} 
-                alt={`${scholar.first_name} ${scholar.last_name}`} 
-                className="admin-scholar-image"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/images/default-avatar.jpg';
-                }}
-              />
-              <div className="admin-scholar-info">
-                <h3>{scholar.first_name} {scholar.last_name}</h3>
-                <div className="admin-scholar-badges">
-                  {scholar.is_verified && 
-                    <span className="admin-scholar-verified-badge">Verified</span>
-                  }
-                </div>
-                <ProgressBar 
-                  currentAmount={scholar.current_amount || 0} 
-                  amountNeeded={scholar.amount_needed || 1}
-                />
-                <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
-                <p>Year Level: {scholar.education_level}</p>
-                <p>School: {scholar.school}</p>
-                {renderAssignedUser(scholar)}
-                {renderScholarCardActions(scholar)}
-              </div>
+            {/* Inactive Scholars */}
+            {filteredScholars.some(scholar => !scholar.is_active || scholar.status === 'inactive') && (
+              <>
+                <h2 className="section-title">For Endorsement</h2>
+                <div className="admin-scholar-grid">
+                  {filteredScholars
+                    .filter(scholar => !scholar.is_active || scholar.status === 'inactive')
+                    .map((scholar) => (
+                      <div key={scholar.id} className="admin-scholar-card inactive">
+                        {/* ...existing card content... */}
+                        <img 
+                    src={getImageUrl(scholar)} 
+                    alt={`${scholar.first_name} ${scholar.last_name}`} 
+                    className="admin-scholar-image"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/images/default-avatar.jpg';
+                    }}
+                  />
+                  <div className="admin-scholar-info">
+                    <h3>{scholar.first_name} {scholar.last_name}</h3>
+                    <div className="admin-scholar-badges">
+                      {scholar.is_verified && 
+                        <span className="admin-scholar-verified-badge">Verified</span>
+                      }
+                    </div>
+                    <ProgressBar 
+                      currentAmount={scholar.current_amount || 0} 
+                      amountNeeded={scholar.amount_needed || 1}
+                    />
+                    <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
+                    <p>Year Level: {scholar.education_level}</p>
+                    <p>School: {scholar.school}</p>
+                    {renderAssignedUser(scholar)}
+                    {renderScholarCardActions(scholar)}
                   </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+                      </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Graduated Scholars */}
+            {filteredScholars.some(scholar => scholar.status === 'graduated') && (
+              <>
+                <h2 className="graduated-section-title">Graduated Scholars</h2>
+                <div className="admin-scholar-grid">
+                  {filteredScholars
+                    .filter(scholar => scholar.status === 'graduated')
+                    .map((scholar) => (
+                      <div key={scholar.id} className="admin-scholar-card graduated">
+                        {/* ...existing card content... */}
+                        <img 
+                    src={getImageUrl(scholar)} 
+                    alt={`${scholar.first_name} ${scholar.last_name}`} 
+                    className="admin-scholar-image"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/images/default-avatar.jpg';
+                    }}
+                  />
+                  <div className="admin-scholar-info">
+                    <h3>{scholar.first_name} {scholar.last_name}</h3>
+                    <div className="admin-scholar-badges">
+                      {scholar.is_verified && 
+                        <span className="admin-scholar-verified-badge">Verified</span>
+                      }
+                    </div>
+                    <ProgressBar 
+                      currentAmount={scholar.current_amount || 0} 
+                      amountNeeded={scholar.amount_needed || 1}
+                    />
+                    <p>Status: {scholar.is_active ? 'Active' : 'Inactive'}</p>
+                    <p>Year Level: {scholar.education_level}</p>
+                    <p>School: {scholar.school}</p>
+                    {renderAssignedUser(scholar)}
+                    {renderScholarCardActions(scholar)}
+                  </div>
+                      </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
 
       {/* View Modal */}
-      {isViewMode && selectedScholar && renderViewModal()}
+      {(isViewMode || directViewMode) && selectedScholar && renderViewModal()}
 
       {/* Edit Modal */}
       {isEditMode && selectedScholar && (

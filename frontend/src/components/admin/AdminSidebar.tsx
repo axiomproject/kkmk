@@ -177,7 +177,7 @@ const AdminSidebar = () => {
         },
         {
           path: PATHS.ADMIN.SCHOLARS.REPORTS,
-          label: 'Reports',
+          label: 'Report Cards',
           icon: 'pending',
           roles: ['admin', 'staff']
         },

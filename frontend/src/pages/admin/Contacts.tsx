@@ -57,7 +57,7 @@ const Contacts: React.FC = () => {
         <h1 className="bank-title">Contact Support</h1>
       </div>
 
-      <div className="stats-grid">
+      <div className="statsss-grid">
         <div className="stat-card total">
           <h3 className="stat-title">Total Messages</h3>
           <p className="stat-value">{contacts.length}</p>

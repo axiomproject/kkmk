@@ -38,12 +38,37 @@ router.get('/report-cards/all', async (req, res) => {
 // Update report card routes for the 3-step process
 router.post('/report-card', async (req, res) => {
   try {
-    const { userId, frontImage, backImage, gradeLevel } = req.body;
-    if (!userId || !frontImage || !backImage || !gradeLevel) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    const { userId, frontImage, backImage, gradeLevel, gradingPeriod } = req.body;
+    
+    // Check for active submission first
+    const activeReport = await ReportCardModel.getActiveReportCard(userId);
+    if (activeReport) {
+      return res.status(400).json({ 
+        error: 'Active submission exists',
+        message: 'You already have an active report card submission. Please wait for it to be processed.'
+      });
     }
-    // Report card starts as 'pending'
-    const reportCard = await ReportCardModel.submitReportCard(userId, frontImage, backImage, gradeLevel);
+
+    if (!userId || !frontImage || !backImage || !gradeLevel || !gradingPeriod) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        details: {
+          userId: !userId,
+          frontImage: !frontImage,
+          backImage: !backImage,
+          gradeLevel: !gradeLevel,
+          gradingPeriod: !gradingPeriod
+        }
+      });
+    }
+
+    const reportCard = await ReportCardModel.submitReportCard(
+      userId, 
+      frontImage, 
+      backImage, 
+      gradeLevel,
+      gradingPeriod
+    );
     
     // Send notification that the report card was submitted and is pending
     await notificationModel.createReportCardStatusNotification(userId, 'pending');
@@ -146,11 +171,19 @@ router.put('/report-cards/:id/verify', async (req, res) => {
 router.put('/report-cards/:id/reject', async (req, res) => {
   try {
     const { reason } = req.body;
+    if (!reason) {
+      return res.status(400).json({ error: 'Rejection reason is required' });
+    }
+
     const reportCard = await ReportCardModel.rejectReportCard(req.params.id, reason);
     
     // Send notification to the scholar
     if (reportCard && reportCard.user_id) {
-      await notificationModel.createReportCardStatusNotification(reportCard.user_id, 'rejected', reason);
+      await notificationModel.createReportCardStatusNotification(
+        reportCard.user_id, 
+        'rejected',
+        `Your report card was rejected: ${reason}. Please submit a new report card.`
+      );
       
       // Fetch scholar details for admin notification
       const scholarResult = await db.query(
@@ -165,16 +198,35 @@ router.put('/report-cards/:id/reject', async (req, res) => {
           reportCard.id,
           reportCard.user_id,
           scholar.name,
-          `Report card for ${scholar.name} has been rejected ❌ Reason: ${reason || 'No reason provided'}`,
+          `Report card for ${scholar.name} has been rejected ❌ Reason: ${reason}. Scholar needs to resubmit.`,
           'rejected'
         );
+      }
+
+      // Send email notification
+      try {
+        const userResult = await db.query(
+          'SELECT email, name FROM users WHERE id = $1',
+          [reportCard.user_id]
+        );
+        
+        if (userResult.rows.length > 0) {
+          await emailService.sendReportCardStatusEmail(
+            userResult.rows[0].email,
+            userResult.rows[0].name,
+            'rejected',
+            reason
+          );
+        }
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
       }
     }
     
     res.json(reportCard);
   } catch (error) {
     console.error('Error rejecting report card:', error);
-    res.status(500).json({ error: 'Failed to reject report card' });
+    res.status(500).json({ error: 'Failed to reject report card', details: error.message });
   }
 });
 

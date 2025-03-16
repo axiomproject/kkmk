@@ -126,7 +126,8 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     const isFromPayatas = window.confirm(
       "KMFI Scholar Program Eligibility Check\n\n" +
       "Scholars must be residents of Payatas, Quezon City to be eligible.\n\n" +
-      "Are you a resident of Payatas area?"
+      "Are you a resident of Payatas area?\n\n" +
+      "Press OK for Yes, Cancel for No"
     );
     
     if (isFromPayatas) {

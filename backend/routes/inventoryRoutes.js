@@ -579,6 +579,9 @@ router.get('/distributions', async (req, res) => {
         d.distributed_at as "distributedAt",
         d.item_type as "itemType",
         d.recipient_type as "recipientType",
+        d.status,  /* Added status field */
+        d.verification_date as "verificationDate",  /* Added verification date */
+        d.verification_message as "verificationMessage",  /* Added verification message */
         u.name as "recipientName",
         u.email as "recipientEmail",
         CASE 
@@ -595,6 +598,102 @@ router.get('/distributions', async (req, res) => {
   } catch (error) {
     console.error('Error getting distributions:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Add this new route to handle distribution verification
+router.put('/distributions/:id/verify', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { scholarId, status, message } = req.body;
+
+    // Validate status
+    if (!['received', 'not_received'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    // Get scholar details for notification
+    const scholarResult = await db.query(
+      'SELECT name, email FROM users WHERE id = $1',
+      [scholarId]
+    );
+    
+    const scholar = scholarResult.rows[0];
+
+    // Get all admin users
+    const adminResult = await db.query(
+      'SELECT id FROM users WHERE role = $1',
+      ['admin']
+    );
+
+    // Get distribution details
+    const distributionResult = await db.query(`
+      SELECT d.*, 
+        CASE 
+          WHEN d.item_type = 'regular' THEN rd.item
+          ELSE id.item
+        END as item_name
+      FROM item_distributions d
+      LEFT JOIN regular_donations rd ON d.item_id = rd.id AND d.item_type = 'regular'
+      LEFT JOIN inkind_donations id ON d.item_id = id.id AND d.item_type = 'in-kind'
+      WHERE d.id = $1
+    `, [id]);
+
+    const distribution = distributionResult.rows[0];
+
+    // Update the distribution status
+    const result = await db.query(
+      `UPDATE item_distributions 
+       SET status = $1,
+           verification_date = CURRENT_TIMESTAMP,
+           verification_message = $2
+       WHERE id = $3 
+       RETURNING *`,
+      [status, message || null, id]
+    );
+
+    // Create notifications for all admins
+    for (const admin of adminResult.rows) {
+      await db.query(`
+        INSERT INTO notifications 
+        (user_id, type, content, related_id, is_read, actor_name, actor_avatar)
+        VALUES ($1, 'distribution_verification', $2, $3, false, $4, $5)
+      `, [
+        admin.id,
+        `Scholar ${scholar.name} has ${status === 'received' ? 'verified receipt of' : 'reported an issue with'} ${distribution.quantity} ${distribution.unit} of ${distribution.item_name}${message ? `. Message: ${message}` : ''}`,
+        id,
+        scholar.name,
+        '/images/verification-icon.png'
+      ]);
+    }
+
+    // Send email to admins
+    try {
+      await emailService.sendDistributionVerificationEmail(
+        process.env.ADMIN_EMAIL,
+        scholar.name,
+        status,
+        message,
+        id,
+        {
+          itemName: distribution.item_name,
+          quantity: distribution.quantity,
+          unit: distribution.unit
+        }
+      );
+    } catch (emailError) {
+      console.error('Error sending verification email:', emailError);
+    }
+
+    res.json({
+      success: true,
+      message: 'Distribution verification updated',
+      distribution: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Error verifying distribution:', error);
+    res.status(500).json({ error: 'Failed to verify distribution' });
   }
 });
 
@@ -1109,7 +1208,9 @@ router.get('/recipient-distributions/:recipientId', async (req, res) => {
         d.unit,
         d.distributed_at as "distributedAt",
         d.item_type as "itemType",
-        d.item_id as "itemId",
+        d.status,
+        d.verification_date as "verificationDate",
+        d.verification_message as "message",
         CASE 
           WHEN d.item_type = 'regular' THEN rd.item
           ELSE id.item
