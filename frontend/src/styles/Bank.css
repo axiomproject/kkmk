@@ -797,3 +797,10 @@
   box-shadow: 0 0 0 2px rgba(253, 148, 0, 0.1);
 }
 
+
+.statsss-grid {
+  display: flex
+;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}

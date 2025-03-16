@@ -79,6 +79,19 @@ const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) =>
     }
   }
 
+  // Add custom styles to override the problematic flex-direction
+  const skillsContainerStyle = {
+    marginBottom: '15px'
+  };
+  
+  const skillsBadgesStyle = {
+    marginBottom: 0,
+    gap: '8px',
+    display: 'flex',
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const
+  };
+
   return (
     <div className="volunteer-view-modal-overlay" onClick={onClose}>
       <div className="volunteer-view-modal-content" onClick={e => e.stopPropagation()}>
@@ -124,9 +137,9 @@ const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) =>
           
           {/* Skills Section */}
           {parsedSkills && parsedSkills.length > 0 && (
-            <div className="volunteer-info-section">
+            <div className="volunteer-info-section" style={skillsContainerStyle}>
               <h3>Skills</h3>
-              <div className="skills-list">
+              <div className="skills-list" style={skillsBadgesStyle}>
                 {parsedSkills.map((skill: string) => (
                   <div key={skill} className="skill-badge">
                     {skillLabels[skill] || skill}

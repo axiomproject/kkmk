@@ -1542,6 +1542,8 @@
   width: 90%;
   border-radius: 5px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  margin: auto;
+  margin-top: calc(var(--popup-scroll-y, 0px) + 100px);
 }
 
 .success-popup.closing {
@@ -1618,9 +1620,10 @@
   background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   z-index: 2000;
-  overflow: hidden;
+  overflow: auto;
+  padding: 20px;
 }
 
 /* Replace fade animations with scale animations for better centered appearance */
@@ -1699,7 +1702,6 @@
   padding-right: 40px;
   border: 1px solid #ccc;
   border-radius: 10px;
-  background-color: transparent;
   font-family: "Poppins";
   font-size: 1rem;
 }
@@ -1938,4 +1940,173 @@
   }
 }
 
-/* ...existing code... */
+/* Add these styles to your Auth.css file */
+
+/* Document upload styling */
+.document-upload-container {
+  margin-bottom: 20px;
+}
+
+.file-upload-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 2px dashed #ccc;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+  margin-top: 6px;
+}
+
+.file-upload-wrapper:hover,
+.file-upload-wrapper:focus-within {
+  border-color: #6e85b7;
+  background-color: #f7f9fc;
+}
+
+.file-upload-wrapper.has-error {
+  border-color: #e74c3c;
+  background-color: #fdeaea;
+}
+
+.file-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  cursor: pointer;
+  color: #495057;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.file-upload-label:hover {
+  color: #6e85b7;
+}
+
+.file-upload-label svg {
+  width: 40px;
+  height: 40px;
+  fill: #6e85b7;
+  margin-bottom: 10px;
+  margin-right: 10px;
+}
+
+.file-upload-label span {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 15px;
+  background-color: #f0f4f8;
+  width: 100%;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  max-width: calc(100% - 40px);
+}
+
+.file-info svg {
+  flex-shrink: 0;
+  fill: #6e85b7;
+}
+
+.file-name {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #333;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.remove-file-btn:hover {
+  background-color: #e3e8ef;
+}
+
+.remove-file-btn svg {
+  fill: #6c757d;
+}
+
+.remove-file-btn:hover svg {
+  fill: #e74c3c;
+}
+
+.document-info {
+  margin-bottom: 15px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+/* Fix date input alignment with select dropdowns */
+.form-group input[type="date"] {
+  width: 100%;
+  padding: 10px;
+  bottom: 1rem;
+}
+
+/* Fix calendar icon appearance for date input */
+.form-group input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  padding: 0 5px;
+  filter: invert(0.5); /* Make the icon darker */
+}
+
+.form-group input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Apply consistent focus styles */
+.form-group input[type="date"]:focus {
+  outline: none;
+  border-color: #EE3F24;
+  box-shadow: 0 0 0 1px rgba(238, 63, 36, 0.2);
+}
+
+/* Make date input consistent across browsers */
+@-moz-document url-prefix() {
+  .form-group input[type="date"] {
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+}
+
+/* Add style for the age hint text */
+.form-group label .age-hint {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: normal;
+  margin-left: 5px;
+}

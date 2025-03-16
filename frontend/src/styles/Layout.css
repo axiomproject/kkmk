@@ -1468,6 +1468,61 @@ body {
 
 /* ... rest of existing styles ... */
 
+/* ... rest of existing styles ... */
+
+/* Add these styles for the distribution verification buttons */
+.verification-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.verify-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.verify-button:hover {
+  opacity: 0.9;
+}
+
+.verify-button.received {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.verify-button.not-received {
+  background-color: #f44336;
+  color: white;
+}
+
+.verification-status {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.verification-status.received {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.verification-status.not_received {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.verification-message {
+  margin-top: 5px;
+  font-style: italic;
+}
+
+/* ... rest of existing styles ... */
+
 /* ...rest of existing styles... */
 
 .cart-item-details {
@@ -2233,3 +2288,380 @@ select:focus {
 }
 
 /* ...rest of existing code... */
+
+/* ...existing code... */
+
+.scholar-distributions-container {
+  margin: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.distributions-header {
+  color: #333;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+}
+
+.distributions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.distribution-item {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f9f9f9;
+}
+
+.distribution-details h3 {
+  color: #2c5282;
+  margin-bottom: 10px;
+}
+
+.verification-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.verify-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.verify-button.received {
+  background-color: #48bb78;
+  color: white;
+}
+
+.verify-button.not-received {
+  background-color: #f56565;
+  color: white;
+}
+
+.verification-status {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.verification-status.received {
+  background-color: #c6f6d5;
+  color: #22543d;
+}
+
+.verification-status.not_received {
+  background-color: #fed7d7;
+  color: #742a2a;
+}
+
+.verification-status p {
+  margin: 5px 0;
+  font-family: "Poppins";
+}
+
+.verification-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.verify-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-family: "Poppins";
+  transition: all 0.2s;
+}
+
+.verify-button.received {
+  background-color: #48bb78;
+  color: white;
+}
+
+.verify-button.not-received {
+  background-color: #f56565;
+  color: white;
+}
+
+.verify-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* ...existing code... */
+
+/* Distribution verification styles */
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+.status-badge.pending {
+  background-color: #f0b429;
+  color: white;
+}
+
+.status-badge.received {
+  background-color: #48bb78;
+  color: white;
+}
+
+.status-badge.not_received {
+  background-color: #f56565;
+  color: white;
+}
+
+.verification-message {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f7f7f7;
+  border-radius: 4px;
+  font-style: italic;
+}
+
+/* ...existing code... */
+
+/* Distribution verification styles */
+.verification-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.verify-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-family: "Poppins";
+  transition: all 0.2s;
+}
+
+.verify-button.received {
+  background-color: #48bb78;
+  color: white;
+}
+
+.verify-button.not-received {
+  background-color: #f56565;
+  color: white;
+}
+
+.verify-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.verification-status {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.verification-status.received {
+  background-color: #c6f6d5;
+  color: #22543d;
+}
+
+.verification-status.not_received {
+  background-color: #fed7d7;
+  color: #742a2a;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+/* Scholar Verification Button Styles */
+.distribution-verification {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f7f7f7;
+}
+
+.verification-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.verify-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-family: "Poppins";
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.verify-button.received {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.verify-button.received:hover {
+  background-color: #45a049;
+}
+
+.verify-button.not-received {
+  background-color: #f44336;
+  color: white;
+}
+
+.verify-button.not-received:hover {
+  background-color: #da190b;
+}
+
+.verification-status {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: "Poppins";
+}
+
+.verification-status.received {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.verification-status.not_received {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.verification-status .status-text {
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.verification-status .verification-date {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.verification-message {
+  font-style: italic;
+  margin-top: 5px;
+  color: #666;
+}
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+/* ...existing code... */
+
+.distribution-verification {
+  margin-top: 15px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.verification-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.verify-button {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  font-family: "Poppins";
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 150px; /* Add minimum width */
+  pointer-events: auto; /* Ensure clicks are registered */
+}
+
+.verify-button.received {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.verify-button.received:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.verify-button.not-received {
+  background-color: #f44336;
+  color: white;
+}
+
+.verify-button.not-received:hover {
+  background-color: #da190b;
+  transform: translateY(-2px);
+}
+
+.verification-status {
+  margin-top: 15px;
+  padding: 15px;
+  border-radius: 8px;
+  font-family: "Poppins";
+}
+
+.verification-status.received {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.verification-status.not_received {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+}
+
+.verification-status .status-text {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.verification-status .verification-date {
+  font-size: 0.9em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.verification-status .verification-message {
+  font-style: italic;
+  color: #666;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+/* ...existing code... */

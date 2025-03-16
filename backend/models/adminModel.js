@@ -460,22 +460,47 @@ const AdminModel = {
   },
 
   async getScholarById(id) {
-    const result = await db.query(`
-      SELECT 
-        u.id, u.name, u.email, u.username, u.phone, 
-        u.date_of_birth, u.status, u.last_login,
-        u.is_verified, u.profile_photo, u.created_at,
-        u.first_name, u.middle_name, u.last_name, u.name_extension, u.gender,
-        u.guardian_name, u.guardian_phone, u.address, 
-        u.education_level, u.school, u.parents_income,
-        s.favorite_subject, s.favorite_activity, 
-        s.favorite_color, s.other_details,
-        s.image_url, s.current_amount, s.amount_needed
-      FROM users u
-      LEFT JOIN scholars s ON u.id = s.user_id
-      WHERE u.id = $1 AND u.role = 'scholar'
-    `, [id]);
-    return result.rows.length ? result.rows[0] : null;
+    try {
+      // Get the scholar data with document_paths included
+      const result = await db.query(`
+        SELECT 
+          u.id,
+          u.username,
+          u.email,
+          u.name,
+          u.first_name,
+          u.middle_name,
+          u.last_name,
+          u.name_extension,
+          u.phone,
+          u.gender,
+          u.date_of_birth,
+          u.document_paths,  /* Add this field to include document paths */
+          u.profile_photo,
+          u.is_verified,
+          u.status,
+          u.last_login,
+          u.address,
+          u.guardian_name,
+          u.guardian_phone,
+          u.education_level,
+          u.school,
+          u.parents_income,
+          u.created_at,
+          u.role
+          /* other fields as needed */
+        FROM 
+          users u
+        WHERE 
+          u.id = $1 AND u.role = 'scholar'
+      `, [id]);
+
+      if (result.rows.length === 0) return null;
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error in getScholarById:', error);
+      throw error;
+    }
   },
 
   async createScholar(scholarData) {

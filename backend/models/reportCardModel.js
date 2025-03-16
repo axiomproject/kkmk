@@ -1,26 +1,48 @@
 const db = require('../config/db');
 
 const ReportCardModel = {
-  async submitReportCard(userId, frontImage, backImage, gradeLevel) {
+  async submitReportCard(userId, frontImage, backImage, gradeLevel, gradingPeriod) {
+    const client = await db.connect();
     try {
-      const result = await db.query(`
-        INSERT INTO report_cards 
-        (user_id, front_image, back_image, grade_level, status, verification_step, submitted_at, updated_at)
-        VALUES 
-        ($1, $2, $3, $4, 'pending', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        RETURNING *
-      `, [userId, frontImage, backImage, gradeLevel]);
+      await client.query('BEGIN');
 
-      await db.query(`
+      // First check if user already has an active submission
+      const activeSubmissionResult = await client.query(`
+        SELECT id, status 
+        FROM report_cards 
+        WHERE user_id = $1 
+        AND status NOT IN ('rejected')
+        ORDER BY submitted_at DESC 
+        LIMIT 1
+      `, [userId]);
+
+      if (activeSubmissionResult.rows.length > 0 && 
+          activeSubmissionResult.rows[0].status !== 'rejected') {
+        throw new Error('You already have an active report card submission');
+      }
+
+      // If no active submission, proceed with new submission
+      const result = await client.query(`
+        INSERT INTO report_cards 
+        (user_id, front_image, back_image, grade_level, status, verification_step, submitted_at, updated_at, grading_period)
+        VALUES 
+        ($1, $2, $3, $4, 'pending', 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $5)
+        RETURNING *
+      `, [userId, frontImage, backImage, gradeLevel, gradingPeriod]);
+
+      await client.query(`
         UPDATE users 
         SET has_submitted_report = true 
         WHERE id = $1
       `, [userId]);
 
+      await client.query('COMMIT');
       return result.rows[0];
     } catch (error) {
-      console.error('Error submitting report card:', error);
+      await client.query('ROLLBACK');
       throw error;
+    } finally {
+      client.release();
     }
   },
 
@@ -38,7 +60,15 @@ const ReportCardModel = {
 
   async getReportCardByUserId(userId) {
     const result = await db.query(`
-      SELECT * FROM report_cards 
+      SELECT 
+        report_cards.*,
+        CASE 
+          WHEN report_cards.status = 'rejected' THEN true
+          WHEN report_cards.status = 'pending' AND verification_step = 0 THEN true
+          WHEN report_cards.status = 'pending_renewal' THEN true
+          ELSE false
+        END as needs_renewal
+      FROM report_cards 
       WHERE user_id = $1 
       ORDER BY submitted_at DESC 
       LIMIT 1
@@ -54,7 +84,14 @@ const ReportCardModel = {
              u.email as user_email
       FROM report_cards rc
       LEFT JOIN users u ON rc.user_id = u.id
-      ORDER BY rc.submitted_at DESC
+      WHERE rc.status IN ('pending', 'in_review', 'verified', 'rejected')
+      ORDER BY 
+        CASE 
+          WHEN rc.status = 'pending' THEN 1
+          WHEN rc.status = 'in_review' THEN 2
+          ELSE 3
+        END,
+        rc.submitted_at DESC
     `);
     
     return result.rows;
@@ -90,16 +127,45 @@ const ReportCardModel = {
   },
 
   async rejectReportCard(id, reason) {
-    const result = await db.query(`
-      UPDATE report_cards 
-      SET 
-        status = 'rejected',
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1 
-      RETURNING *
-    `, [id]);
-    
-    return result.rows[0];
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Get report card details to fetch user_id
+      const reportCard = await client.query(`
+        SELECT user_id FROM report_cards WHERE id = $1
+      `, [id]);
+
+      if (!reportCard.rows.length) {
+        throw new Error('Report card not found');
+      }
+
+      // Update report card status
+      const result = await client.query(`
+        UPDATE report_cards 
+        SET 
+          status = 'rejected',
+          rejection_reason = $2,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 
+        RETURNING *
+      `, [id, reason]);
+
+      // Reset user's report submission status to allow resubmission
+      await client.query(`
+        UPDATE users 
+        SET has_submitted_report = false 
+        WHERE id = $1
+      `, [reportCard.rows[0].user_id]);
+
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async getActiveReportCard(userId) {
@@ -201,7 +267,8 @@ const ReportCardModel = {
         // Update the report card status to indicate renewal
         await client.query(`
           UPDATE report_cards
-          SET status = 'renewal_requested',
+          SET status = 'pending',
+              verification_step = 0, -- Reset verification step
               updated_at = NOW()
           WHERE id = $1
         `, [id]);
@@ -233,7 +300,8 @@ const ReportCardModel = {
           user_id: oldReportCard.user_id,
           user_name: user.name,
           user_email: user.email,
-          status: 'renewal_requested'
+          status: 'pending',
+          verification_step: 0 // Add verification step to response
         };
       } catch (error) {
         await client.query('ROLLBACK');

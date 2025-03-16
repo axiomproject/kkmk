@@ -391,8 +391,10 @@
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Changed from center to flex-start */
   z-index: 1000;
+  overflow-y: scroll;
+  padding: 20px;
 }
 
 .admin-scholar-modal {
@@ -403,6 +405,8 @@
   max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
+  margin: auto;
+  margin-top: calc(var(--scroll-y, 0px) + 100px); /* Position based on scroll */
 }
 
 .admin-scholar-modal h2 {

@@ -1090,3 +1090,31 @@
 
 /* ...existing code... */
 
+/* Add these styles to your CSS file */
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 12px;
+  text-align: center;
+  min-width: 80px;
+}
+
+.status-badge.pending {
+  background-color: #f0f0f0;
+  color: #666;
+  border: 1px solid #ccc;
+}
+
+.status-badge.received {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 1px solid #4CAF50;
+}
+
+.status-badge.not-received {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+  border: 1px solid #f44336;
+}

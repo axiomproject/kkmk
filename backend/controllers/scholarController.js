@@ -18,6 +18,10 @@ const scholarController = {
       if (!scholar) {
         return res.status(404).json({ error: 'Scholar not found' });
       }
+
+      // You can add debugging here to check document_paths
+      console.log("Document paths from database:", scholar.document_paths);
+
       res.json(scholar);
     } catch (error) {
       console.error('Error fetching scholar:', error);

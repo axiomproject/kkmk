@@ -442,6 +442,33 @@ router.post('/register', documentUpload, async (req, res) => {
       });
     }
 
+    // Check specifically for email and username existence BEFORE creating the user
+    const existingUserCheck = await db.query(
+      'SELECT id, email, username FROM users WHERE email = $1 OR username = $2',
+      [email, username]
+    );
+
+    if (existingUserCheck.rows.length > 0) {
+      const existingUser = existingUserCheck.rows[0];
+      
+      // Be explicit about which field caused the conflict
+      if (existingUser.email === email) {
+        return res.status(409).json({ 
+          error: 'Email already registered',
+          field: 'email',
+          detail: 'This email address is already registered. Please use a different email or try to log in.'
+        });
+      }
+      
+      if (existingUser.username === username) {
+        return res.status(409).json({ 
+          error: 'Username already taken',
+          field: 'username',
+          detail: 'This username is already in use. Please choose another username.'
+        });
+      }
+    }
+
     // Create user
     const { user, verificationToken } = await userModel.createUser(
       firstName,
@@ -486,21 +513,33 @@ router.post('/register', documentUpload, async (req, res) => {
   } catch (error) {
     console.error('Registration error:', error);
     
-    // Check for specific error types
-    if (error.message.includes('duplicate key') && error.message.includes('username')) {
-      return res.status(409).json({ 
-        error: 'Username already taken',
-        field: 'username',
-        detail: 'This username is already in use. Please choose another one.'
+    // IMPORTANT: Handle errors with field property from userModel
+    if (error.field && error.status) {
+      return res.status(error.status).json({
+        error: error.message,
+        field: error.field,
+        detail: error.message
       });
     }
     
-    if (error.message.includes('duplicate key') && error.message.includes('email')) {
-      return res.status(409).json({ 
-        error: 'Email already registered',
-        field: 'email',
-        detail: 'This email address is already registered. Please use a different email or try to log in.'
-      });
+    // More specific error handling for duplicate key errors
+    if (error.message && error.message.includes('duplicate key')) {
+      // Parse the error message to identify which constraint failed
+      if (error.message.includes('users_email_key')) {
+        return res.status(409).json({ 
+          error: 'Email already registered',
+          field: 'email',
+          detail: 'This email address is already registered. Please use a different email or try to log in.'
+        });
+      }
+      
+      if (error.message.includes('users_username_key')) {
+        return res.status(409).json({ 
+          error: 'Username already taken',
+          field: 'username',
+          detail: 'This username is already in use. Please choose another username.'
+        });
+      }
     }
     
     // If error was caused by multer
@@ -518,7 +557,20 @@ router.post('/register', documentUpload, async (req, res) => {
       });
     }
     
-    res.status(500).json({ error: 'Registration failed' });
+    // For all other errors, return a generic message but log the full error
+    console.error('Detailed registration error:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      constraint: error.constraint,
+      field: error.field,
+      status: error.status
+    });
+    
+    res.status(500).json({ 
+      error: 'Registration failed', 
+      detail: 'An unexpected error occurred during registration.'
+    });
   }
 });
 
@@ -564,26 +616,46 @@ router.post('/test-face-save', async (req, res) => {
   }
 });
 
-// Add endpoint to check if username is available
+// Similar enhancement for username check
 router.get('/check-username', async (req, res) => {
   try {
     const { username } = req.query;
     
     if (!username) {
-      return res.status(400).json({ error: 'Username is required' });
+      return res.status(400).json({ error: 'Username is required', field: 'username' });
     }
     
-    const result = await db.query('SELECT id FROM users WHERE username = $1', [username]);
+    const result = await db.query('SELECT id FROM users WHERE LOWER(username) = LOWER($1)', [username]);
     
     if (result.rows.length > 0) {
-      return res.status(409).json({ available: false, message: 'This username is already registered. Please choose another username.' });
+      return res.status(409).json({ 
+
+        available: false,
+        field: 'username', 
+        error: 'Username already taken',
+        message: 'This username is already registered. Please choose another username.'
+      });
     }
     
-    res.json({ available: true, message: 'Username is available' });
+    res.json({ 
+      available: true, 
+      field: 'username',
+      message: 'Username is available'
+    });
   } catch (error) {
     console.error('Error checking username:', error);
-    res.status(500).json({ error: 'Server error', message: 'Failed to check username availability' });
+    res.status(500).json({ 
+      error: 'Server error',
+      field: 'username',
+      message: 'Failed to check username availability'
+    });
   }
+});
+
+// Debug any unmatched routes
+router.use((req, res) => {
+  console.log('Unmatched auth route:', req.method, req.url);
+  res.status(404).json({ error: 'Auth route not found' });
 });
 
 // Add endpoint to check if email is available

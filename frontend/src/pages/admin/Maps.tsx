@@ -618,6 +618,9 @@ interface ScholarDistributionItem {
   color: string;
 }
 
+// Add this constant for the base URL of uploads
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
+
 const AdminMap: React.FC = () => {
   const navigate = useNavigate();
   const [markers, setMarkers] = useState<LocationMarker[]>([OFFICE_MARKER]);
@@ -872,10 +875,30 @@ const AdminMap: React.FC = () => {
             rawResponse: event
           });
 
-          // Construct image URL with fallback
-          const imageUrl = event.image
-            ? `${event.image}`
-            : '/images/default-event.jpg';
+          // Construct image URL with proper base URL for uploads
+          let imageUrl = '/images/default-event.jpg';
+          
+          if (event.image) {
+            // Check if the image path starts with http(s)
+            if (event.image.startsWith('http')) {
+              imageUrl = event.image;
+            }
+            // Check if it's a relative path starting with /uploads/
+            else if (event.image.startsWith('/uploads/')) {
+              imageUrl = `${API_BASE_URL}${event.image}`;
+            } 
+            // Handle data URLs (base64)
+            else if (event.image.startsWith('data:image')) {
+              imageUrl = event.image;
+            }
+            // Fall back to default image if path is invalid
+            else {
+              console.warn(`Invalid image path for event ${event.id}: ${event.image}`);
+              imageUrl = '/images/default-event.jpg';
+            }
+          }
+
+          console.log(`Event ${event.id} using image URL: ${imageUrl}`);
 
           return {
             id: event.id,
@@ -1107,7 +1130,7 @@ const AdminMap: React.FC = () => {
       .sort((a, b) => new Date(b.distributedAt).getTime() - new Date(a.distributedAt).getTime())
       .slice(0, 3); // Show only last 3 distributions
 
-    // Improved profile photo handling
+    // Improved profile photo handling with BASE_URL
     let profilePhotoUrl = '/images/default-avatar.jpg';
     const photo = marker.details.profile_photo;
 
@@ -1117,7 +1140,7 @@ const AdminMap: React.FC = () => {
       } else if (photo.startsWith('http')) {
         profilePhotoUrl = photo; // Use full URL
       } else if (photo.startsWith('/uploads/')) {
-        profilePhotoUrl = `http://localhost:5175${photo}`; // Add server URL to path
+        profilePhotoUrl = `${API_BASE_URL}${photo}`; // Add server URL to path
       }
     }
 
@@ -1135,6 +1158,11 @@ const AdminMap: React.FC = () => {
     };
 
     const sector = getSectorForMarker(marker);
+
+    // Navigate to the specific scholar profile - Update to use the correct path
+    const handleViewScholarProfile = () => {
+      navigate(`/Scholars/Profile`);
+    };
     
     return (
       <div className="scholar-popup-content">
@@ -1185,7 +1213,7 @@ const AdminMap: React.FC = () => {
         <div className="popup-buttons">
           <button 
             className="view-details-btn"
-            onClick={() => navigate(`/admin/scholars/${marker.id}`)}
+            onClick={handleViewScholarProfile}
           >
             View Scholar Profile
           </button>
@@ -1244,7 +1272,7 @@ const AdminMap: React.FC = () => {
         }
         
         if (marker.type === 'scholar') {
-          // Create custom scholar icon using their profile photo
+          // Create custom scholar icon using their profile photo with BASE_URL
           let iconUrl = '/images/default-avatar.jpg';
           const photo = marker.details.profile_photo;
 
@@ -1254,7 +1282,7 @@ const AdminMap: React.FC = () => {
             } else if (photo.startsWith('http')) {
               iconUrl = photo;
             } else if (photo.startsWith('/uploads/')) {
-              iconUrl = `http://localhost:5175${photo}`;
+              iconUrl = `${API_BASE_URL}${photo}`;
             }
           }
 
@@ -1300,9 +1328,10 @@ const AdminMap: React.FC = () => {
                         alt={marker.name}
                         className="marker-event-image"
                         onError={(e) => {
+                          console.error('Failed to load event image:', marker.details.rawImagePath);
                           const target = e.target as HTMLImageElement;
                           target.src = '/images/default-event.jpg';
-                          console.error('Failed to load image:', marker.details.image);
+                          target.onerror = null; // Prevent infinite error loops
                         }}
                       />
                     </div>
@@ -1786,7 +1815,7 @@ const handleDistribute = (itemId: number) => {
             
             {/* Sector stats panel */}
             <div className="sector-stats-panel">
-              <h3>Sector Statistics</h3>
+              <h3>Area Statistics</h3>
               {Object.entries(sectorData).map(([name, data]) => (
                 <div key={name} className="sector-stat-block">
                   <div className="sector-stat-header">

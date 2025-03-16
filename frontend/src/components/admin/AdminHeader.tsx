@@ -37,6 +37,8 @@ const AdminHeader = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const notificationRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<NotificationType>('all');
+  const [notificationClosing, setNotificationClosing] = useState(false);
+  const bellIconRef = useRef<HTMLDivElement>(null);
   
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
 
@@ -260,16 +262,54 @@ const AdminHeader = () => {
     }
   };
 
+  // Modified function to handle notification panel animation
+  const toggleNotifications = async () => {
+    // If notifications are showing, handle closing animation
+    if (showNotifications) {
+      await markUnreadNotificationsAsRead();
+      
+      // Start closing animation
+      setNotificationClosing(true);
+      
+      // Wait for animation to complete before hiding
+      setTimeout(() => {
+        setShowNotifications(false);
+        setNotificationClosing(false);
+      }, 300); // Match animation duration
+    } else {
+      // For opening, show immediately with animation
+      setShowNotifications(true);
+    }
+    
+    // Animate bell icon
+    if (bellIconRef.current) {
+      bellIconRef.current.classList.add('animate');
+      setTimeout(() => {
+        if (bellIconRef.current) {
+          bellIconRef.current.classList.remove('animate');
+        }
+      }, 500); // Match bell animation duration
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
       }
-      // Add notification click outside handler
+      // Add notification click outside handler with animation
       if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
         if (showNotifications) {
           markUnreadNotificationsAsRead();
-          setShowNotifications(false);
+          
+          // Start closing animation
+          setNotificationClosing(true);
+          
+          // Wait for animation to complete before hiding
+          setTimeout(() => {
+            setShowNotifications(false);
+            setNotificationClosing(false);
+          }, 300); // Match animation duration
         }
       }
     };
@@ -381,18 +421,17 @@ const AdminHeader = () => {
       <div className="header-right">
         {/* Add notification bell */}
         <div className="notification-container" ref={notificationRef}>
-          <div className="notification-icon" onClick={async () => {
-            if (showNotifications) {
-              await markUnreadNotificationsAsRead();
-            }
-            setShowNotifications(!showNotifications);
-          }}>
+          <div 
+            className="notification-icon" 
+            ref={bellIconRef}
+            onClick={toggleNotifications}
+          >
             {unreadCount > 0 && (
               <span className="notification-badge">{unreadCount}</span>
             )}
             {showNotifications ? <BsBellFill size={20} /> : <BsBell size={20} />}
           </div>
-          <div className={`notifications-dropdown ${showNotifications ? 'active' : ''}`}>
+          <div className={`notifications-dropdown ${showNotifications ? 'active' : ''} ${notificationClosing ? 'closing' : ''}`}>
             <div className="notifications-header">
               <h3>Admin Notifications</h3>
               {notifications.length > 0 && (

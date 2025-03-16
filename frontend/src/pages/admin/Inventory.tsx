@@ -583,6 +583,7 @@ interface Distribution {
   quantity: number;
   itemType: string;       // matches backend item_type
   distributedAt: string;  // matches backend distributed_at
+  status: 'pending' | 'received' | 'not_received' | null; // add status field
 }
 
 // Add this interface near the top with other interfaces
@@ -764,12 +765,23 @@ const AdminInventory: React.FC = () => {
   // Fetch items on component mount - fixed to prevent infinite loop
   useEffect(() => {
     fetchItems();
-  }, []); // Remove dependencies that cause re-renders
+    
+    // Set up interval to fetch data periodically (every 5 minutes) instead of constant polling
+    const intervalId = setInterval(() => {
+      console.log('Scheduled data refresh');
+      fetchItems();
+    }, 300000); // 5 minutes in milliseconds
+    
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []); // Empty dependency array means this runs once on mount
 
-  // Update useEffect to calculate expiring items without causing infinite loops
+  // Update useEffect to calculate expiring items only when needed
   useEffect(() => {
-    calculateExpiringItems();
-  }, [regularItems.length, inkindItems.length]); // Only recalculate when arrays change length
+    if (regularItems.length > 0 || inkindItems.length > 0) {
+      calculateExpiringItems();
+    }
+  }, [regularItems.length, inkindItems.length]); // Only recalculate when the arrays change length
 
   const handleAddItem = async (newItem: Omit<DonationItem, 'id' | 'lastUpdated'>) => {
     try {
@@ -847,32 +859,96 @@ const AdminInventory: React.FC = () => {
   const handleDistribute = async (itemId: number, quantity: number, recipientId: number, recipientType: string) => {
     try {
       const type = distributeItem?.type === 'regular' ? 'regular' : 'inkind';
-      await api.post(`/inventory/${type}/${itemId}/distribute`, {
+      
+      // First get scholar info before distribution
+      const scholarResponse = await api.get(`/scholars/${recipientId}`);
+      if (!scholarResponse.data) {
+        throw new Error('Scholar information not found');
+      }
+      
+      console.log('Scholar info for notification:', scholarResponse.data);
+  
+      // Distribute item
+      const response = await api.post(`/inventory/${type}/${itemId}/distribute`, {
         quantity,
         recipientId,
         recipientType
       });
-      
-      // Refresh all data after successful distribution
+  
+      // Send email notification with detailed logging
+      if (response.data.success) {
+        console.log('Distribution successful, sending notification...');
+        try {
+          const notificationData = {
+            email: scholarResponse.data.email,
+            scholarName: scholarResponse.data.name,
+            items: [{
+              itemId,
+              itemName: distributeItem?.item,
+              quantity,
+              unit: distributeItem?.unit,
+              category: distributeItem?.category,
+              type: distributeItem?.type,
+              recipientId
+            }],
+            distributionId: response.data.distributionId
+          };
+  
+          console.log('Sending notification with data:', notificationData);
+  
+          const notificationResponse = await api.post('/notifications/distribution-notification', notificationData);
+  
+          console.log('Notification response:', notificationResponse.data);
+  
+          if (notificationResponse.data.emailSent) {
+            console.log('Email notification sent successfully');
+          } else {
+            console.warn('Email notification failed:', notificationResponse.data.emailError);
+            alert('Distribution successful but there might be an issue with the email notification.');
+          }
+        } catch (notificationError) {
+          console.error('Error sending notification:', notificationError);
+          alert('Distribution successful but notification may not have been sent.');
+        }
+      }
+  
+      // Refresh data and cleanup
       await fetchAll();
       setDistributeItem(null);
+      alert('Items distributed successfully! Scholar has been notified.');
     } catch (error) {
-      console.error('Error distributing item:', error);
+      console.error('Error in distribution process:', error);
       alert('Failed to distribute item. Please try again.');
     }
   };
+  
 
   const handleVerify = async (id: number, type: 'regular' | 'in-kind') => {
     try {
       const endpoint = type === 'regular' ? 'regular' : 'inkind';
+      
+      // Find the item being verified to get its details
+      const items = type === 'regular' ? regularItems : inkindItems;
+      const itemToVerify = items.find(item => item.id === id);
+      
       const response = await api.post(
         `/inventory/${endpoint}/${id}/verify`,
         { 
-          expirationDate: new Date().toISOString().split('T')[0] // Set today as default date
+          expirationDate: itemToVerify?.expirationDate || new Date().toISOString().split('T')[0]
         },
         getAuthHeaders()
       );
-  
+
+      // Send verification notification email
+      if (itemToVerify) {
+        await api.post('/notifications/donation-verification', {
+          email: itemToVerify.email,
+          donorName: itemToVerify.donatorName,
+          items: [itemToVerify],
+          verificationDate: new Date()
+        });
+      }
+
       // Update local state
       if (type === 'regular') {
         setRegularItems(regularItems.map(item => 
@@ -883,7 +959,7 @@ const AdminInventory: React.FC = () => {
           item.id === id ? response.data : item
         ));
       }
-  
+
       alert('Item verified successfully!');
     } catch (error) {
       console.error('Error verifying item:', error);
@@ -896,11 +972,26 @@ const AdminInventory: React.FC = () => {
     if (reason) {
       try {
         const endpoint = type === 'regular' ? 'regular' : 'inkind';
+        
+        // Find the item being rejected to get its details
+        const items = type === 'regular' ? regularItems : inkindItems;
+        const itemToReject = items.find(item => item.id === id);
+
         const response = await api.post(
           `/inventory/${endpoint}/${id}/reject`,
           { reason },
           getAuthHeaders()
         );
+
+        // Send rejection notification email
+        if (itemToReject) {
+          await api.post('/notifications/donation-rejection', {
+            email: itemToReject.email,
+            donorName: itemToReject.donatorName,
+            items: [itemToReject],
+            rejectionReason: reason
+          });
+        }
 
         // Update local state
         if (type === 'regular') {
@@ -982,7 +1073,8 @@ const AdminInventory: React.FC = () => {
         'Recipient Type': dist.recipientType,
         'Item': dist.itemName,
         'Quantity': dist.quantity,
-        'Item Type': dist.itemType
+        'Item Type': dist.itemType,
+        'Status': dist.status || 'Pending' // Add status to export
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -1301,6 +1393,18 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
     const endIndex = startIndex + rowsPerPage;
     const paginatedDistributions = sortedDistributions.slice(startIndex, endIndex);
 
+    // Helper function to render status badge with appropriate styling
+    const renderStatusBadge = (status: string | null) => {
+      if (!status || status === 'pending') {
+        return <span className="status-badge pending">Pending</span>;
+      } else if (status === 'received') {
+        return <span className="status-badge received">Received ✓</span>;
+      } else if (status === 'not_received') {
+        return <span className="status-badge not-received">Not Received ✕</span>;
+      }
+      return <span className="status-badge">{status}</span>;
+    };
+
     return (
       <div className="inventory-section">
         <div className="table-header">
@@ -1345,6 +1449,10 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
                 <th onClick={() => handleSort('itemType')} className="sortable-header">
                   Item Type <span className="material-icons sort-icon">{getSortIcon('itemType')}</span>
                 </th>
+                {/* Add status column header */}
+                <th onClick={() => handleSort('status')} className="sortable-header">
+                  Status <span className="material-icons sort-icon">{getSortIcon('status')}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1357,6 +1465,8 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
                   <td>{dist.itemName}</td>
                   <td>{dist.quantity}</td>
                   <td>{dist.itemType}</td>
+                  {/* Add status column cell */}
+                  <td>{renderStatusBadge(dist.status)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1880,4 +1990,3 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
   );
 };
 export default AdminInventory;
- 

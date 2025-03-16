@@ -298,6 +298,18 @@ const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
     { value: 'other', label: 'Other' }
   ];
 
+  // Define styles to override the problematic flex-direction
+  const skillsGridStyle = {
+    marginBottom: 0,
+    paddingBottom: 0
+  };
+  
+  const skillCheckboxContainerStyle = {
+    flexDirection: 'row' as const,
+    alignItems: 'center',
+    marginBottom: '8px'
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-contents wide-form">
@@ -513,9 +525,9 @@ const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
             </h3>
             <p className="section-description">Select skills this volunteer has:</p>
             
-            <div className="skills-grid">
+            <div className="skills-grid" style={skillsGridStyle}>
               {skillOptions.map((skill) => (
-                <div key={skill.value} className="skill-checkbox-container">
+                <div key={skill.value} className="skill-checkbox-container" style={skillCheckboxContainerStyle}>
                   <div className="skill-checkbox">
                     <input
                       type="checkbox"

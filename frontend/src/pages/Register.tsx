@@ -5,6 +5,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import '../styles/Auth.css';
 import { RegistrationResponse } from '../types/auth';
 import FaceVerification from '../components/FaceVerification';
+import { isEmailDuplicateError, isUsernameDuplicateError } from '../utils/errorParser';
 
 interface ValidationErrors {
   firstName?: string;
@@ -243,17 +244,27 @@ const Register: React.FC = () => {
       newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
     }
 
-    // Date of Birth validation - minimum age of 5 years
+    // Date of Birth validation - role-specific minimum age requirements
     if (!dateOfBirth.trim()) {
       newErrors.dateOfBirth = 'Date of Birth is required';
     } else {
       const dobDate = new Date(dateOfBirth);
       const today = new Date();
+      
+      // Calculate minimum age based on role
+      let minAge = 5; // Default minimum age (for scholars)
+      
+      if (role === 'volunteer') {
+        minAge = 16; // Volunteers must be at least 16
+      } else if (role === 'sponsor') {
+        minAge = 18; // Sponsors must be at least 18
+      }
+      
       const minAgeDate = new Date();
-      minAgeDate.setFullYear(today.getFullYear() - 5);
+      minAgeDate.setFullYear(today.getFullYear() - minAge);
       
       if (dobDate > minAgeDate) {
-        newErrors.dateOfBirth = 'You must be at least 5 years old to register';
+        newErrors.dateOfBirth = `You must be at least ${minAge} years old to register as a ${role}`;
       }
     }
 
@@ -347,142 +358,266 @@ const Register: React.FC = () => {
     }
 
     setErrors(newErrors);
+    
+    // If we have errors, scroll to the top to show the error messages
+    if (Object.keys(newErrors).length > 0) {
+      // Use setTimeout to ensure the errors are rendered before scrolling
+      setTimeout(() => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }, 100);
+      
+      // If there's a specific field with error, try to focus it
+      const firstErrorField = Object.keys(newErrors)[0];
+      const errorElement = document.getElementById(firstErrorField);
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError('');
-    setSuccess('');
-    
-    if (!validateForm()) return;
+  // Completely rewrite the form submission function with better error handling
+const handleSubmit = async (event: React.FormEvent) => {
+  event.preventDefault();
+  setError('');
+  setSuccess('');
+  
+  if (!validateForm()) return;
 
+  try {
+    const fullName = [firstName, middleName, lastName, extension].filter(Boolean).join(' ');
+    
+    // Create FormData object
+    const formData = new FormData();
+    formData.append('firstName', firstName);
+    formData.append('middleName', middleName);
+    formData.append('lastName', lastName);
+    formData.append('extension', extension);
+    formData.append('fullName', fullName);
+    formData.append('gender', gender);
+    formData.append('username', username);
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('dateOfBirth', dateOfBirth);
+    formData.append('role', role || '');
+    formData.append('phone', phone);
+    
+    // Add face verification data
+    if (faceData) {
+      formData.append('faceData', faceData);
+    }
+    
+    // Add role-specific data
+    if (role === 'scholar') {
+      formData.append('guardianName', guardianName);
+      formData.append('guardianPhone', guardianPhone);
+      formData.append('address', address);
+      formData.append('educationLevel', educationLevel);
+      formData.append('school', school);
+      formData.append('parentsIncome', parentsIncome);
+      
+      // Add document files
+      if (schoolRegistrationForm) formData.append('schoolRegistrationForm', schoolRegistrationForm);
+      if (psaDocument) formData.append('psaDocument', psaDocument);
+      if (parentsId) formData.append('parentsId', parentsId);
+      if (reportCard) formData.append('reportCard', reportCard);
+    } else if (role === 'volunteer') {
+      formData.append('skills', JSON.stringify(skills));
+      formData.append('hasDisability', hasDisability === null ? '' : String(hasDisability));
+      
+      if (hasDisability) {
+        formData.append('disabilityTypes', JSON.stringify(disabilityType));
+        formData.append('disabilityDetails', otherDisabilityDetails);
+      }
+    }
+    
+    // First check for potential conflicts before full submission
+    let hasConflict = false;
+    
+    // Check email availability
     try {
-      const fullName = [firstName, middleName, lastName, extension].filter(Boolean).join(' ');
-      
-      // Prepare disability information for volunteers
-      let disabilityInfo = null;
-      if (role === 'volunteer' && hasDisability === true) {
-        disabilityInfo = {
-          types: disabilityType,
-          details: otherDisabilityDetails
-        };
-      }
-      
-      // Use FormData for file uploads
-      const formData = new FormData();
-      
-      // Add basic fields
-      formData.append('firstName', firstName);
-      formData.append('middleName', middleName || '');
-      formData.append('lastName', lastName);
-      formData.append('extension', extension || '');
-      formData.append('gender', gender);
-      formData.append('name', fullName);
-      formData.append('username', username);
-      formData.append('email', email);
-      formData.append('phone', phone);
-      formData.append('password', password);
-      formData.append('dateOfBirth', dateOfBirth);
-      formData.append('role', role || '');
-      
-      if (faceVerified && faceData) {
-        formData.append('faceData', faceData);
-      }
-      
-      // Add scholar specific fields
-      if (role === 'scholar') {
-        formData.append('guardianName', guardianName);
-        formData.append('guardianPhone', guardianPhone);
-        formData.append('address', address);
-        formData.append('educationLevel', educationLevel);
-        formData.append('school', school);
-        formData.append('parentsIncome', parentsIncome);
-        
-        // Append document files
-        if (schoolRegistrationForm) {
-          formData.append('schoolRegistrationForm', schoolRegistrationForm);
-        }
-        if (psaDocument) {
-          formData.append('psaDocument', psaDocument);
-        }
-        if (parentsId) {
-          formData.append('parentsId', parentsId);
-        }
-        if (reportCard) {
-          formData.append('reportCard', reportCard);
-        }
-      }
-      
-      // Add volunteer specific fields
-      if (role === 'volunteer') {
-        if (skills.length > 0) {
-          formData.append('skills', JSON.stringify(skills));
-        }
-        
-        if (hasDisability !== null) {
-          formData.append('disability', JSON.stringify(hasDisability ? disabilityInfo : null));
-        }
-      }
-      
-      // Log data to debug
-      console.log('Registration data sent to server:', {
-        role,
-        firstName,
-        lastName,
-        email,
-        // Don't log files directly
-        documentUploads: role === 'scholar' ? {
-          schoolRegistration: schoolRegistrationForm?.name,
-          psa: psaDocument?.name,
-          parentsId: parentsId?.name,
-          reportCard: reportCard?.name
-        } : null
-      });
-      
-      const response = await api.post('/register', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      // Different success message based on role
-      if (role === 'scholar') {
-        setSuccess('Registration successful. Please wait for admin to verify your account.');
-      } else {
-        setSuccess(response.data.message);
-      }
-      
-      setShowSuccessPopup(true);
-    } catch (err: any) {
-      console.error('Registration error:', err);
-      
-      // Check for specific error types
-      const errorMessage = err.response?.data?.error || '';
-      
-      // Handle duplicate username error
-      if (errorMessage.includes('duplicate key') && errorMessage.includes('users_username_key')) {
+      const emailCheck = await api.get(`/check-email?email=${encodeURIComponent(email)}`);
+      if (!emailCheck.data.available) {
         setErrors(prev => ({
           ...prev,
-          username: 'This username is already taken. Please choose another username.'
-        }));
-        setError('Username is already taken');
-      } 
-      // Handle duplicate email error
-      else if (errorMessage.includes('duplicate key') && errorMessage.includes('users_email_key')) {
-        setErrors(prev => ({
-          ...prev,
-          email: 'This email is already registered. Please use another email or try to login.'
+          email: 'This email is already registered. Please use another email or try to login.',
+          username: undefined // Clear any username errors
         }));
         setError('Email is already registered');
+        hasConflict = true;
       }
-      // Generic error handling
-      else {
-        setError(err.response?.data?.error || 'Registration failed. Please try again.');
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        setErrors(prev => ({
+          ...prev,
+          email: 'This email is already registered. Please use another email or try to login.',
+          username: undefined
+        }));
+        setError('Email is already registered');
+        hasConflict = true;
       }
-      
-      // Scroll to the error message
+    }
+    
+    // Only check username if email is fine
+    if (!hasConflict) {
+      try {
+        const usernameCheck = await api.get(`/check-username?username=${encodeURIComponent(username)}`);
+        if (!usernameCheck.data.available) {
+          setErrors(prev => ({
+            ...prev,
+            username: 'This username is already taken. Please choose another username.',
+            email: undefined // Clear any email errors
+          }));
+          setError('Username is already taken');
+          hasConflict = true;
+        }
+      } catch (error: any) {
+        if (error.response?.status === 409) {
+          setErrors(prev => ({
+            ...prev,
+            username: 'This username is already taken. Please choose another username.',
+            email: undefined
+          }));
+          setError('Username is already taken');
+          hasConflict = true;
+        }
+      }
+    }
+    
+    // Don't proceed with form submission if there are conflicts
+    if (hasConflict) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    
+    const response = await api.post('/register', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    // Set success message based on role or from response
+    if (role === 'scholar') {
+      setSuccess('Registration successful. Please wait for admin to verify your account.');
+    } else {
+      setSuccess(response.data.message || 'Registration successful. Please check your email to verify your account and also check the spam folder');
+    }
+    
+    // Store current scroll position before showing success popup
+    const scrollY = window.scrollY;
+    document.documentElement.style.setProperty('--popup-scroll-y', `${scrollY}px`);
+    
+    // Show success popup
+    setShowSuccessPopup(true);
+    
+    // Reset form after successful submission (optional)
+    if (role === 'volunteer' || role === 'sponsor') {
+      // Only clear form for non-scholars, since scholars need verification
+      setTimeout(() => {
+        setStep('role');
+        setRole(undefined);
+        // Other form reset logic...
+      }, 3000); // Wait 3 seconds after success to reset form
+    }
+    
+  } catch (err: any) {
+    console.error('Registration error:', err);
+    
+    // Log the actual error response for debugging
+    console.log('Error response data:', err.response?.data);
+    console.log('Error status:', err.response?.status);
+    
+    // Get the error data from the response if available
+    const responseError = err.response?.data || {};
+    
+    // Always clear existing field errors to prevent stale error messages
+    setErrors(prev => ({
+      ...prev,
+      email: undefined,
+      username: undefined
+    }));
+    
+    // Handle specific field errors based on the field property from backend
+    if (responseError.field === 'email') {
+      setErrors(prev => ({
+        ...prev,
+        email: responseError.detail || responseError.error || 'Email already registered'
+      }));
+      setError('Email is already registered. Please use a different email.');
+    }
+    else if (responseError.field === 'username') {
+      setErrors(prev => ({
+        ...prev,
+        username: responseError.detail || responseError.error || 'Username already taken'
+      }));
+      setError('Username is already taken. Please choose another username.');
+    }
+    else if (responseError.error) {
+      // If no field is specified but we have an error message
+      const errorLowerCase = responseError.error.toLowerCase();
+      
+      if (errorLowerCase.includes('email')) {
+        setErrors(prev => ({
+          ...prev,
+          email: responseError.detail || 'Email already registered'
+        }));
+        setError('Email is already registered. Please use a different email.');
+      }
+      else if (errorLowerCase.includes('username')) {
+        setErrors(prev => ({
+          ...prev,
+          username: responseError.detail || 'Username already taken'
+        }));
+        setError('Username is already taken. Please choose another username.');
+      }
+      else {
+        // Generic error message
+        setError(responseError.error || 'Registration failed. Please try again.');
+      }
+    }
+    else {
+      // Fallback for unexpected error formats
+      setError('Registration failed. Please try again or contact support.');
+    }
+    
+    // Scroll to the error message
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+
+  // Add an additional check for email availability
+  const checkEmailAvailability = async (email: string) => {
+    try {
+      const response = await api.get(`/check-email?email=${encodeURIComponent(email)}`);
+      return response.data.available;
+    } catch (error: any) {
+      // If we get a 409 status, the email is already taken
+      if (error.response?.status === 409) {
+        return false;
+      }
+      // For other errors, assume the email might be available to avoid false negatives
+      console.error('Error checking email availability:', error);
+      return true;
+    }
+  };
+
+  // Add an additional check for username availability
+  const checkUsernameAvailability = async (username: string) => {
+    try {
+      const response = await api.get(`/check-username?username=${encodeURIComponent(username)}`);
+      return response.data.available;
+    } catch (error: any) {
+      // If we get a 409 status, the username is already taken
+      if (error.response?.status === 409) {
+        return false;
+      }
+      // For other errors, assume the username might be available to avoid false negatives
+      console.error('Error checking username availability:', error);
+      return true;
     }
   };
 
@@ -709,48 +844,311 @@ const Register: React.FC = () => {
     </div>
   );
 
-  // Success Popup Component - Updated for better animation
-  const renderSuccessPopup = () => (
+  // Success Popup Component - Updated for better animation and scroll position
+const renderSuccessPopup = () => (
+  <motion.div 
+    className="success-popup-overlay"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.3 }}
+    // Auto-dismiss after 8 seconds
+    onAnimationComplete={() => {
+      setTimeout(() => {
+        setShowSuccessPopup(false);
+      }, 8000);
+    }}
+  >
     <motion.div 
-      className="success-popup-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      className={`success-popup ${isClosingModal ? 'closing' : ''}`}
+      initial={{ scale: 0.8, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ 
+        type: "spring",
+        stiffness: 300,
+        damping: 25,
+        duration: 0.3
+      }}
     >
-      <motion.div 
-        className={`success-popup ${isClosingModal ? 'closing' : ''}`}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ 
-          type: "spring",
-          stiffness: 300,
-          damping: 25,
-          duration: 0.3
-        }}
-      >
-        <div className="success-popup-content">
-          <div className="success-icon">✓</div>
-          <p>{success || 'Registration successful. Please check your email to verify your account.'}</p>
-          <button 
-            className="close-popup-btn"
-            onClick={() => setShowSuccessPopup(false)}
-          >
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-            </svg>
-          </button>
-        </div>
-      </motion.div>
+      <div className="success-popup-content">
+        <div className="success-icon">✓</div>
+        <p>{success || 'Registration successful. Please check your email to verify your account.'}</p>
+        <button 
+          className="close-popup-btn"
+          onClick={() => setShowSuccessPopup(false)}
+        >
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
     </motion.div>
-  );
+  </motion.div>
+);
+
+  const handleNameInput = (e: React.ChangeEvent<HTMLInputElement>, setter: (value: string) => void) => {
+    const value = e.target.value;
+    // Allow only letters, spaces, and basic punctuation for names
+    if (/^[a-zA-ZÀ-ÖØ-öø-ÿ\s'.,-]*$/.test(value) || value === '') {
+      setter(value);
+      // If there was an error for this field, clear it when user starts typing a valid value
+      if (errors[e.target.id as keyof ValidationErrors]) {
+        setErrors(prev => ({
+          ...prev,
+          [e.target.id]: undefined
+        }));
+      }
+    }
+  };
+  
+  // Enhance the username input handler with a debounced availability check
+  const handleUsernameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Allow only letters, numbers, and underscores for username
+    if (/^[a-zA-Z0-9_]*$/.test(value) || value === '') {
+      setUsername(value);
+      
+      // Clear error when user changes the username
+      if (errors.username || error.includes('Username is already taken')) {
+        setErrors(prev => ({
+          ...prev,
+          username: undefined
+        }));
+        if (error.includes('Username is already taken')) {
+          setError('');
+        }
+      }
+      
+      // Add debounced username check if it's a valid format and length
+      if (value && value.length >= 3) {
+        // Clear any previous timeout
+        if (window.usernameCheckTimeout) {
+          clearTimeout(window.usernameCheckTimeout);
+        }
+        
+        // Set a new timeout to check username availability
+        window.usernameCheckTimeout = setTimeout(async () => {
+          try {
+            const isAvailable = await checkUsernameAvailability(value);
+            if (!isAvailable && username === value) { // Make sure the username hasn't changed during the delay
+              setErrors(prev => ({
+                ...prev,
+                username: 'This username is already taken. Please choose another username.'
+              }));
+            }
+          } catch (error) {
+            console.error('Username availability check failed:', error);
+            // Don't set error on check failure
+          }
+        }, 600); // Wait for 600ms after user stops typing
+      }
+    }
+  };
+  
+  // Enhance the email input handler with a debounced availability check
+  const handleEmailInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    
+    // Clear error when user changes the email
+    if (errors.email || error.includes('Email is already registered')) {
+      setErrors(prev => ({
+        ...prev,
+        email: undefined
+      }));
+      if (error.includes('Email is already registered')) {
+        setError('');
+      }
+    }
+    
+    // Add debounced email check if it's a valid email format
+    if (value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      // Clear any previous timeout
+      if (window.emailCheckTimeout) {
+        clearTimeout(window.emailCheckTimeout);
+      }
+      
+      // Set a new timeout to check email availability
+      window.emailCheckTimeout = setTimeout(async () => {
+        try {
+          const isAvailable = await checkEmailAvailability(value);
+          if (!isAvailable && email === value) { // Make sure the email hasn't changed during the delay
+            setErrors(prev => ({
+              ...prev,
+              email: 'This email is already registered. Please use another email or try to login.'
+            }));
+          }
+        } catch (error) {
+          console.error('Email availability check failed:', error);
+          // Don't set error on check failure
+        }
+      }, 600); // Wait for 600ms after user stops typing
+    }
+  };
+  
+  const handlePasswordInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    // Clear error when user changes the password
+    if (errors.password) {
+      setErrors(prev => ({
+        ...prev,
+        password: undefined
+      }));
+    }
+  };
+  
+  const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow only numbers, +, and spaces for phone numbers
+    if (/^[0-9+\s]*$/.test(value) || value === '') {
+      setPhone(value);
+      if (errors.phone) {
+        setErrors(prev => ({
+          ...prev,
+          phone: undefined
+        }));
+      }
+    }
+  };
+  
+  const handleGuardianPhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow only numbers, +, and spaces for phone numbers
+    if (/^[0-9+\s]*$/.test(value) || value === '') {
+      setGuardianPhone(value);
+      if (errors.guardianPhone) {
+        setErrors(prev => ({
+          ...prev,
+          guardianPhone: undefined
+        }));
+      }
+    }
+  };
+
+  const handleSchoolInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSchool(e.target.value);
+    if (errors.school) {
+      setErrors(prev => ({
+        ...prev,
+        school: undefined
+      }));
+    }
+  };
+
+  const handleGuardianNameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Allow only letters, spaces, and basic punctuation for names
+    if (/^[a-zA-ZÀ-ÖØ-öø-ÿ\s'.,-]*$/.test(value) || value === '') {
+      setGuardianName(value);
+      if (errors.guardianName) {
+        setErrors(prev => ({
+          ...prev,
+          guardianName: undefined
+        }));
+      }
+    }
+  };
+  
+  const handleAddressInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setAddress(e.target.value);
+    if (errors.address) {
+      setErrors(prev => ({
+        ...prev,
+        address: undefined
+      }));
+    }
+  };
+  
+  const handleEducationLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setEducationLevel(e.target.value);
+    if (errors.educationLevel) {
+      setErrors(prev => ({
+        ...prev,
+        educationLevel: undefined
+      }));
+    }
+  };
+  
+  const handleParentsIncomeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setParentsIncome(e.target.value);
+    if (errors.parentsIncome) {
+      setErrors(prev => ({
+        ...prev,
+        parentsIncome: undefined
+      }));
+    }
+  };
+
+  const handleDateOfBirthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateOfBirth(e.target.value);
+    if (errors.dateOfBirth) {
+      setErrors(prev => ({
+        ...prev,
+        dateOfBirth: undefined
+      }));
+    }
+  };
+
+  const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setGender(e.target.value as 'male' | 'female' | 'other');
+    if (errors.gender) {
+      setErrors(prev => ({
+        ...prev,
+        gender: undefined
+      }));
+    }
+  };
+
+  const handleDisabilityDetailsInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setOtherDisabilityDetails(e.target.value);
+    if (errors.disabilityDetails) {
+      setErrors(prev => ({
+        ...prev,
+        disabilityDetails: undefined
+      }));
+    }
+  };
+
+  const handleTermsCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAcceptedTerms(e.target.checked);
+    if (errors.terms && e.target.checked) {
+      setErrors(prev => ({
+        ...prev,
+        terms: undefined
+      }));
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (file: File | null) => void, errorKey: keyof ValidationErrors) => {
+    const file = e.target.files?.[0] || null;
+    setter(file);
+    if (file && errors[errorKey]) {
+      setErrors(prev => ({
+        ...prev,
+        [errorKey]: undefined
+      }));
+    }
+  };
+
+  // Add function to handle file removal
+  const handleRemoveFile = (setter: (file: File | null) => void, errorKey: keyof ValidationErrors) => {
+    setter(null);
+    // Clear any error for this field when removing the file
+    if (errors[errorKey]) {
+      setErrors(prev => ({
+        ...prev,
+        [errorKey]: undefined
+      }));
+    }
+  };
 
   const renderRegistrationForm = () => (
     <div className="registration-form">
       <h4>Complete your registration</h4>
       <p>Please fill in your details</p>
-      {error && <p className="error-message">{error}</p>}
-      <form onSubmit={handleSubmit} className="auth-form">
+      {error && <p className="error-message" id="error-message">{error}</p>}
+      <form onSubmit={handleSubmit} className="auth-form" noValidate>
         <div className="form-section">
           <h5>Personal Information</h5>
           <div className="form-group-row">
@@ -760,7 +1158,7 @@ const Register: React.FC = () => {
                 type="text"
                 id="firstName"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={(e) => handleNameInput(e, setFirstName)}
                 placeholder="First name"
                 className={errors.firstName ? 'error-input' : ''}
               />
@@ -772,7 +1170,7 @@ const Register: React.FC = () => {
                 type="text"
                 id="middleName"
                 value={middleName}
-                onChange={(e) => setMiddleName(e.target.value)}
+                onChange={(e) => handleNameInput(e, setMiddleName)}
                 placeholder="Middle name (optional)"
               />
             </div>
@@ -784,7 +1182,7 @@ const Register: React.FC = () => {
                 type="text"
                 id="lastName"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e) => handleNameInput(e, setLastName)}
                 placeholder="Last name"
                 className={errors.lastName ? 'error-input' : ''}
               />
@@ -796,7 +1194,7 @@ const Register: React.FC = () => {
                 type="text"
                 id="extension"
                 value={extension}
-                onChange={(e) => setExtension(e.target.value)}
+                onChange={(e) => handleNameInput(e, setExtension)}
                 placeholder="Jr., Sr., III, etc. (optional)"
               />
             </div>
@@ -808,7 +1206,7 @@ const Register: React.FC = () => {
               <select
                 id="gender"
                 value={gender}
-                onChange={(e) => setGender(e.target.value as 'male' | 'female' | 'other')}
+                onChange={handleGenderChange}
                 className={errors.gender ? 'error-input' : ''}
               >
                 <option value="male">Male</option>
@@ -818,14 +1216,23 @@ const Register: React.FC = () => {
               {errors.gender && <span className="error-text">{errors.gender}</span>}
             </div>
             <div className="form-group">
-              <label htmlFor="dateOfBirth">Date of Birth *</label>
+              <label htmlFor="dateOfBirth">
+                Date of Birth * 
+                {role === 'volunteer' && <span className="age-hint">(16+ years old)</span>}
+                {role === 'sponsor' && <span className="age-hint">(18+ years old)</span>}
+              </label>
               <input
                 type="date"
                 id="dateOfBirth"
                 value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
+                onChange={handleDateOfBirthChange}
                 placeholder="Date of Birth"
-                max={new Date().toISOString().split('T')[0]}
+                max={(() => {
+                  const today = new Date();
+                  let minAge = role === 'volunteer' ? 16 : (role === 'sponsor' ? 18 : 5);
+                  today.setFullYear(today.getFullYear() - minAge);
+                  return today.toISOString().split('T')[0];
+                })()}
                 className={errors.dateOfBirth ? 'error-input' : ''}
               />
               {errors.dateOfBirth && <span className="error-text">{errors.dateOfBirth}</span>}
@@ -839,7 +1246,7 @@ const Register: React.FC = () => {
               type="tel"
               id="phone"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={handlePhoneInput}
               placeholder="Phone number"
               className={errors.phone ? 'error-input' : ''}
             />
@@ -855,7 +1262,7 @@ const Register: React.FC = () => {
               type="text"
               id="username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={handleUsernameInput}
               placeholder="Choose a username"
               className={errors.username ? 'error-input' : ''}
             />
@@ -869,7 +1276,7 @@ const Register: React.FC = () => {
               type="email"
               id="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={handleEmailInput}
               placeholder="Email"
               className={errors.email ? 'error-input' : ''}
             />
@@ -883,7 +1290,7 @@ const Register: React.FC = () => {
                 type={showPassword ? "text" : "password"}
                 id="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={handlePasswordInput}
                 placeholder="Password"
                 className={`password-input ${errors.password ? 'error-input' : ''}`}
               />
@@ -919,7 +1326,7 @@ const Register: React.FC = () => {
                   type="text"
                   id="guardianName"
                   value={guardianName}
-                  onChange={(e) => setGuardianName(e.target.value)}
+                  onChange={handleGuardianNameInput}
                   placeholder="Guardian's full name"
                   className={errors.guardianName ? 'error-input' : ''}
                 />
@@ -932,7 +1339,7 @@ const Register: React.FC = () => {
                   type="tel"
                   id="guardianPhone"
                   value={guardianPhone}
-                  onChange={(e) => setGuardianPhone(e.target.value)}
+                  onChange={handleGuardianPhoneInput}
                   placeholder="Guardian's phone number"
                   className={errors.guardianPhone ? 'error-input' : ''}
                 />
@@ -944,7 +1351,7 @@ const Register: React.FC = () => {
                 <textarea
                   id="address"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={handleAddressInput}
                   placeholder="Complete address"
                   rows={3}
                   className={errors.address ? 'error-input' : ''}
@@ -958,7 +1365,7 @@ const Register: React.FC = () => {
                 <select
                   id="parentsIncome"
                   value={parentsIncome}
-                  onChange={(e) => setParentsIncome(e.target.value)}
+                  onChange={handleParentsIncomeChange}
                   className={errors.parentsIncome ? 'error-input' : ''}
                 >
                   <option value="">Select income range</option>
@@ -978,7 +1385,7 @@ const Register: React.FC = () => {
                   <select
                     id="educationLevel"
                     value={educationLevel}
-                    onChange={(e) => setEducationLevel(e.target.value)}
+                    onChange={handleEducationLevelChange}
                     className={errors.educationLevel ? 'error-input' : ''}
                   >
                     <option value="">Select Education Level</option>
@@ -995,7 +1402,7 @@ const Register: React.FC = () => {
                     type="text"
                     id="school"
                     value={school}
-                    onChange={(e) => setSchool(e.target.value)}
+                    onChange={handleSchoolInput}
                     placeholder="School name"
                     className={errors.school ? 'error-input' : ''}
                   />
@@ -1004,60 +1411,180 @@ const Register: React.FC = () => {
               </div>
             </div>
             
-            {/* New Document Upload Section */}
+            {/* Enhanced Document Upload Section */}
             <div className="form-section">
               <h5>Required Documents</h5>
               <p className="document-info">Please upload the following required documents (PDF, JPG, or PNG files, max 5MB each):</p>
               
-              <div className="form-group">
+              <div className="form-group document-upload-container">
                 <label htmlFor="schoolRegistrationForm">School Registration Form *</label>
-                <input
-                  type="file"
-                  id="schoolRegistrationForm"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => setSchoolRegistrationForm(e.target.files?.[0] || null)}
-                  className={errors.schoolRegistrationForm ? 'error-input' : ''}
-                />
-                {schoolRegistrationForm && <span className="file-name">{schoolRegistrationForm.name}</span>}
+                <div className={`file-upload-wrapper ${errors.schoolRegistrationForm ? 'has-error' : ''}`}>
+                  {!schoolRegistrationForm ? (
+                    <>
+                      <label htmlFor="schoolRegistrationForm" className="file-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                        </svg>
+                        <span>Click to upload</span>
+                      </label>
+                      <input
+                        type="file"
+                        id="schoolRegistrationForm"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, setSchoolRegistrationForm, 'schoolRegistrationForm')}
+                        className="file-input"
+                      />
+                    </>
+                  ) : (
+                    <div className="file-preview">
+                      <div className="file-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V8H19v12H5V4h8v-.5zM7 13h10v1H7v-1zm0 3h10v1H7v-1zm0-6h5v1H7v-1z"/>
+                        </svg>
+                        <span className="file-name">{schoolRegistrationForm.name}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="remove-file-btn"
+                        onClick={() => handleRemoveFile(setSchoolRegistrationForm, 'schoolRegistrationForm')}
+                        title="Remove file"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {errors.schoolRegistrationForm && <span className="error-text">{errors.schoolRegistrationForm}</span>}
               </div>
               
-              <div className="form-group">
+              <div className="form-group document-upload-container">
                 <label htmlFor="psaDocument">PSA Birth Certificate *</label>
-                <input
-                  type="file"
-                  id="psaDocument"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => setPsaDocument(e.target.files?.[0] || null)}
-                  className={errors.psaDocument ? 'error-input' : ''}
-                />
-                {psaDocument && <span className="file-name">{psaDocument.name}</span>}
+                <div className={`file-upload-wrapper ${errors.psaDocument ? 'has-error' : ''}`}>
+                  {!psaDocument ? (
+                    <>
+                      <label htmlFor="psaDocument" className="file-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                        </svg>
+                        <span>Click to upload</span>
+                      </label>
+                      <input
+                        type="file"
+                        id="psaDocument"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, setPsaDocument, 'psaDocument')}
+                        className="file-input"
+                      />
+                    </>
+                  ) : (
+                    <div className="file-preview">
+                      <div className="file-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V8H19v12H5V4h8v-.5zM7 13h10v1H7v-1zm0 3h10v1H7v-1zm0-6h5v1H7v-1z"/>
+                        </svg>
+                        <span className="file-name">{psaDocument.name}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="remove-file-btn"
+                        onClick={() => handleRemoveFile(setPsaDocument, 'psaDocument')}
+                        title="Remove file"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {errors.psaDocument && <span className="error-text">{errors.psaDocument}</span>}
               </div>
               
-              <div className="form-group">
+              <div className="form-group document-upload-container">
                 <label htmlFor="parentsId">Parent's ID *</label>
-                <input
-                  type="file"
-                  id="parentsId"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => setParentsId(e.target.files?.[0] || null)}
-                  className={errors.parentsId ? 'error-input' : ''}
-                />
-                {parentsId && <span className="file-name">{parentsId.name}</span>}
+                <div className={`file-upload-wrapper ${errors.parentsId ? 'has-error' : ''}`}>
+                  {!parentsId ? (
+                    <>
+                      <label htmlFor="parentsId" className="file-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                        </svg>
+                        <span>Click to upload</span>
+                      </label>
+                      <input
+                        type="file"
+                        id="parentsId"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, setParentsId, 'parentsId')}
+                        className="file-input"
+                      />
+                    </>
+                  ) : (
+                    <div className="file-preview">
+                      <div className="file-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V8H19v12H5V4h8v-.5zM7 13h10v1H7v-1zm0 3h10v1H7v-1zm0-6h5v1H7v-1z"/>
+                        </svg>
+                        <span className="file-name">{parentsId.name}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="remove-file-btn"
+                        onClick={() => handleRemoveFile(setParentsId, 'parentsId')}
+                        title="Remove file"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {errors.parentsId && <span className="error-text">{errors.parentsId}</span>}
               </div>
               
-              <div className="form-group">
+              <div className="form-group document-upload-container">
                 <label htmlFor="reportCard">Latest Report Card/Grade Slip *</label>
-                <input
-                  type="file"
-                  id="reportCard"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => setReportCard(e.target.files?.[0] || null)}
-                  className={errors.reportCard ? 'error-input' : ''}
-                />
-                {reportCard && <span className="file-name">{reportCard.name}</span>}
+                <div className={`file-upload-wrapper ${errors.reportCard ? 'has-error' : ''}`}>
+                  {!reportCard ? (
+                    <>
+                      <label htmlFor="reportCard" className="file-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                        </svg>
+                        <span>Click to upload</span>
+                      </label>
+                      <input
+                        type="file"
+                        id="reportCard"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => handleFileChange(e, setReportCard, 'reportCard')}
+                        className="file-input"
+                      />
+                    </>
+                  ) : (
+                    <div className="file-preview">
+                      <div className="file-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V8H19v12H5V4h8v-.5zM7 13h10v1H7v-1zm0 3h10v1H7v-1zm0-6h5v1H7v-1z"/>
+                        </svg>
+                        <span className="file-name">{reportCard.name}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="remove-file-btn"
+                        onClick={() => handleRemoveFile(setReportCard, 'reportCard')}
+                        title="Remove file"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
                 {errors.reportCard && <span className="error-text">{errors.reportCard}</span>}
               </div>
             </div>
@@ -1079,7 +1606,15 @@ const Register: React.FC = () => {
                       id={`skill-${skill.value}`}
                       value={skill.value}
                       checked={skills.includes(skill.value)}
-                      onChange={handleSkillChange}
+                      onChange={(e) => {
+                        handleSkillChange(e);
+                        if (errors.skills && e.target.checked) {
+                          setErrors(prev => ({
+                            ...prev,
+                            skills: undefined
+                          }));
+                        }
+                      }}
                     />
                     <label htmlFor={`skill-${skill.value}`}>{skill.label}</label>
                   </div>
@@ -1102,7 +1637,15 @@ const Register: React.FC = () => {
                     id="disability-yes"
                     name="hasDisability"
                     checked={hasDisability === true}
-                    onChange={() => setHasDisability(true)}
+                    onChange={() => {
+                      setHasDisability(true);
+                      if (errors.disability) {
+                        setErrors(prev => ({
+                          ...prev,
+                          disability: undefined
+                        }));
+                      }
+                    }}
                   />
                   <label htmlFor="disability-yes">Yes</label>
                 </div>
@@ -1112,7 +1655,15 @@ const Register: React.FC = () => {
                     id="disability-no"
                     name="hasDisability"
                     checked={hasDisability === false}
-                    onChange={() => setHasDisability(false)}
+                    onChange={() => {
+                      setHasDisability(false);
+                      if (errors.disability) {
+                        setErrors(prev => ({
+                          ...prev,
+                          disability: undefined
+                        }));
+                      }
+                    }}
                   />
                   <label htmlFor="disability-no">No</label>
                 </div>
@@ -1131,7 +1682,15 @@ const Register: React.FC = () => {
                         id={`disability-${type}`}
                         value={type}
                         checked={disabilityType.includes(type)}
-                        onChange={handleDisabilityTypeChange}
+                        onChange={(e) => {
+                          handleDisabilityTypeChange(e);
+                          if (errors.disability && disabilityType.length === 0 && e.target.checked) {
+                            setErrors(prev => ({
+                              ...prev,
+                              disability: undefined
+                            }));
+                          }
+                        }}
                       />
                       <label htmlFor={`disability-${type}`}>{type}</label>
                     </div>
@@ -1144,7 +1703,7 @@ const Register: React.FC = () => {
                     <textarea
                       id="otherDisabilityDetails"
                       value={otherDisabilityDetails}
-                      onChange={(e) => setOtherDisabilityDetails(e.target.value)}
+                      onChange={handleDisabilityDetailsInput}
                       placeholder="Please provide details about your disability (nature, accommodations needed, etc.)"
                       rows={3}
                       className={errors.disabilityDetails ? 'error-input' : ''}
@@ -1162,7 +1721,7 @@ const Register: React.FC = () => {
             type="checkbox"
             id="terms"
             checked={acceptedTerms}
-            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            onChange={handleTermsCheck}
             className={errors.terms ? 'error-input' : ''}
           />
           <label htmlFor="terms">
@@ -1183,7 +1742,17 @@ const Register: React.FC = () => {
           <button
             type="button"
             className={`face-verify-button ${faceVerified ? 'verified' : ''}`}
-            onClick={() => setShowFaceVerification(true)}
+            onClick={() => {
+              setShowFaceVerification(true);
+              // Clear any face verification errors
+              if (errors.face) {
+                setErrors(prev => ({
+                  ...prev,
+                  face: undefined
+                }));
+              }
+            }}
+            disabled={faceVerified} // Disable button when face is already verified
           >
             {faceVerified ? 'Face Verified ✓' : 'Verify Face'}
           </button>

@@ -15,6 +15,7 @@ interface ReportCard {
   updated_at: string;
   user_name?: string;
   user_email?: string;
+  grading_period: string;
 }
 
 interface GradeLevelGroup {
@@ -33,10 +34,11 @@ interface ReportCardHistory {
   archived_at: string;
   school_year: string;
   renewal_reason: string;
+  grading_period: string;
 }
 
 const ScholarReports: React.FC = () => {
-  const [activeView, setActiveView] = useState<'all' | 'pending' | 'in_review' | 'verified' | 'rejected' | 'by-grade'>('all');
+  const [activeView, setActiveView] = useState<'all' | 'in_review' | 'verified' | 'rejected' | 'by-grade'>('all');
   const [reports, setReports] = useState<ReportCard[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportCard | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -84,7 +86,14 @@ const ScholarReports: React.FC = () => {
   const loadReports = async () => {
     try {
       const { data } = await api.get('/scholars/report-cards/all');
-      setReports(data);
+      // Convert pending status to in_review
+      const updatedReports = data.map((report: ReportCard) => ({
+        ...report,
+        status: report.status === 'pending' ? 'in_review' : report.status
+      }));
+      
+      console.log('Processed reports:', updatedReports); // Debug log
+      setReports(updatedReports);
     } catch (error) {
       console.error('Error loading report cards:', error);
     }
@@ -154,16 +163,22 @@ const ScholarReports: React.FC = () => {
   };
 
   const handleReject = async (id: number, userName: string | undefined) => {
-    const reason = window.prompt('Please enter reason for rejection:');
-    if (reason) {
-      try {
-        await api.put(`/scholars/report-cards/${id}/reject`, { reason });
-        await loadReports();
-        alert(`Report card for ${userName || 'scholar'} has been rejected. A notification with the reason has been sent to the scholar.`);
-      } catch (error) {
-        console.error('Error rejecting report card:', error);
-        alert('Failed to reject report card');
-      }
+    const reason = window.prompt('Please provide a reason for rejection:');
+    if (!reason) {
+      alert('A rejection reason is required');
+      return;
+    }
+
+    try {
+      await api.put(`/scholars/report-cards/${id}/reject`, { reason });
+      
+      // Refresh the report cards list
+      await loadReports();
+      
+      alert(`Report card rejected. ${userName || 'The scholar'} will be notified to submit a new report card.`);
+    } catch (error) {
+      console.error('Error rejecting report card:', error);
+      alert('Failed to reject report card. Please try again.');
     }
   };
 
@@ -273,7 +288,6 @@ const ScholarReports: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return '#ffa500';
       case 'in_review': return '#3498db';
       case 'verified': return '#2ecc71';
       case 'rejected': return '#e74c3c';
@@ -281,10 +295,31 @@ const ScholarReports: React.FC = () => {
     }
   };
 
+  const getStatusText = (report: ReportCard) => {
+    return report.status === 'rejected' ? 'Rejected' : report.status.replace('_', ' ');
+  };
+
   const getFilteredReports = () => {
     if (activeView === 'all') return reports;
     if (activeView === 'by-grade') return reports.filter(report => report.status === 'verified');
     return reports.filter(report => report.status === activeView);
+  };
+
+  const getGradingPeriodLabel = (gradingPeriod: string) => {
+    // Just return the value if it's missing
+    if (!gradingPeriod) return 'Not specified';
+    
+    // Format based on actual value from form submission
+    switch (gradingPeriod.toLowerCase()) {
+      case '1st': return '1st Grading';
+      case '2nd': return '2nd Grading';
+      case '3rd': return '3rd Grading';
+      case '4th': return '4th Grading';
+      case '1st_sem': return '1st Semester';
+      case '2nd_sem': return '2nd Semester';
+      case '3rd_sem': return '3rd Semester';
+      default: return gradingPeriod; // Return as-is if unknown format
+    }
   };
 
   // Add this helper function to get icon and color for grade levels
@@ -336,6 +371,9 @@ const ScholarReports: React.FC = () => {
                 <div className="scholar-info">
                   <h4>{report.user_name}</h4>
                   <p className="submission-date">Submitted: {formatDate(report.submitted_at)}</p>
+                  <p className="grading-period">
+                    Grading Period: {getGradingPeriodLabel(report.grading_period)}
+                  </p>
                 </div>
                 <div className="report-actions">
                   <button 
@@ -376,12 +414,6 @@ const ScholarReports: React.FC = () => {
                 onClick={() => setActiveView('all')}
               >
                 All Reports
-              </button>
-              <button 
-                className={`status-button pending ${activeView === 'pending' ? 'active' : ''}`}
-                onClick={() => setActiveView('pending')}
-              >
-                Pending ({reports.filter(r => r.status === 'pending').length})
               </button>
               <button 
                 className={`status-button in-review ${activeView === 'in_review' ? 'active' : ''}`}
@@ -429,7 +461,8 @@ const ScholarReports: React.FC = () => {
                   <tr>
                     <th>Date Submitted</th>
                     <th>Scholar Name</th>
-                    {activeView === 'verified' && <th>Grade Level</th>}
+                    <th>Grade Level</th>
+                    <th>Grading Period</th>
                     <th>Status</th>
                     <th>Images</th>
                     <th>Actions</th>
@@ -440,15 +473,14 @@ const ScholarReports: React.FC = () => {
                     <tr key={report.id}>
                       <td>{formatDate(report.submitted_at)}</td>
                       <td>{report.user_name}</td>
-                      {activeView === 'verified' && (
-                        <td>{gradeLevelLabels[report.grade_level] || report.grade_level || 'Unknown'}</td>
-                      )}
+                      <td>{gradeLevelLabels[report.grade_level] || report.grade_level || 'Unknown'}</td>
+                      <td>{getGradingPeriodLabel(report.grading_period)}</td>
                       <td>
                         <span 
                           className="status-badge"
                           style={{ backgroundColor: getStatusColor(report.status) }}
                         >
-                          {report.status.replace('_', ' ')} ({report.verification_step}/3)
+                          {getStatusText(report)} ({report.verification_step}/3)
                         </span>
                       </td>
                       <td>
@@ -456,16 +488,15 @@ const ScholarReports: React.FC = () => {
                         <button className="image-view-button" onClick={() => handleViewImage(report.back_image)}>Back</button>
                       </td>
                       <td>
-                        {report.status === 'pending' ? (
-                          <>
-                            <button onClick={() => handleSetInReview(report.id, report.user_name)}>Set to Review</button>
-                            <button onClick={() => handleReject(report.id, report.user_name)}>Reject</button>
-                            <button onClick={() => handlePrintReport(report)} className="print-btn">Print</button>
-                          </>
-                        ) : report.status === 'in_review' ? (
+                        {report.status === 'in_review' ? (
                           <>
                             <button onClick={() => handleVerify(report.id, report.user_name)}>Verify</button>
-                            <button onClick={() => handleReject(report.id, report.user_name)}>Reject</button>
+                            <button 
+                              onClick={() => handleReject(report.id, report.user_name)}
+                              className="reject-button"
+                            >
+                              Reject
+                            </button>
                             <button onClick={() => handlePrintReport(report)} className="print-btn">Print</button>
                           </>
                         ) : (
@@ -503,9 +534,11 @@ const ScholarReports: React.FC = () => {
                 <div className="report-details">
                   <p><strong>Scholar:</strong> {selectedReport.user_name}</p>
                   <p><strong>Email:</strong> {selectedReport.user_email}</p>
+                  <p><strong>Grade Level:</strong> {gradeLevelLabels[selectedReport.grade_level] || selectedReport.grade_level}</p>
+                  <p><strong>Grading Period:</strong> {getGradingPeriodLabel(selectedReport.grading_period)}</p>
                   <p><strong>Submitted:</strong> {formatDate(selectedReport.submitted_at)}</p>
                   <p><strong>Status:</strong> {selectedReport.status}</p>
-                  <p><strong>Verification Step:</strong> {selectedReport.verification_step}</p>
+                  <p><strong>Verification Step:</strong> {selectedReport.verification_step}/3</p>
                 </div>
                 <div className="modal-actions">
                   <button onClick={() => handlePrintReport(selectedReport)} className="print-btn">Print Report</button>
@@ -540,6 +573,7 @@ const ScholarReports: React.FC = () => {
                         <tr>
                           <th>School Year</th>
                           <th>Grade Level</th>
+                          <th>Grading Period</th>
                           <th>Status</th>
                           <th>Submitted</th>
                           <th>Archived</th>
@@ -551,6 +585,7 @@ const ScholarReports: React.FC = () => {
                           <tr key={history.history_id}>
                             <td>{history.school_year || 'N/A'}</td>
                             <td>{gradeLevelLabels[history.grade_level] || history.grade_level || 'Unknown'}</td>
+                            <td>{getGradingPeriodLabel(history.grading_period)}</td>
                             <td>{history.status.replace('_', ' ')}</td>
                             <td>{formatDate(history.submitted_at)}</td>
                             <td>{formatDate(history.archived_at)}</td>
@@ -582,6 +617,8 @@ const ScholarReports: React.FC = () => {
               <h2>Scholar Information</h2>
               <p><strong>Name:</strong> {reportToPrint.user_name || 'N/A'}</p>
               <p><strong>Email:</strong> {reportToPrint.user_email || 'N/A'}</p>
+              <p><strong>Grade Level:</strong> {gradeLevelLabels[reportToPrint.grade_level] || reportToPrint.grade_level}</p>
+              <p><strong>Grading Period:</strong> {getGradingPeriodLabel(reportToPrint.grading_period)}</p>
               <p><strong>Submitted:</strong> {formatDate(reportToPrint.submitted_at)}</p>
               <p><strong>Status:</strong> {reportToPrint.status.replace('_', ' ')}</p>
               <p><strong>Verification Step:</strong> {reportToPrint.verification_step}/3</p>
@@ -747,5 +784,17 @@ const styles = `
 
   .card-actions button:hover {
     filter: brightness(1.1);
+  }
+
+  .grading-period {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 4px 0;
+  }
+
+  .scholar-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 `;

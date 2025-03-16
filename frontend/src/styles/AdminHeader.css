@@ -13,6 +13,24 @@
   align-items: center;
   justify-content: center;
   padding: 5px;
+  transition: transform 0.3s ease; /* Add transition for smooth animation */
+}
+
+/* Add bell animation class */
+.admin-header .notification-icon.animate {
+  animation: bellShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Bell shake animation */
+@keyframes bellShake {
+  0% { transform: rotate(0); }
+  15% { transform: rotate(15deg); }
+  30% { transform: rotate(-15deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(5deg); }
+  85% { transform: rotate(-5deg); }
+  100% { transform: rotate(0); }
 }
 
 .admin-header .notification-badge {
@@ -28,6 +46,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.2s ease; /* Add transition for badge */
+}
+
+/* Badge animation when bell is animated */
+.admin-header .notification-icon.animate .notification-badge {
+  animation: badgePulse 0.5s ease;
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
 }
 
 .admin-header .notifications-dropdown {
@@ -42,10 +71,46 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   display: none;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
 .admin-header .notifications-dropdown.active {
   display: block;
+  opacity: 1;
+  transform: translateY(0);
+  animation: dropdownFadeIn 0.3s ease forwards;
+}
+
+/* Animation for dropdown appearing */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation for dropdown disappearing (will be triggered by JS) */
+@keyframes dropdownFadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+/* Apply the fade-out animation */
+.admin-header .notifications-dropdown.closing {
+  display: block;
+  animation: dropdownFadeOut 0.3s ease forwards;
 }
 
 .admin-header .notifications-header {

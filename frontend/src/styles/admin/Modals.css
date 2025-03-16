@@ -281,6 +281,12 @@
   gap: 8px;
 }
 
+.document-actionss{
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
 .view-document-btn,
 .download-document-btn {
   padding: 4px 10px;
@@ -439,4 +445,38 @@
   .document-grid {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* Add this to your CSS file, likely in Modals.css */
+.document-preview-top-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1100;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.document-preview-top-close:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: scale(1.1);
+}
+
+.document-preview-top-close .material-icons {
+  font-size: 24px;
+  color: #333;
+}
+
+.document-preview-content {
+  position: relative; /* Ensure positioned elements work inside this container */
 }
