@@ -427,11 +427,18 @@ const handleSubmit = async (event: React.FormEvent) => {
       if (reportCard) formData.append('reportCard', reportCard);
     } else if (role === 'volunteer') {
       formData.append('skills', JSON.stringify(skills));
-      formData.append('hasDisability', hasDisability === null ? '' : String(hasDisability));
       
-      if (hasDisability) {
-        formData.append('disabilityTypes', JSON.stringify(disabilityType));
-        formData.append('disabilityDetails', otherDisabilityDetails);
+      // Create a properly structured disability object
+      if (hasDisability === true) {
+        const disabilityObject = {
+          hasDisability: true,
+          types: disabilityType,
+          details: otherDisabilityDetails
+        };
+        formData.append('disability', JSON.stringify(disabilityObject));
+      } else if (hasDisability === false) {
+        // Even if user has no disability, save this information
+        formData.append('disability', JSON.stringify({ hasDisability: false }));
       }
     }
     
