@@ -10,7 +10,7 @@ interface NewVolunteerFormProps {
 interface SkillOption {
   value: string;
   label: string;
-  examples: string;
+  description: string;
 }
 
 const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
@@ -33,22 +33,31 @@ const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
     disabilityDetails: ''
   });
   
+  // Add state for skill evidence file
+  const [skillEvidence, setSkillEvidence] = useState<File | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<string>('');
+  
   // Add state for validation errors
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Available skill options with examples
+  // Updated skill options with descriptions
   const skillOptions: SkillOption[] = [
-    { value: 'teaching', label: 'Teaching', examples: 'Tutoring, mentoring, curriculum development' },
-    { value: 'programming', label: 'Programming', examples: 'Web development, mobile apps, data analysis' },
-    { value: 'writing', label: 'Writing', examples: 'Content creation, grant writing, editing' },
-    { value: 'design', label: 'Design', examples: 'Graphic design, UI/UX, illustration' },
-    { value: 'fundraising', label: 'Fundraising', examples: 'Event organization, donor relations, crowdfunding' },
-    { value: 'counseling', label: 'Counseling', examples: 'Emotional support, career guidance, conflict resolution' },
-    { value: 'logistics', label: 'Logistics', examples: 'Event planning, transportation coordination, resource management' },
-    { value: 'medical', label: 'Medical', examples: 'First aid, health education, medical assistance' },
-    { value: 'social_media', label: 'Social Media', examples: 'Content strategy, community management, analytics' },
-    { value: 'photography', label: 'Photography/Videography', examples: 'Event documentation, promotional material creation' },
+    { value: 'tutoring', label: 'Tutoring/Academic Support', description: 'Helping students with homework, teaching subjects, conducting study sessions' },
+    { value: 'mentoring', label: 'Mentoring', description: 'Providing guidance, career advice, and personal development support' },
+    { value: 'counseling', label: 'Community Counseling', description: 'Offering emotional support, conflict resolution, and basic mental health services' },
+    { value: 'healthcare', label: 'Healthcare Support', description: 'First aid, health education, medical assistance, health awareness programs' },
+    { value: 'arts_culture', label: 'Arts & Culture Programs', description: 'Teaching music, art, dance, theater, organizing cultural events' },
+    { value: 'sports_recreation', label: 'Sports & Recreation', description: 'Coaching sports, organizing games, planning recreational activities' },
+    { value: 'environmental', label: 'Environmental Projects', description: 'Clean-ups, recycling initiatives, environmental education' },
+    { value: 'food_distribution', label: 'Food Distribution', description: 'Preparing meals, distributing food packages, managing food banks' },
+    { value: 'shelter_support', label: 'Shelter Support', description: 'Working in shelters, housing programs, construction assistance' },
+    { value: 'administrative', label: 'Administrative Support', description: 'Office management, data entry, record keeping, documentation' },
+    { value: 'event_planning', label: 'Event Planning', description: 'Organizing community events, fundraisers, awareness programs' },
+    { value: 'technical', label: 'Technical Support', description: 'Computer skills training, tech troubleshooting, digital literacy programs' },
+    { value: 'elderly_support', label: 'Elderly Support', description: 'Elder care, companionship, assistance with daily activities' },
+    { value: 'child_care', label: 'Child Care', description: 'Childcare services, after-school programs, recreational activities for children' },
+    { value: 'translation', label: 'Translation/Interpretation', description: 'Language services for non-native speakers in the community' },
   ];
 
   // Available disability types
@@ -85,19 +94,52 @@ const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
     }
   };
 
-  const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Replace handleSkillChange with skill dropdown handling
+  const handleSkillSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     
-    if (e.target.checked) {
+    if (value && !formData.skills.includes(value)) {
+      setSelectedSkill(value);
       setFormData(prev => ({
         ...prev,
         skills: [...prev.skills, value]
       }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        skills: prev.skills.filter(skill => skill !== value)
-      }));
+      
+      // Clear errors when a skill is selected
+      if (errors.skills) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.skills;
+          return newErrors;
+        });
+      }
+    }
+  };
+
+  // Add method to remove a skill
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
+    }));
+    
+    // If removing all skills, clear the evidence too
+    if (formData.skills.length <= 1) {
+      setSkillEvidence(null);
+    }
+  };
+
+  // Add handler for skill evidence file upload
+  const handleSkillEvidenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSkillEvidence(file);
+    
+    if (file && errors.skillEvidence) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.skillEvidence;
+        return newErrors;
+      });
     }
   };
 
@@ -211,6 +253,18 @@ const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
       }
     }
     
+    // Add skill validation
+    if (formData.skills.length === 0) {
+      newErrors.skills = 'Please select at least one skill';
+    }
+    
+    // Add skill evidence validation 
+    if (formData.skills.length > 0 && !skillEvidence) {
+      newErrors.skillEvidence = 'Please upload evidence for at least one of your skills';
+    } else if (skillEvidence && skillEvidence.size > 5 * 1024 * 1024) { // 5MB limit
+      newErrors.skillEvidence = 'File is too large (max 5MB)';
+    }
+    
     setErrors(newErrors);
     
     // Scroll to the first error if there are any
@@ -238,26 +292,74 @@ const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
       formData.last_name,
       formData.name_extension
     ].filter(Boolean).join(' ');
-    
-    // Prepare the final data for submission
-    const finalData = {
-      ...formData,
-      name: fullName, // Add the full name field
-      disability: formData.hasDisability ? {
-        types: formData.disabilityType,
-        details: formData.disabilityDetails
-      } : null
-    } as Partial<typeof formData>;
-    
-    // Remove intermediate form fields
-    delete finalData.hasDisability;
-    delete finalData.disabilityType;
-    delete finalData.disabilityDetails;
-    
+
     try {
-      // Changed: Await the promise returned by onSubmit instead of expecting it to throw
-      await onSubmit(finalData);
-      // If we get here, submission was successful
+      // Create FormData object for file upload
+      const submitFormData = new FormData();
+      
+      // Add all form fields to FormData
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key !== 'skills' && key !== 'disabilityType' && key !== 'hasDisability' && key !== 'disabilityDetails') {
+          submitFormData.append(key, value as string);
+        }
+      });
+      
+      // Add name field
+      submitFormData.append('name', fullName); 
+      
+      // Add skills array as JSON string
+      submitFormData.append('skills', JSON.stringify(formData.skills));
+      
+      // IMPORTANT: Log the file being uploaded to confirm it exists
+      console.log('Skill evidence file to upload:', skillEvidence);
+      
+      // Add skill evidence file - ensure the field name matches exactly what the backend expects
+      if (skillEvidence) {
+        submitFormData.append('skillEvidence', skillEvidence);
+        console.log('Added skill evidence to FormData');
+      }
+      
+      // Add disability object if applicable
+      if (formData.hasDisability) {
+        const disabilityObject = {
+          types: formData.disabilityType,
+          details: formData.disabilityDetails
+        };
+        submitFormData.append('disability', JSON.stringify(disabilityObject));
+      } else {
+        submitFormData.append('disability', JSON.stringify({ hasDisability: false }));
+      }
+      
+      // Debugging: Check what's in the FormData
+      for (let pair of (submitFormData as any).entries()) {
+        console.log(pair[0] + ': ' + (pair[0] === 'skillEvidence' ? 'File object' : pair[1]));
+      }
+      
+      // Let the parent component handle the submission
+      await onSubmit(submitFormData);
+      
+      // Reset form after successful submission
+      setFormData({
+        first_name: '',
+        middle_name: '',
+        last_name: '',
+        name_extension: '',
+        gender: 'male',
+        username: '',
+        email: '',
+        password: '',
+        phone: '',
+        date_of_birth: '',
+        status: 'active',
+        is_verified: false,
+        skills: [],
+        hasDisability: false,
+        disabilityType: [],
+        disabilityDetails: ''
+      });
+      setSkillEvidence(null);
+      setSelectedSkill('');
+      
     } catch (error: any) {
       console.error('Error submitting form:', error);
       
@@ -304,12 +406,24 @@ const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
     paddingBottom: 0
   };
   
-  const skillCheckboxContainerStyle = {
-    flexDirection: 'row' as const,
-    alignItems: 'center',
-    marginBottom: '8px'
+  // Add function to render skill badge
+  const renderSkillBadge = (skill: string) => {
+    const skillOption = skillOptions.find(option => option.value === skill);
+    return (
+      <div key={skill} className="skill-badge">
+        <span className="skill-label">{skillOption?.label || skill}</span>
+        <button 
+          type="button"
+          className="remove-skill-btn"
+          onClick={() => handleRemoveSkill(skill)}
+          title="Remove skill"
+        >
+          ×
+        </button>
+      </div>
+    );
   };
-
+  
   return (
     <div className="modal-overlay">
       <div className="modal-contents wide-form">
@@ -525,23 +639,97 @@ const NewVolunteerForm = ({ onSubmit, onCancel }: NewVolunteerFormProps) => {
             </h3>
             <p className="section-description">Select skills this volunteer has:</p>
             
-            <div className="skills-grid" style={skillsGridStyle}>
-              {skillOptions.map((skill) => (
-                <div key={skill.value} className="skill-checkbox-container" style={skillCheckboxContainerStyle}>
-                  <div className="skill-checkbox">
-                    <input
-                      type="checkbox"
-                      id={`skill-${skill.value}`}
-                      value={skill.value}
-                      checked={formData.skills.includes(skill.value)}
-                      onChange={handleSkillChange}
-                    />
-                    <label htmlFor={`skill-${skill.value}`}>{skill.label}</label>
-                  </div>
-                  <p className="skill-examples">{skill.examples}</p>
-                </div>
-              ))}
+            {/* Replace checkbox grid with dropdown */}
+            <div className="form-group">
+              <label htmlFor="skills">Select Skills</label>
+              <select
+                id="skills"
+                value={selectedSkill}
+                onChange={handleSkillSelect}
+                className={errors.skills ? 'error-input' : ''}
+              >
+                <option value="">-- Select a skill to add --</option>
+                {skillOptions.map(skill => (
+                  <option 
+                    key={skill.value} 
+                    value={skill.value}
+                    disabled={formData.skills.includes(skill.value)}
+                  >
+                    {skill.label}
+                  </option>
+                ))}
+              </select>
+              {errors.skills && <span className="error-message">{errors.skills}</span>}
             </div>
+            
+            {/* Display selected skills as badges */}
+            {formData.skills.length > 0 && (
+              <div className="selected-skills">
+                <label>Selected skills:</label>
+                <div className="skill-badges">
+                  {formData.skills.map(skill => renderSkillBadge(skill))}
+                </div>
+                
+                {/* Show description for selected skills */}
+                <div className="skills-description">
+                  {formData.skills.map(skill => {
+                    const skillOption = skillOptions.find(option => option.value === skill);
+                    return skillOption ? (
+                      <div key={skill} className="skill-description-item">
+                        <strong>{skillOption.label}:</strong> {skillOption.description}
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Add skill evidence upload */}
+            {formData.skills.length > 0 && (
+              <div className="form-group document-upload-container">
+                <label htmlFor="skillEvidence">Skill Evidence/Certificate <span className="upload-hint">(Certificate, proof of training, or other evidence)</span></label>
+                <div className={`file-upload-wrapper ${errors.skillEvidence ? 'has-error' : ''}`}>
+                  {!skillEvidence ? (
+                    <>
+                      <label htmlFor="skillEvidence" className="file-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                        </svg>
+                        <span>Upload evidence of skills</span>
+                      </label>
+                      <input
+                        type="file"
+                        id="skillEvidence"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleSkillEvidenceChange}
+                        className="file-input"
+                      />
+                    </>
+                  ) : (
+                    <div className="file-preview">
+                      <div className="file-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V8H19v12H5V4h8v-.5zM7 13h10v1H7v-1zm0 3h10v1H7v-1zm0-6h5v1H7v-1z"/>
+                        </svg>
+                        <span className="file-name">{skillEvidence.name}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="remove-file-btn"
+                        onClick={() => setSkillEvidence(null)}
+                        title="Remove file"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <p className="evidence-hint">Upload a certificate, training record, or proof of experience for your primary skill.</p>
+                {errors.skillEvidence && <span className="error-message">{errors.skillEvidence}</span>}
+              </div>
+            )}
           </div>
 
           <div className="form-section">

@@ -14,6 +14,7 @@ export interface User {
   role: UserRole;
   hasSubmittedReport?: boolean;
   verificationStep?: number;
+  salaryRange?: string; // Add this property
 }
 
 export interface LoginResponse {

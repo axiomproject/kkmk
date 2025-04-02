@@ -343,6 +343,11 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     let uploadPath = 'uploads/scholar-documents';
     
+    // Use a different path for volunteer skill evidence
+    if (file.fieldname === 'skillEvidence') {
+      uploadPath = 'uploads/volunteer-evidence';
+    }
+    
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
@@ -385,7 +390,8 @@ const documentUpload = upload.fields([
   { name: 'schoolRegistrationForm', maxCount: 1 },
   { name: 'psaDocument', maxCount: 1 },
   { name: 'parentsId', maxCount: 1 },
-  { name: 'reportCard', maxCount: 1 }
+  { name: 'reportCard', maxCount: 1 },
+  { name: 'skillEvidence', maxCount: 1 } // Add skill evidence field
 ]);
 
 // Add logging middleware for debugging registration requests
@@ -411,7 +417,14 @@ router.post('/register', documentUpload, async (req, res) => {
       educationLevel,
       school,
       parentsIncome,
+      salaryRange, // Add salaryRange extraction
     } = req.body;
+
+    // Debug log
+    console.log('Register request received with role:', role);
+    if (role === 'sponsor') {
+      console.log('Sponsor salary range:', salaryRange);
+    }
 
     // Parse skills and disability data
     let skills = null;
@@ -437,7 +450,11 @@ router.post('/register', documentUpload, async (req, res) => {
     if (req.files) {
       Object.keys(req.files).forEach(fieldname => {
         if (req.files[fieldname] && req.files[fieldname].length > 0) {
-          documentPaths[fieldname] = `/uploads/scholar-documents/${req.files[fieldname][0].filename}`;
+          const uploadPath = fieldname === 'skillEvidence' 
+            ? `/uploads/volunteer-evidence/${req.files[fieldname][0].filename}`
+            : `/uploads/scholar-documents/${req.files[fieldname][0].filename}`;
+          
+          documentPaths[fieldname] = uploadPath;
         }
       });
     }
@@ -492,7 +509,8 @@ router.post('/register', documentUpload, async (req, res) => {
       parentsIncome,
       skills,
       disability,
-      documentPaths // Pass document paths to be stored in the database
+      documentPaths, // Pass document paths to be stored in the database
+      salaryRange    // Pass salaryRange to createUser
     );
 
     // Send verification email

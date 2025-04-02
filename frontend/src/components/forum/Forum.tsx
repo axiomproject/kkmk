@@ -36,6 +36,7 @@ const Forum: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [originalPosts, setOriginalPosts] = useState<Post[]>([]);
   const [userRole, setUserRole] = useState<string>('');
+  const [pendingPostsCount, setPendingPostsCount] = useState(0);
 
   useEffect(() => {
     fetchPosts();
@@ -227,8 +228,11 @@ const Forum: React.FC = () => {
     }
   };
 
+  // Update handleCategoryChange to ensure consistent category naming
   const handleCategoryChange = (category: string) => {
-    setActiveCategory(category);
+    // Normalize category name to always be lowercase for consistent comparison
+    const normalizedCategory = category.toLowerCase();
+    setActiveCategory(normalizedCategory);
     setActiveEventId(null);
     
     // Scroll to forum content with smooth behavior
@@ -239,12 +243,14 @@ const Forum: React.FC = () => {
       });
     }
 
-    if (category === 'events') {
+    if (normalizedCategory === 'pending approval') {
+      fetchPendingPosts();
+    } else if (normalizedCategory === 'events') {
       fetchEvents();
       setActiveCategoryInfo({ category: 'events' });
     } else {
       fetchPosts();
-      setActiveCategoryInfo({ category });
+      setActiveCategoryInfo({ category: normalizedCategory });
     }
   };
 
@@ -389,6 +395,9 @@ const Forum: React.FC = () => {
     if (activeCategoryInfo.category === 'all') {
       return 'Community Forum';
     }
+    if (activeCategoryInfo.category === 'pending approval') {
+      return 'Posts Pending Approval';
+    }
     return `${activeCategoryInfo.category.charAt(0).toUpperCase()}${activeCategoryInfo.category.slice(1)} Discussions`;
   };
 
@@ -416,6 +425,174 @@ const Forum: React.FC = () => {
     
     setPosts(filtered);
   };
+
+  // Add new functions for handling post approval/rejection
+  const handleApprovePost = async (postId: string) => {
+    try {
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+      
+      if (!user) {
+        console.error('No user data found');
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/api/forum/posts/${postId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          userId: user.id
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to approve post');
+      }
+  
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { ...post, approval_status: 'approved', rejection_reason: undefined } 
+            : post
+        )
+      );
+      
+      // Decrease pending posts count by 1 but don't go below 0
+      setPendingPostsCount(prevCount => Math.max(0, prevCount - 1));
+      
+      // If we're in the pending approval category, fetch pending posts again
+      if (activeCategory === 'pending approval') {
+        fetchPendingPosts();
+      }
+    } catch (error) {
+      console.error('Error approving post:', error);
+    }
+  };
+  
+  const handleRejectPost = async (postId: string, reason: string) => {
+    try {
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+      
+      if (!user) {
+        console.error('No user data found');
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/api/forum/posts/${postId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          userId: user.id,
+          reason
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to reject post');
+      }
+  
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { ...post, approval_status: 'rejected', rejection_reason: reason } 
+            : post
+        )
+      );
+      
+      // Decrease pending posts count by 1 but don't go below 0
+      setPendingPostsCount(prevCount => Math.max(0, prevCount - 1));
+      
+      // If we're in the pending approval category, fetch pending posts again
+      if (activeCategory === 'pending approval') {
+        fetchPendingPosts();
+      }
+    } catch (error) {
+      console.error('Error rejecting post:', error);
+    }
+  };
+  
+  // Update fetchPendingPosts function to properly set the active category
+  const fetchPendingPosts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+      
+      if (!user || !['admin', 'staff'].includes(user.role)) {
+        console.error('Unauthorized access to pending posts');
+        setError('You are not authorized to view pending posts');
+        setLoading(false);
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/api/forum/posts/status/pending?userId=${user.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const pendingPosts = await response.json();
+      setPosts(pendingPosts);
+      // Set active category to 'pending approval' to match what's shown in the sidebar
+      setActiveCategory('pending approval');
+      setActiveCategoryInfo({ category: 'pending approval' });
+    } catch (error) {
+      console.error('Failed to fetch pending posts:', error);
+      setError('Failed to load pending posts. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Add function to fetch pending posts count
+  const fetchPendingPostsCount = async () => {
+    try {
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+      
+      if (!user || !['admin', 'staff'].includes(user.role)) {
+        return 0;
+      }
+      
+      const response = await fetch(`${API_URL}/api/forum/pending-posts-count?userId=${user.id}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.count;
+    } catch (error) {
+      console.error('Failed to fetch pending posts count:', error);
+      return 0;
+    }
+  };
+  
+  // Update useEffect to fetch pending posts count for admins/staff
+  useEffect(() => {
+    if (isAdmin || ['admin', 'staff'].includes(userRole)) {
+      const fetchCount = async () => {
+        const count = await fetchPendingPostsCount();
+        setPendingPostsCount(count);
+      };
+      
+      fetchCount();
+      
+      // Set interval to update count every minute
+      const intervalId = setInterval(fetchCount, 60000);
+      
+      return () => clearInterval(intervalId);
+    }
+  }, [isAdmin, userRole]);
 
   return (
     <>
@@ -489,7 +666,9 @@ const Forum: React.FC = () => {
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           events={events} // Pass events to sidebar
-          isAdmin={isAdmin} // Add this prop
+          isAdmin={isAdmin || userRole === 'staff'} // Add this prop
+          pendingPostsCount={pendingPostsCount} // Add the count
+          userRole={userRole} // Add this line to pass the userRole
         />
         <div className="forum-main" ref={forumMainRef}>
           <div className="forum-header">
@@ -625,6 +804,10 @@ const Forum: React.FC = () => {
               onUpdatePost={handleUpdatePost}
               onDeleteComment={handleDeleteComment} // Add this prop
               userRole={userRole} // Add this prop
+              onApprovePost={handleApprovePost} // Add this prop
+              onRejectPost={handleRejectPost} // Add this prop
+              // Update this line to be true when in pending approval category
+              showApprovalActions={activeCategoryInfo.category === 'pending approval'} // Add this prop
             />
           )}
         </div>

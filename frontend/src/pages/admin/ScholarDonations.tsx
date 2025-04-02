@@ -32,6 +32,10 @@ interface ScholarDonation {
     first_name: string;
     last_name: string;
   };
+  
+  // Add a field to track if certificate was sent
+  certificate_sent?: boolean;
+  certificate_sent_at?: string;
 }
 
 // Helper function to format frequency for display
@@ -64,6 +68,7 @@ const ScholarDonations: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false); // Add this state for action processing
   const [actionMessage, setActionMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null); // Add this for message display
+  const [sendingCertificateIds, setSendingCertificateIds] = useState<Set<number>>(new Set()); // Add state for certificate sending
 
   useEffect(() => {
     fetchDonations();
@@ -235,6 +240,80 @@ const ScholarDonations: React.FC = () => {
   const handleProofClick = (proofUrl: string) => {
     setSelectedProof(proofUrl);
     setShowProofModal(true);
+  };
+
+  const handleSendCertificate = async (donation: ScholarDonation) => {
+    if (!donation || !donation.id) return;
+    
+    // Determine scholar name to display in confirmation
+    let scholarName = 'Unknown Scholar';
+    
+    if (donation.scholar_name) {
+      scholarName = donation.scholar_name;
+    } else if (donation.scholar_first_name) {
+      scholarName = donation.scholar_first_name + 
+        (donation.scholar_last_name ? ' ' + donation.scholar_last_name : '');
+    } else if (donation.scholar && donation.scholar.first_name) {
+      scholarName = donation.scholar.first_name + 
+        (donation.scholar.last_name ? ' ' + donation.scholar.last_name : '');
+    }
+    
+    // Only allow for verified donations
+    if (donation.verification_status !== 'verified') {
+      alert('Only verified donations can receive certificates');
+      return;
+    }
+    
+    if (!donation.donor_email) {
+      alert('Cannot send certificate: Donor email is missing');
+      return;
+    }
+    
+    if (!window.confirm(`Send donation certificate to ${donation.donor_name} (${donation.donor_email})?`)) return;
+    
+    try {
+      // Add this ID to the set of sending certificate IDs
+      setSendingCertificateIds(prev => new Set(prev).add(donation.id));
+      
+      // Call API endpoint to generate and send certificate
+      const response = await api.post(`/scholardonations/send-certificate/${donation.id}`);
+      
+      if (response.data.success) {
+        // Show success message
+        setActionMessage({
+          text: 'Certificate sent successfully!',
+          type: 'success'
+        });
+        
+        // Refresh donations to update certificate_sent status
+        await fetchDonations();
+      } else {
+        throw new Error(response.data.message || 'Failed to send certificate');
+      }
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setActionMessage(null);
+      }, 3000);
+    } catch (error) {
+      console.error('Error sending certificate:', error);
+      setActionMessage({
+        text: 'Failed to send certificate. Please try again.',
+        type: 'error'
+      });
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setActionMessage(null);
+      }, 5000);
+    } finally {
+      // Remove this ID from the set of sending certificate IDs
+      setSendingCertificateIds(prev => {
+        const updated = new Set(prev);
+        updated.delete(donation.id);
+        return updated;
+      });
+    }
   };
 
   const filteredDonations = donations.filter(
@@ -421,7 +500,7 @@ const ScholarDonations: React.FC = () => {
                   <td>
                     <div className="action-button-bank">
                       <button
-                        className="verify-button"
+                        className="view-button"
                         onClick={() => {
                           setSelectedDonation(donation);
                           setShowDetailsModal(true);
@@ -429,6 +508,20 @@ const ScholarDonations: React.FC = () => {
                       >
                         View
                       </button>
+                      
+                      {/* Add certificate button for verified donations */}
+                      {donation.verification_status === 'verified' && donation.donor_email && (
+                        <button
+                          className="certificate-button"
+                          onClick={() => handleSendCertificate(donation)}
+                          disabled={sendingCertificateIds.has(donation.id)}
+                          title={donation.certificate_sent ? 'Certificate already sent' : 'Send donation certificate'}
+                        >
+                          {sendingCertificateIds.has(donation.id) ? 'Sending...' : 
+                            donation.certificate_sent ? 'Resend' : 'Certificate'}
+                        </button>
+                      )}
+                      
                       {donation.verification_status === 'pending' && (
                         <>
                           <button
@@ -558,6 +651,14 @@ const ScholarDonations: React.FC = () => {
                     <label>Verified By:</label>
                     <p>{selectedDonation.verified_by || 'N/A'}</p>
                   </div>
+                  <div className="detail-group">
+                    <label>Certificate Status:</label>
+                    <p>
+                      {selectedDonation.certificate_sent ? 
+                        `Certificate sent on ${formatDate(selectedDonation.certificate_sent_at)}` : 
+                        'Certificate not sent yet'}
+                    </p>
+                  </div>
                 </>
               )}
               {selectedDonation.verification_status === 'rejected' && (
@@ -601,6 +702,7 @@ const ScholarDonations: React.FC = () => {
                 </button>
               </div>
             )}
+            {/* Remove the certificate button from modal footer */}
           </div>
         </div>
       )}

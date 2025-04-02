@@ -64,7 +64,6 @@
   transition: background-color 0.2s;
 }
 
-.view-button { background: #3b82f6; }
 .verify-button { background: #10b981; }
 .reject-button { background: #ef4444; }
 
@@ -459,4 +458,53 @@ table{
   background-color: #f8fafc;
   border-radius: 8px;
   margin-top: 0.5rem;
+}
+
+/* Add styles for certificate button */
+.certificate-button {
+  background-color: #8e44ad;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-right: 8px;
+}
+
+.certificate-button:hover {
+  background-color: #7d3c98;
+}
+
+.certificate-button:disabled {
+  background-color: #d2b4de;
+  cursor: not-allowed;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Style for certificate status in detail view */
+.detail-group .certificate-status {
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 0.9em;
+}
+
+.detail-group .certificate-status.sent {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.detail-group .certificate-status.not-sent {
+  background-color: #f5f5f5;
+  color: #757575;
 }

@@ -721,7 +721,31 @@ const notificationModel = {
       console.error('Stack trace:', error.stack);
       throw error;
     }
-  }
+  },
+
+  // Create a special notification for donation certificates
+  async createDonationCertificateNotification(userId, data) {
+    try {
+      const result = await db.query(`
+        INSERT INTO notifications 
+        (user_id, type, content, related_id, actor_id, actor_name, actor_avatar)
+        VALUES ($1, 'donation_certificate', $2, $3, $4, $5, $6)
+        RETURNING *`,
+        [
+          userId,
+          data.content,
+          data.donationId,
+          data.actorId || null,
+          data.actorName || 'KMFI Foundation',
+          data.actorAvatar || '/images/certificate-icon.png'
+        ]
+      );
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating donation certificate notification:', error);
+      throw error;
+    }
+  },
 };
 
 module.exports = notificationModel;

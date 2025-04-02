@@ -336,4 +336,49 @@ router.post('/distribution-verification', async (req, res) => {
   }
 });
 
+// Add new route for sending donation certificates
+router.post('/donation-certificate', async (req, res) => {
+  try {
+    const { email, donorName, scholarName, amount, donationDate, donationId } = req.body;
+
+    if (!email || !donorName || !scholarName || !amount || !donationDate || !donationId) {
+      return res.status(400).json({ error: 'Missing required fields for donation certificate' });
+    }
+
+    // Send email with certificate
+    await emailService.sendDonationCertificateEmail(
+      email,
+      donorName,
+      scholarName,
+      amount,
+      donationDate,
+      donationId
+    );
+
+    // Create notification for the donor if userId is provided
+    if (req.body.userId) {
+      await notificationModel.createNotification({
+        userId: req.body.userId,
+        type: 'donation_certificate',
+        content: `Your donation certificate for ${scholarName} has been sent to your email.`,
+        relatedId: donationId,
+        actorId: null,
+        actorName: 'KMFI Foundation',
+        actorAvatar: '/images/certificate-icon.png'
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Donation certificate sent successfully' 
+    });
+  } catch (error) {
+    console.error('Error sending donation certificate:', error);
+    res.status(500).json({ 
+      error: 'Failed to send donation certificate',
+      details: error.message
+    });
+  }
+});
+
 module.exports = router;

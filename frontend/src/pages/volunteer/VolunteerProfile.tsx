@@ -1891,7 +1891,7 @@ const handleVerifyDistribution = async (
             title="Skip feedback"
           >×</span>
           
-          <h2>Event Feedback</h2>
+          <h2>Share Your Experience</h2>
           <p>Please share your experience at:<br/>{currentFeedbackEvent.title}</p>
           
           <div className="rating-container">

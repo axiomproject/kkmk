@@ -873,6 +873,122 @@ router.get('/stats', async (req, res) => {
     }
 });
 
-module.exports = router;
+// Send certificate for a donation
+router.post('/send-certificate/:id', authenticateToken, async (req, res) => {
+  const donationId = req.params.id;
+  const adminId = req.user.id;
+  const adminRole = req.user.role;
+  
+  try {
+    // Get donation details with improved scholar name handling
+    const donationResult = await db.query(
+      `SELECT 
+        sd.*,
+        CASE
+          WHEN s.first_name IS NOT NULL AND s.last_name IS NOT NULL THEN CONCAT(s.first_name, ' ', s.last_name)
+          WHEN u_scholar.name IS NOT NULL THEN u_scholar.name
+          ELSE 'KMFI Scholar'
+        END as scholar_name,
+        u.email as donor_email
+      FROM scholar_donations sd
+      LEFT JOIN scholars s ON sd.scholar_id = s.id
+      LEFT JOIN users u ON sd.sponsor_id = u.id
+      LEFT JOIN users u_scholar ON sd.scholar_id = u_scholar.id
+      WHERE sd.id = $1`,
+      [donationId]
+    );
+    
+    if (donationResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Donation not found' });
+    }
+    
+    const donation = donationResult.rows[0];
+    
+    // Debug the scholar name value
+    console.log(`Preparing certificate for donation #${donationId}:`, {
+      scholar_id: donation.scholar_id,
+      scholar_name: donation.scholar_name,
+      donor_name: donation.donor_name,
+      amount: donation.amount
+    });
+    
+    // Check if donation is verified
+    if (donation.verification_status !== 'verified') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Only verified donations can receive certificates' 
+      });
+    }
+    
+    // Check if donor email exists
+    if (!donation.donor_email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot send certificate: Donor email is missing'
+      });
+    }
+    
+    // Send certificate email
+    await emailService.sendDonationCertificateEmail(
+      donation.donor_email,
+      donation.donor_name,
+      donation.scholar_name || 'a KMFI Scholar', // Ensure scholar_name is never empty
+      donation.amount,
+      donation.created_at,
+      donation.id
+    );
+    
+    // Update certificate_sent status in database
+    await db.query(
+      `UPDATE scholar_donations 
+       SET certificate_sent = true, 
+           certificate_sent_at = NOW(), 
+           certificate_sent_by_role = $1
+       WHERE id = $2`,
+      [adminRole, donationId]
+    );
+    
+    // Notify donor if they have a user account
+    if (donation.sponsor_id) {
+      await notificationModel.createNotification({
+        userId: donation.sponsor_id,
+        type: 'donation_certificate',
+        content: `Your donation certificate for ${donation.scholar_name || 'a KMFI Scholar'} has been sent to your email.`,
+        relatedId: donationId,
+        actorId: null,
+        actorName: 'KMFI Foundation',
+        actorAvatar: '/images/certificate-icon.png'
+      });
+    }
+    
+    // Get admin users for notification
+    const adminUsersResult = await db.query(
+      `SELECT id FROM users WHERE role = 'admin'`
+    );
+    
+    const adminIds = adminUsersResult.rows.map(row => row.id);
+    
+    // Notify admins
+    await notificationModel.notifyAdmins(
+      adminIds,
+      'donation_certificate_sent',
+      `Donation certificate sent to ${donation.donor_name} for donation #${donationId}`,
+      donationId,
+      { id: adminId, name: req.user.name }
+    );
+    
+    return res.json({
+      success: true,
+      message: 'Certificate sent successfully'
+    });
+  } catch (error) {
+    console.error('Error sending certificate:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to send certificate',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

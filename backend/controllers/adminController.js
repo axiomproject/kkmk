@@ -122,123 +122,225 @@ const getVolunteerById = async (req, res) => {
   try {
     const { id } = req.params;
     const volunteer = await AdminModel.getVolunteerById(id);
+    
     if (!volunteer) {
       return res.status(404).json({ error: 'Volunteer not found' });
     }
+    
+    // Log the volunteer data to debug skill_evidence
+    console.log('Volunteer data:', {
+      id: volunteer.id,
+      name: volunteer.name,
+      skillEvidence: volunteer.skill_evidence,
+      hasSkills: !!volunteer.skills
+    });
+    
     res.json(volunteer);
   } catch (error) {
-    console.error('Error fetching volunteer:', error);
+    console.error('Error fetching volunteer by ID:', error);
     res.status(500).json({ error: 'Failed to fetch volunteer details' });
   }
 };
 
+// Modify the createVolunteer function to handle FormData with skill evidence
+
 const createVolunteer = async (req, res) => {
   try {
-    const { username, email, password, skills, disability, date_of_birth, ...otherData } = req.body;
-
-    // Validate minimum age (16 years)
-    if (date_of_birth) {
-      const birthDate = new Date(date_of_birth);
-      const today = new Date();
-      const minAgeDate = new Date();
-      minAgeDate.setFullYear(today.getFullYear() - 16);
-      
-      if (birthDate > minAgeDate) {
-        return res.status(400).json({ 
-          error: 'Age requirement not met', 
-          field: 'date_of_birth',
-          message: 'Volunteers must be at least 16 years old'
+    // Check if user is admin or staff
+    if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    
+    console.log('Create volunteer request received');
+    console.log('Content-Type:', req.headers['content-type']);
+    
+    // Debug the req.files object
+    if (req.files) {
+      console.log('Files received:', Object.keys(req.files));
+      // Check for skillEvidence specifically
+      if (req.files.skillEvidence) {
+        console.log('Skill evidence file details:', {
+          filename: req.files.skillEvidence[0].filename,
+          originalname: req.files.skillEvidence[0].originalname,
+          mimetype: req.files.skillEvidence[0].mimetype,
+          size: req.files.skillEvidence[0].size
         });
+      } else {
+        console.log('No skillEvidence file found in req.files');
       }
-    }
-
-    // First check if username or email already exists
-    const checkExistingQuery = await db.query(
-      'SELECT username, email FROM users WHERE username = $1 OR email = $2',
-      [username, email]
-    );
-
-    if (checkExistingQuery.rows.length > 0) {
-      const existingUser = checkExistingQuery.rows[0];
-      
-      if (existingUser.username === username) {
-        return res.status(400).json({ 
-          error: 'Username already taken', 
-          field: 'username',
-          message: 'This username is already registered. Please choose another username.'
-        });
-      }
-      
-      if (existingUser.email === email) {
-        return res.status(400).json({ 
-          error: 'Email already registered', 
-          field: 'email',
-          message: 'This email is already registered. Please use another email address.'
-        });
-      }
+    } else {
+      console.log('No files found in request');
     }
     
-    // Process skills and disability fields if they exist
-    let processedData = { ...otherData };
-    
-    // Format skills as JSON string if provided
-    if (skills && Array.isArray(skills)) {
-      processedData.skills = JSON.stringify(skills);
-    }
-    
-    // Format disability object as JSON string if provided
-    if (disability !== undefined) {
-      processedData.disability = disability ? JSON.stringify(disability) : null;
-    }
-    
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Call the model function with processed data
-    const newVolunteer = await AdminModel.createVolunteer({
-      ...processedData,
+    // Extract fields from request body
+    const {
+      first_name,
+      middle_name,
+      last_name,
+      name_extension,
+      gender,
       username,
       email,
+      password,
+      phone,
       date_of_birth,
-      password: hashedPassword
+      status,
+      is_verified,
+      name,
+      skills: skillsJson,
+      disability: disabilityJson
+    } = req.body;
+
+    // Parse skills and disability from JSON strings
+    let skills = [];
+    try {
+      if (skillsJson) {
+        skills = JSON.parse(skillsJson);
+        console.log('Parsed skills:', skills);
+      }
+    } catch (e) {
+      console.error('Error parsing skills:', e);
+    }
+
+    let disability = null;
+    try {
+      if (disabilityJson) {
+        disability = JSON.parse(disabilityJson);
+        console.log('Parsed disability:', disability);
+      }
+    } catch (e) {
+      console.error('Error parsing disability:', e);
+    }
+
+    // Process skill evidence file
+    let skillEvidence = null;
+    if (req.files && req.files.skillEvidence && req.files.skillEvidence.length > 0) {
+      skillEvidence = `/uploads/volunteer-evidence/${req.files.skillEvidence[0].filename}`;
+      console.log('Skill evidence path set to:', skillEvidence);
+    }
+
+    // Create full name if not provided
+    const fullName = name || [
+      first_name,
+      middle_name,
+      last_name,
+      name_extension
+    ].filter(Boolean).join(' ');
+    
+    // Create volunteer data object
+    const volunteerData = {
+      name: fullName,
+      first_name,
+      middle_name,
+      last_name,
+      name_extension,
+      username,
+      email,
+      password, // Will be hashed below
+      phone,
+      date_of_birth,
+      status: status || 'active',
+      is_verified: is_verified === 'true' || is_verified === true,
+      skills,
+      disability,
+      gender,
+      skill_evidence: skillEvidence // Include skill evidence path in the data
+    };
+    
+    console.log('Creating volunteer with data:', {
+      ...volunteerData,
+      password: '[REDACTED]',
+      skill_evidence: skillEvidence  // Log this explicitly
     });
 
-    console.log('New volunteer created:', newVolunteer);
-    res.status(201).json(newVolunteer);
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    volunteerData.password = await bcrypt.hash(volunteerData.password, salt);
+
+    // Call the admin model to create the volunteer
+    const volunteer = await AdminModel.createVolunteer(volunteerData);
+
+    if (!volunteer) {
+      throw new Error('Failed to create volunteer');
+    }
+
+    console.log('Volunteer created successfully with ID:', volunteer.id);
+    console.log('Volunteer data saved:', {
+      ...volunteer,
+      skill_evidence: volunteer.skill_evidence // Check this was saved correctly
+    });
+    
+    res.status(201).json({
+      success: true,
+      message: 'Volunteer created successfully',
+      volunteer
+    });
+
   } catch (error) {
     console.error('Error creating volunteer:', error);
-    
-    // Check for specific database constraint violations
-    if (error.code === '23505') { // PostgreSQL unique constraint violation code
-      if (error.constraint === 'users_username_key') {
-        return res.status(400).json({ 
-          error: 'Username already taken',
-          field: 'username',
-          message: 'This username is already registered. Please choose another username.'
-        });
-      } else if (error.constraint === 'users_email_key') {
-        return res.status(400).json({ 
-          error: 'Email already registered',
-          field: 'email',
-          message: 'This email is already registered. Please use another email address.'
-        });
-      }
-    }
-    
-    res.status(500).json({ 
-      error: 'Failed to create volunteer',
-      details: error.message 
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create volunteer'
     });
   }
 };
 
 const updateVolunteer = async (req, res) => {
   try {
-    // Log the request body for debugging
-    console.log('Update volunteer request body:', req.body);
+    console.log('Update volunteer request received');
+    console.log('Content-Type:', req.headers['content-type']);
+    console.log('Has files?', !!req.files);
+    
+    if (req.files) {
+      console.log('Files detected:', Object.keys(req.files));
+      if (req.files.skillEvidence) {
+        console.log('Skill evidence file included:', req.files.skillEvidence[0].filename);
+      }
+    }
     
     const { id } = req.params;
-    const updates = req.body;
+    const isFormData = req.headers['content-type']?.includes('multipart/form-data');
+    let updates = {};
+    
+    if (isFormData) {
+      // Process multipart form data
+      updates = { ...req.body };
+      
+      // Handle skill evidence file
+      if (req.files && req.files.skillEvidence && req.files.skillEvidence.length > 0) {
+        const evidenceFile = req.files.skillEvidence[0];
+        updates.skill_evidence = `/uploads/volunteer-evidence/${evidenceFile.filename}`;
+        console.log('Setting new skill evidence path:', updates.skill_evidence);
+      }
+      
+      // Check if we need to remove the current evidence
+      if (req.body.removeSkillEvidence === 'true') {
+        updates.skill_evidence = null;
+        console.log('Removing skill evidence');
+      }
+      
+      // Parse JSON fields
+      if (updates.skills) {
+        try {
+          updates.skills = JSON.parse(updates.skills);
+          console.log('Parsed skills:', updates.skills);
+        } catch (e) {
+          console.error('Error parsing skills:', e);
+        }
+      }
+      
+      if (updates.disability) {
+        try {
+          updates.disability = JSON.parse(updates.disability);
+          console.log('Parsed disability:', updates.disability);
+        } catch (e) {
+          console.error('Error parsing disability:', e);
+        }
+      }
+    } else {
+      // Regular JSON request
+      updates = req.body;
+    }
     
     // Validate minimum age (16 years) if date_of_birth is being updated
     if (updates.date_of_birth) {

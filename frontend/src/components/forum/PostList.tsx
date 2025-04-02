@@ -18,6 +18,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { checkProfanity } from '../../utils/profanityFilter'; // Remove showProfanityWarning
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'; // Add this import
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'; // Add this import
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'; // Add this import
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty'; // Add this import
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
 
@@ -35,6 +38,9 @@ interface PostListProps {
   onCategoryChange: (category: string) => void; // Add this prop
   onDeleteComment?: (postId: string, commentId: string) => void; // Add this prop
   userRole: string; // Add this prop
+  onApprovePost?: (postId: string) => void; // Add this prop
+  onRejectPost?: (postId: string, reason: string) => void; // Add this prop
+  showApprovalActions?: boolean; // Add this prop
 }
 
 interface EditData {
@@ -74,7 +80,7 @@ const authorNameStyle = {
   fontWeight: 500
 };
 
-const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddComment, onVote, onCommentLike, onDeletePost, onUpdatePost, highlightedPostId, onCategoryChange, onDeleteComment, userRole }) => {
+const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddComment, onVote, onCommentLike, onDeletePost, onUpdatePost, highlightedPostId, onCategoryChange, onDeleteComment, userRole, onApprovePost, onRejectPost, showApprovalActions = false }) => {
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [expandedPosts, setExpandedPosts] = useState<string[]>([]);
   const [newComments, setNewComments] = useState<{ [key: string]: string }>({});
@@ -97,6 +103,20 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAdminOrStaff, setIsAdminOrStaff] = useState(false);
+  
+  // Add new state for rejection reason dialog
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [postToReject, setPostToReject] = useState<string | null>(null);
+  const [approvalSnackbar, setApprovalSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
   const modalStyle = { // Add this style object
     display: 'flex',
@@ -494,6 +514,95 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
     }
   };
 
+  // Add new handler for approving posts
+  const handleApprovePost = async (postId: string) => {
+    if (!isAdminOrStaff) return;
+    
+    try {
+      // Will connect to backend later
+      console.log('Approving post:', postId);
+      
+      // Update local state for immediate UI feedback
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { ...post, approval_status: 'approved' } 
+            : post
+        )
+      );
+      
+      // Show success notification
+      setApprovalSnackbar({
+        open: true,
+        message: 'Post approved successfully',
+        severity: 'success'
+      });
+      
+      // Call parent component handler if provided
+      if (onApprovePost) {
+        onApprovePost(postId);
+      }
+    } catch (error) {
+      console.error('Error approving post:', error);
+      setApprovalSnackbar({
+        open: true,
+        message: 'Failed to approve post',
+        severity: 'error'
+      });
+    }
+  };
+
+  // Add new handler for opening rejection dialog
+  const handleOpenRejectDialog = (postId: string) => {
+    if (!isAdminOrStaff) return;
+    setPostToReject(postId);
+    setRejectionReason('');
+    setRejectionDialogOpen(true);
+  };
+
+  // Add new handler for submitting rejection
+  const handleRejectPost = async () => {
+    if (!postToReject || !isAdminOrStaff) return;
+    
+    try {
+      // Will connect to backend later
+      console.log('Rejecting post:', postToReject, 'with reason:', rejectionReason);
+      
+      // Update local state for immediate UI feedback
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postToReject 
+            ? { 
+                ...post, 
+                approval_status: 'rejected',
+                rejection_reason: rejectionReason.trim() || 'Content does not meet community guidelines'
+              } 
+            : post
+        )
+      );
+      
+      // Close dialog and show success notification
+      setRejectionDialogOpen(false);
+      setApprovalSnackbar({
+        open: true,
+        message: 'Post rejected',
+        severity: 'info'
+      });
+      
+      // Call parent component handler if provided
+      if (onRejectPost) {
+        onRejectPost(postToReject, rejectionReason);
+      }
+    } catch (error) {
+      console.error('Error rejecting post:', error);
+      setApprovalSnackbar({
+        open: true,
+        message: 'Failed to reject post',
+        severity: 'error'
+      });
+    }
+  };
+
   const getVotePercentage = (votes: number, totalVotes: number) => {
     if (totalVotes === 0) return 0;
     return Math.round((votes / totalVotes) * 100);
@@ -516,11 +625,14 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
   };
 
   const filteredPosts = allPosts ? (
-    category.toLowerCase() === 'all' 
-      ? allPosts 
-      : category === 'event'
-        ? allPosts // Show all event posts when in event category
-        : allPosts.filter((post: Post) => post.category.toLowerCase() === category.toLowerCase())
+    // Special handling for pending approval category
+    category.toLowerCase() === 'pending approval'
+      ? allPosts // Don't filter, already provided filtered list from parent
+      : category.toLowerCase() === 'all' 
+        ? allPosts 
+        : category === 'event'
+          ? allPosts // Show all event posts when in event category
+          : allPosts.filter((post: Post) => post.category.toLowerCase() === category.toLowerCase())
   ) : [];
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, postId: string) => {
@@ -771,6 +883,129 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
     );
   };
 
+  // Create a function to render approval status badge
+  const renderApprovalStatus = (post: Post) => {
+    // Always show approval status in the Pending Approval category
+    // For other categories, only show if the post is rejected
+    if (!post.approval_status) return null;
+    
+    if (post.approval_status === 'pending') {
+      // Only show "Pending" badge in the pending approval category
+      if (!showApprovalActions) return null;
+      
+      return (
+        <Chip
+          icon={<HourglassEmptyIcon />}
+          label="Pending Approval"
+          size="small"
+          sx={{
+            backgroundColor: '#f8d7da',
+            color: '#721c24',
+            fontWeight: 500,
+            '& .MuiChip-icon': {
+              color: '#721c24',
+            }
+          }}
+        />
+      );
+    } else if (post.approval_status === 'rejected') {
+      // Always show "Rejected" badge for rejected posts visible to the user
+      return (
+        <Chip
+          icon={<CancelOutlinedIcon />}
+          label="Rejected"
+          size="small"
+          sx={{
+            backgroundColor: '#f8d7da',
+            color: '#721c24',
+            fontWeight: 500,
+            '& .MuiChip-icon': {
+              color: '#721c24',
+            }
+          }}
+        />
+      );
+    }
+    
+    return null;
+  };
+
+  // Add function to render admin approval actions
+  const renderAdminApprovalActions = (post: Post) => {
+    // Only show approval actions if we're in the pending approval category
+    // AND the user is admin/staff AND the post is pending
+    if (!showApprovalActions || !isAdminOrStaff || !post.approval_status || post.approval_status !== 'pending') {
+      return null;
+    }
+    
+    return (
+      <div className="admin-approval-actions">
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<CheckCircleOutlineIcon />}
+          onClick={() => handleApprovePost(post.id)}
+          sx={{
+            backgroundColor: '#4caf50',
+            color: 'white',
+            marginRight: 1,
+            '&:hover': {
+              backgroundColor: '#388e3c',
+            }
+          }}
+        >
+          Approve
+        </Button>
+        <Button
+          variant="contained"
+          size="small"
+          startIcon={<CancelOutlinedIcon />}
+          onClick={() => handleOpenRejectDialog(post.id)}
+          sx={{
+            backgroundColor: '#f44336',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: '#d32f2f',
+            }
+          }}
+        >
+          Reject
+        </Button>
+      </div>
+    );
+  };
+
+  // Create function to render rejection reason
+  const renderRejectionReason = (post: Post) => {
+    if (post.approval_status !== 'rejected' || !post.rejection_reason) {
+      return null;
+    }
+
+    return (
+      <Box
+        sx={{
+          backgroundColor: '#f8d7da',
+          borderRadius: 1,
+          padding: 2,
+          marginBottom: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        <ErrorOutlineIcon sx={{ color: '#721c24' }} />
+        <div>
+          <Typography variant="subtitle2" sx={{ color: '#721c24', fontWeight: 600 }}>
+            This post was rejected
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#721c24' }}>
+            Reason: {post.rejection_reason}
+          </Typography>
+        </div>
+      </Box>
+    );
+  };
+
   if (!posts || posts.length === 0) {
     return (
       <div className="no-posts">
@@ -807,10 +1042,41 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
         </Alert>
       </Snackbar>
 
+      {/* Add new snackbar for approval/rejection notifications */}
+      <Snackbar
+        open={approvalSnackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setApprovalSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity={approvalSnackbar.severity}
+          variant="filled"
+          onClose={() => setApprovalSnackbar(prev => ({ ...prev, open: false }))}
+        >
+          {approvalSnackbar.message}
+        </Alert>
+      </Snackbar>
+
       <div className={`post-list ${view}`}>
         {filteredPosts.map(post => {
           const isAuthor = post.author_id === JSON.parse(localStorage.getItem('user') || '{}').id;
           const isHighlighted = post.id === highlightedPostId;
+          
+          // Update this logic to properly handle pending approval posts visibility
+          // If in "Pending Approval" category, show all pending posts
+          // Otherwise, hide pending posts unless user is author or admin/staff
+          const shouldHidePost = 
+            (category.toLowerCase() !== 'pending approval' && 
+             post.approval_status === 'pending' && 
+             !isAuthor && 
+             !isAdminOrStaff) ||
+            // Always hide rejected posts unless the user is the author or admin/staff
+            (post.approval_status === 'rejected' && !isAuthor && !isAdminOrStaff);
+          
+          if (shouldHidePost) {
+            return null;
+          }
           
           return (
             <Card 
@@ -825,6 +1091,16 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                   borderLeft: '4px solid #f99407',
                   backgroundColor: 'rgba(249, 148, 7, 0.05)',
                   boxShadow: '0 0 15px rgba(249, 148, 7, 0.2)'
+                }),
+                // Add different styling for posts with different approval statuses
+                ...(post.approval_status === 'pending' && {
+                  borderLeft: '4px solid #ffc107',
+                  backgroundColor: 'rgba(255, 193, 7, 0.05)',
+                }),
+                ...(post.approval_status === 'rejected' && {
+                  borderLeft: '4px solid #dc3545',
+                  backgroundColor: 'rgba(220, 53, 69, 0.05)',
+                  opacity: 0.8
                 })
               }}
             >
@@ -885,10 +1161,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                           }}
                         />
                       )}
-                    </div>
-                    <Typography 
-                      variant="caption" 
-                      color="text.secondary"
+                      <Typography 
                       sx={{ 
                         display: 'block', 
                         textAlign: 'left',
@@ -897,6 +1170,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                     >
                       {formatDate(post.created_at)}
                     </Typography>
+                    </div>
                   </div>
                   <Chip 
                     label={post.category} 
@@ -931,7 +1205,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                           boxShadow: 'none'
                         }
                       })
-                    }} 
+                    }}
                   />
                   {(isAuthor || isAdmin || (isAdminOrStaff && post.author_role !== 'admin')) && (
                     <div className="post-action-wrapper" style={{ marginLeft: '12px', position: 'relative' }}>
@@ -986,6 +1260,12 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                   )}
                 </div>
 
+                {/* Add rejection reason display if post is rejected */}
+                {renderRejectionReason(post)}
+
+                {/* Show admin approval actions if user is admin/staff and post is pending */}
+                {renderAdminApprovalActions(post)}
+
                 <Typography 
                   variant="h6" 
                   gutterBottom
@@ -1018,7 +1298,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                         maxWidth: '100%',
                         maxHeight: 400,
                         objectFit: 'contain',
-                        cursor: 'pointer' // Add this to show it's clickable
+                        cursor: 'pointer'
                       }}
                       onClick={() => handleImageClick(`${API_URL}${post.image_url}`)}
                     />
@@ -1036,8 +1316,13 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                           key={option.id}
                           variant="outlined"
                           fullWidth
-                          // Update disabled condition to include userRole check
-                          disabled={votedPolls.includes(post.id) || userRole === 'scholar'}
+                          // Update disabled condition to include approval status
+                          disabled={
+                            votedPolls.includes(post.id) || 
+                            userRole === 'scholar' || 
+                            post.approval_status === 'pending' || 
+                            post.approval_status === 'rejected'
+                          }
                           onClick={() => handleVote(post.id, option.id)}
                           sx={{ 
                             mb: 1,
@@ -1089,6 +1374,10 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                     >
                       {userRole === 'scholar' ? (
                         'Scholars cannot vote on polls'
+                      ) : post.approval_status === 'pending' ? (
+                        'Voting will be enabled after approval'
+                      ) : post.approval_status === 'rejected' ? (
+                        'This poll has been rejected'
                       ) : (
                         <>Total votes: {post.poll?.totalVotes ?? 0} {votedPolls.includes(post.id) && '• You voted'}</>
                       )}
@@ -1097,8 +1386,8 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                 )}
 
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                  {/* Only show like button if user is not a scholar */}
-                  {userRole !== 'scholar' && (
+                  {/* Only show like button if user is not a scholar and post is approved */}
+                  {userRole !== 'scholar' && (!post.approval_status || post.approval_status === 'approved') && (
                     <Button 
                       startIcon={likedPosts.includes(post.id) ? <ThumbUpIcon /> : <ThumbUpOutlinedIcon />}
                       size="small"
@@ -1115,17 +1404,21 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                     </Button>
                   )}
                   
-                  {/* Show comments count for all users but only allow toggle for non-scholars */}
+                  {/* Show comments count for all users but only allow toggle for non-scholars and approved posts */}
                   <Button 
                     startIcon={expandedPosts.includes(post.id) ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                     size="small"
-                    onClick={userRole !== 'scholar' ? () => toggleComments(post.id) : undefined}
-                    disabled={userRole === 'scholar'}
+                    onClick={
+                      userRole !== 'scholar' && (!post.approval_status || post.approval_status === 'approved') 
+                        ? () => toggleComments(post.id) 
+                        : undefined
+                    }
+                    disabled={userRole === 'scholar' || post.approval_status === 'pending' || post.approval_status === 'rejected'}
                     sx={{
                       color: expandedPosts.includes(post.id) ? '#f99407' : 'inherit',
                       fontFamily: '"Poppins", sans-serif',
                       '&:hover': {
-                        color: userRole !== 'scholar' ? '#f99407' : 'inherit',
+                        color: userRole !== 'scholar' && (!post.approval_status || post.approval_status === 'approved') ? '#f99407' : 'inherit',
                       }
                     }}
                   >
@@ -1133,8 +1426,8 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
                   </Button>
                 </div>
 
-                {/* Only show comments section and add comment if user is not a scholar */}
-                {userRole !== 'scholar' && (
+                {/* Only show comments section and add comment if user is not a scholar and post is approved */}
+                {userRole !== 'scholar' && (!post.approval_status || post.approval_status === 'approved') && (
                   <Collapse in={expandedPosts.includes(post.id)}>
                     <div className="comments-section">
                       <div className="comments-list">
@@ -1355,6 +1648,53 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
         </Modal>
       </div>
 
+      {/* Add rejection reason dialog */}
+      <Dialog
+        open={rejectionDialogOpen}
+        onClose={() => setRejectionDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle sx={{ fontFamily: '"Poppins", sans-serif', fontWeight: 600 }}>
+          Reject Post
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Reason for rejection"
+            fullWidth
+            multiline
+            rows={4}
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Explain why this post is being rejected..."
+            variant="outlined"
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setRejectionDialogOpen(false)}
+            sx={{ color: 'text.secondary' }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleRejectPost} 
+            variant="contained"
+            sx={{
+              backgroundColor: '#f44336',
+              '&:hover': {
+                backgroundColor: '#d32f2f',
+              }
+            }}
+          >
+            Reject
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {editDialog && (
         <div className="edit-modal" onClick={() => setEditDialog(false)}>
           <div className="edit-modal-content" onClick={e => e.stopPropagation()}>
@@ -1425,3 +1765,5 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
 };
 
 export default PostList;
+
+

@@ -11,8 +11,20 @@ interface VolunteerEditFormProps {
 interface SkillOption {
   value: string;
   label: string;
-  examples: string;
+  description: string; // Changed from 'examples' to 'description' to match NewVolunteerForm
 }
+
+// Add disability types array
+const disabilityTypes = [
+  'Physical',
+  'Visual',
+  'Hearing',
+  'Cognitive',
+  'Learning',
+  'Speech',
+  'Mental Health',
+  'Other'
+];
 
 const VolunteerEditForm = ({ volunteer, onSubmit, onCancel }: VolunteerEditFormProps) => {
   // Split the existing name into components if available
@@ -167,27 +179,23 @@ const VolunteerEditForm = ({ volunteer, onSubmit, onCancel }: VolunteerEditFormP
     }));
   }, [volunteer]);
 
-  // Available skill options with examples
+  // Updated skill options with descriptions to match NewVolunteerForm
   const skillOptions: SkillOption[] = [
-    { value: 'teaching', label: 'Teaching', examples: 'Tutoring, mentoring, curriculum development' },
-    { value: 'programming', label: 'Programming', examples: 'Web development, mobile apps, data analysis' },
-    { value: 'writing', label: 'Writing', examples: 'Content creation, grant writing, editing' },
-    { value: 'design', label: 'Design', examples: 'Graphic design, UI/UX, illustration' },
-    { value: 'fundraising', label: 'Fundraising', examples: 'Event organization, donor relations, crowdfunding' },
-    { value: 'counseling', label: 'Counseling', examples: 'Emotional support, career guidance, conflict resolution' },
-    { value: 'logistics', label: 'Logistics', examples: 'Event planning, transportation coordination, resource management' },
-    { value: 'medical', label: 'Medical', examples: 'First aid, health education, medical assistance' },
-    { value: 'social_media', label: 'Social Media', examples: 'Content strategy, community management, analytics' },
-    { value: 'photography', label: 'Photography/Videography', examples: 'Event documentation, promotional material creation' },
-  ];
-
-  // Available disability types
-  const disabilityTypes = [
-    'Physical',
-    'Mental',
-    'Psychological',
-    'Learning',
-    'Other'
+    { value: 'tutoring', label: 'Tutoring/Academic Support', description: 'Helping students with homework, teaching subjects, conducting study sessions' },
+    { value: 'mentoring', label: 'Mentoring', description: 'Providing guidance, career advice, and personal development support' },
+    { value: 'counseling', label: 'Community Counseling', description: 'Offering emotional support, conflict resolution, and basic mental health services' },
+    { value: 'healthcare', label: 'Healthcare Support', description: 'First aid, health education, medical assistance, health awareness programs' },
+    { value: 'arts_culture', label: 'Arts & Culture Programs', description: 'Teaching music, art, dance, theater, organizing cultural events' },
+    { value: 'sports_recreation', label: 'Sports & Recreation', description: 'Coaching sports, organizing games, planning recreational activities' },
+    { value: 'environmental', label: 'Environmental Projects', description: 'Clean-ups, recycling initiatives, environmental education' },
+    { value: 'food_distribution', label: 'Food Distribution', description: 'Preparing meals, distributing food packages, managing food banks' },
+    { value: 'shelter_support', label: 'Shelter Support', description: 'Working in shelters, housing programs, construction assistance' },
+    { value: 'administrative', label: 'Administrative Support', description: 'Office management, data entry, record keeping, documentation' },
+    { value: 'event_planning', label: 'Event Planning', description: 'Organizing community events, fundraisers, awareness programs' },
+    { value: 'technical', label: 'Technical Support', description: 'Computer skills training, tech troubleshooting, digital literacy programs' },
+    { value: 'elderly_support', label: 'Elderly Support', description: 'Elder care, companionship, assistance with daily activities' },
+    { value: 'child_care', label: 'Child Care', description: 'Childcare services, after-school programs, recreational activities for children' },
+    { value: 'translation', label: 'Translation/Interpretation', description: 'Language services for non-native speakers in the community' },
   ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -437,6 +445,441 @@ const VolunteerEditForm = ({ volunteer, onSubmit, onCancel }: VolunteerEditFormP
     }
   };
 
+  // Add state for skill evidence file
+  const [skillEvidence, setSkillEvidence] = useState<File | null>(null);
+  const [currentSkillEvidence, setCurrentSkillEvidence] = useState<string | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<string>('');
+  const [removeEvidence, setRemoveEvidence] = useState<boolean>(false);
+
+  // Add skill selection handler
+  const handleSkillSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    
+    if (value && !formData.skills.includes(value)) {
+      setSelectedSkill(value);
+      setFormData(prev => ({
+        ...prev,
+        skills: [...prev.skills, value]
+      }));
+      
+      // Clear errors when a skill is selected
+      if (errors.skills) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.skills;
+          return newErrors;
+        });
+      }
+    }
+  };
+
+  // Add method to remove a skill
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills.filter(skill => skill !== skillToRemove)
+    }));
+    
+    // If removing all skills, prompt to remove evidence too
+    if (formData.skills.length <= 1 && (skillEvidence || currentSkillEvidence)) {
+      if (window.confirm('Do you want to remove the skill evidence too?')) {
+        setSkillEvidence(null);
+        setCurrentSkillEvidence(null);
+        setRemoveEvidence(true);
+      }
+    }
+  };
+
+  // Add handler for skill evidence file upload
+  const handleSkillEvidenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSkillEvidence(file);
+    
+    if (file) {
+      // If uploading a new file, we're not removing the evidence
+      setRemoveEvidence(false);
+      
+      // Clear errors if they exist
+      if (errors.skillEvidence) {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.skillEvidence;
+          return newErrors;
+        });
+      }
+    }
+  };
+
+  // Add handler to remove current skill evidence
+  const handleRemoveSkillEvidence = () => {
+    setSkillEvidence(null);
+    setCurrentSkillEvidence(null);
+    setRemoveEvidence(true);
+  };
+
+  // Add function to render skill badge
+  const renderSkillBadge = (skill: string) => {
+    const skillOption = skillOptions.find(option => option.value === skill);
+    return (
+      <div key={skill} className="skill-badge">
+        <span className="skill-label">{skillOption?.label || skill}</span>
+        <button 
+          type="button"
+          className="remove-skill-btn"
+          onClick={() => handleRemoveSkill(skill)}
+          title="Remove skill"
+        >
+          ×
+        </button>
+      </div>
+    );
+  };
+
+  // Function to get the filename from a URL
+  const getFilenameFromUrl = (url: string) => {
+    if (!url) return 'Evidence File';
+    const parts = url.split('/');
+    return parts[parts.length - 1];
+  };
+  
+  // Function to display file size in human-readable format
+  const formatFileSize = (size: number) => {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  // Effect to initialize form data from volunteer prop
+  useEffect(() => {
+    if (volunteer) {
+      // Parse skills from volunteer data
+      let parsedSkills = [];
+      if (volunteer.skills) {
+        if (typeof volunteer.skills === 'string') {
+          try {
+            parsedSkills = JSON.parse(volunteer.skills);
+          } catch (e) {
+            console.error('Error parsing skills:', e);
+            parsedSkills = [];
+          }
+        } else if (Array.isArray(volunteer.skills)) {
+          parsedSkills = volunteer.skills;
+        }
+      }
+
+      // Parse disability from volunteer data
+      let hasDisability = false;
+      let disabilityType: string[] = [];
+      let disabilityDetails = '';
+
+      if (volunteer.disability) {
+        let parsedDisability = null;
+        if (typeof volunteer.disability === 'string') {
+          try {
+            parsedDisability = JSON.parse(volunteer.disability);
+          } catch (e) {
+            console.error('Error parsing disability:', e);
+          }
+        } else {
+          parsedDisability = volunteer.disability;
+        }
+
+        // Fix: Proper check for hasDisability value
+        if (parsedDisability) {
+          // Check if parsedDisability has a hasDisability property
+          if (parsedDisability.hasDisability !== undefined) {
+            hasDisability = parsedDisability.hasDisability === true;
+          } else if (parsedDisability.types && parsedDisability.types.length > 0) {
+            // If no explicit hasDisability flag but has types, assume true
+            hasDisability = true;
+          }
+          
+          disabilityType = parsedDisability.types || [];
+          disabilityDetails = parsedDisability.details || '';
+        }
+      }
+
+      // Set current skill evidence if exists
+      if (volunteer.skill_evidence) {
+        setCurrentSkillEvidence(volunteer.skill_evidence);
+      }
+
+      // Debug log for name fields
+      console.log('Volunteer name fields:', {
+        first_name: volunteer.first_name,
+        middle_name: volunteer.middle_name,
+        last_name: volunteer.last_name,
+        name_extension: volunteer.name_extension,
+        name: volunteer.name
+      });
+
+      // If individual name fields aren't available, try to split from full name
+      let firstName = volunteer.first_name;
+      let middleName = volunteer.middle_name;
+      let lastName = volunteer.last_name;
+      let nameExtension = volunteer.name_extension;
+
+      if ((!firstName || !lastName) && volunteer.name) {
+        // Only split name if individual fields are missing
+        const nameComponents = splitName(volunteer.name || '');
+        firstName = firstName || nameComponents.first;
+        middleName = middleName || nameComponents.middle;
+        lastName = lastName || nameComponents.last;
+        nameExtension = nameExtension || nameComponents.extension;
+      }
+
+      // Set form data from volunteer
+      setFormData({
+        first_name: firstName || '',
+        middle_name: middleName || '',
+        last_name: lastName || '',
+        name_extension: nameExtension || '',
+        gender: volunteer.gender || 'male',
+        username: volunteer.username || '',
+        email: volunteer.email || '',
+        phone: volunteer.phone || '',
+        date_of_birth: volunteer.date_of_birth ? new Date(volunteer.date_of_birth).toISOString().split('T')[0] : '',
+        status: volunteer.status || 'active',
+        is_verified: volunteer.is_verified || false,
+        password: '',
+        skills: parsedSkills,
+        hasDisability,
+        disabilityType,
+        disabilityDetails
+      });
+    }
+  }, [volunteer]);
+
+  // Update the disability section JSX
+  const renderDisabilitySection = () => (
+    <div className="form-section">
+      <h3 className="section-title">
+        <span className="section-icon material-icons">accessibility</span>
+        Disability Information
+      </h3>
+      <p className="section-description">We support volunteers of all abilities. This information helps us provide appropriate support.</p>
+      
+      <div className="disability-question">
+        <p>Do you have any disabilities or conditions we should be aware of?</p>
+        <div className="radio-options">
+          <label className={formData.hasDisability === true ? 'radio-selected' : ''}>
+            <input
+              type="radio"
+              name="hasDisability"
+              checked={formData.hasDisability === true}
+              onChange={() => handleDisabilityChange(true)}
+            />
+            Yes
+          </label>
+          <label className={formData.hasDisability === false ? 'radio-selected' : ''}>
+            <input
+              type="radio"
+              name="hasDisability"
+              checked={formData.hasDisability === false}
+              onChange={() => handleDisabilityChange(false)}
+            />
+            No
+          </label>
+        </div>
+      </div>
+      
+      {formData.hasDisability && (
+        <div className="disability-details">
+          <div className="form-group">
+            <label>Type of disability/condition:</label>
+            <div className="checkbox-group">
+              {disabilityTypes.map(type => (
+                <label key={type} className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    name="disabilityType"
+                    value={type}
+                    checked={formData.disabilityType.includes(type)}
+                    onChange={handleDisabilityTypeChange}
+                  />
+                  {type}
+                </label>
+              ))}   
+            </div>
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="disabilityDetails">Additional details (optional):</label>
+            <textarea
+              id="disabilityDetails"
+              name="disabilityDetails"
+              value={formData.disabilityDetails}
+              onChange={handleChange}
+              placeholder="Please provide any details that would help us accommodate your needs"
+              rows={3}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Add or modify the skills section renderer to match NewVolunteerForm
+  const renderSkillsSection = () => (
+    <div className="form-section">
+      <h3 className="section-title">
+        <span className="section-icon material-icons">build</span>
+        Skills
+      </h3>
+      <p className="section-description">Select skills this volunteer has:</p>
+      
+      {/* Skills dropdown */}
+      <div className="form-group">
+        <label htmlFor="skills">Select Skills</label>
+        <select
+          id="skills"
+          value={selectedSkill}
+          onChange={handleSkillSelect}
+          className={errors.skills ? 'error-input' : ''}
+        >
+          <option value="">-- Select a skill to add --</option>
+          {skillOptions.map(skill => (
+            <option 
+              key={skill.value} 
+              value={skill.value}
+              disabled={formData.skills.includes(skill.value)}
+            >
+              {skill.label}
+            </option>
+          ))}
+        </select>
+        {errors.skills && <span className="error-message">{errors.skills}</span>}
+      </div>
+      
+      {/* Display selected skills as badges */}
+      {formData.skills.length > 0 && (
+        <div className="selected-skills">
+          <label>Selected skills:</label>
+          <div className="skill-badges">
+            {formData.skills.map(skill => renderSkillBadge(skill))}
+          </div>
+          
+          {/* Show description for selected skills */}
+          <div className="skills-description">
+            {formData.skills.map(skill => {
+              const skillOption = skillOptions.find(option => option.value === skill);
+              return skillOption ? (
+                <div key={skill} className="skill-description-item">
+                  <strong>{skillOption.label}:</strong> {skillOption.description}
+                </div>
+              ) : null;
+            })}
+          </div>
+        </div>
+      )}
+      
+      {/* Skill evidence upload or display existing */}
+      {formData.skills.length > 0 && (
+        <div className="form-group document-upload-container">
+          <label htmlFor="skillEvidence">Skill Evidence/Certificate <span className="upload-hint">(Certificate, proof of training, or other evidence)</span></label>
+          
+          <div className={`file-upload-wrapper ${errors.skillEvidence ? 'has-error' : ''}`}>
+            {/* Case 1: No evidence (neither current nor new) */}
+            {!skillEvidence && !currentSkillEvidence && (
+              <>
+                <label htmlFor="skillEvidence" className="file-upload-label">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                  </svg>
+                  <span>Upload evidence of skills</span>
+                </label>
+                <input
+                  type="file"
+                  id="skillEvidence"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={handleSkillEvidenceChange}
+                  className="file-input"
+                />
+              </>
+            )}
+            
+            {/* Case 2: New file selected */}
+            {skillEvidence && (
+              <div className="file-preview">
+                <div className="file-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V8H19v12H5V4h8v-.5zM7 13h10v1H7v-1zm0 3h10v1H7v-1zm0-6h5v1H7v-1z"/>
+                  </svg>
+                  <span className="file-name">
+                    {skillEvidence.name} 
+                    <span className="file-size">({formatFileSize(skillEvidence.size)})</span>
+                  </span>
+                </div>
+                <button 
+                  type="button" 
+                  className="remove-file-btn"
+                  onClick={() => setSkillEvidence(null)}
+                  title="Remove file"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                  </svg>
+                </button>
+              </div>
+            )}
+            
+            {/* Case 3: Display current evidence */}
+            {!skillEvidence && currentSkillEvidence && !removeEvidence && (
+              <div className="file-preview current-evidence">
+                <div className="file-info">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V8H19v12H5V4h8v-.5zM7 13h10v1H7v-1zm0 3h10v1H7v-1zm0-6h5v1H7v-1z"/>
+                  </svg>
+                  <span className="file-name">
+                    {getFilenameFromUrl(currentSkillEvidence)}
+                    <span className="current-evidence-label"> (Current Evidence)</span>
+                  </span>
+                </div>
+                <div className="evidence-actions">
+                  <a 
+                    href={currentSkillEvidence} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="view-evidence-btn"
+                    title="View evidence"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                  </a>
+                  <label htmlFor="skillEvidence" className="change-evidence-btn" title="Change evidence">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                    <input
+                      type="file"
+                      id="skillEvidence"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={handleSkillEvidenceChange}
+                      className="file-input"
+                    />
+                  </label>
+                  <button 
+                    type="button" 
+                    className="remove-file-btn"
+                    onClick={handleRemoveSkillEvidence}
+                    title="Remove evidence"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <p className="evidence-hint">Upload a certificate, training record, or proof of experience for your primary skill.</p>
+          {errors.skillEvidence && <span className="error-message">{errors.skillEvidence}</span>}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="modal-overlay">
       <div className="modal-contents wide-form">
@@ -644,100 +1087,9 @@ const VolunteerEditForm = ({ volunteer, onSubmit, onCancel }: VolunteerEditFormP
             </div>
           </div>
 
-          <div className="form-section">
-            <h3 className="section-title">
-              <span className="section-icon material-icons">build</span>
-              Skills
-            </h3>
-            <p className="section-description">Select all the skills this volunteer has:</p>
-            
-            <div className="skills-grid">
-              {skillOptions.map((skill) => (
-                <div key={skill.value} className="skill-checkbox-container">
-                  <div className="skill-checkbox">
-                    <input
-                      type="checkbox"
-                      id={`skill-${skill.value}`}
-                      value={skill.value}
-                      checked={formData.skills.includes(skill.value)}
-                      onChange={handleSkillChange}
-                    />
-                    <label htmlFor={`skill-${skill.value}`}>{skill.label}</label>
-                  </div>
-                  <p className="skill-examples">{skill.examples}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          {renderSkillsSection()}
 
-          <div className="form-section">
-            <h3 className="section-title">
-              <span className="section-icon material-icons">accessibility</span>
-              Disability Information
-            </h3>
-            <p className="section-description">We support volunteers of all abilities. This information helps us provide appropriate support.</p>
-            
-            {/* Update the disability question with improved styling */}
-            <div className="disability-question">
-              <label>Does the volunteer have any disability?</label>
-              <div className="radio-group">
-                <div className="radio-option">
-                  <input
-                    type="radio"
-                    id="disability-yes"
-                    name="hasDisability"
-                    checked={formData.hasDisability === true}
-                    onChange={() => handleDisabilityChange(true)}
-                  />
-                  <label htmlFor="disability-yes">Yes</label>
-                </div>
-                <div className="radio-option">
-                  <input
-                    type="radio"
-                    id="disability-no"
-                    name="hasDisability"
-                    checked={formData.hasDisability === false}
-                    onChange={() => handleDisabilityChange(false)}
-                  />
-                  <label htmlFor="disability-no">No</label>
-                </div>
-              </div>
-            </div>
-            
-            {formData.hasDisability === true && (
-              <div className="disability-types">
-                <label>Type of disability (select all that apply):</label>
-                <div className="disability-checkbox-grid">
-                  {disabilityTypes.map((type) => (
-                    <div key={type} className="disability-checkbox">
-                      <input
-                        type="checkbox"
-                        id={`disability-${type}`}
-                        value={type}
-                        checked={formData.disabilityType.includes(type)}
-                        onChange={handleDisabilityTypeChange}
-                      />
-                      <label htmlFor={`disability-${type}`}>{type}</label>
-                    </div>
-                  ))}
-                </div>
-                
-                {formData.disabilityType.length > 0 && (
-                  <div className="form-group mt-2">
-                    <label htmlFor="disabilityDetails">Please specify details about the disability:</label>
-                    <textarea
-                      id="disabilityDetails"
-                      name="disabilityDetails"
-                      value={formData.disabilityDetails}
-                      onChange={handleChange}
-                      placeholder="Provide details about the disability (nature, accommodations needed, etc.)"
-                      rows={3}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {renderDisabilitySection()}
 
           <div className="form-actions">
             <button 
