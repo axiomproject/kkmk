@@ -23,6 +23,8 @@ interface Transaction {
   contactNumber: string;
   message?: string;
   paymentMethod?: string; // Add payment method field
+  certificate_sent?: boolean;
+  certificate_sent_at?: string;
 }
 
 interface DonationResponse {
@@ -54,6 +56,8 @@ const Bank: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  const [sendingCertificateIds, setSendingCertificateIds] = useState<Set<number>>(new Set());
+  const [actionMessage, setActionMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
 
   useEffect(() => {
     const loadDonations = async () => {
@@ -263,6 +267,77 @@ const Bank: React.FC = () => {
     }
   };
 
+  const handleSendCertificate = async (id: number) => {
+    // Get the transaction to display name in confirmation
+    const transaction = transactions.find(t => t.id === id);
+    if (!transaction) return;
+    
+    // Only allow for verified transactions
+    if (transaction.verificationStatus !== 'verified') {
+      alert('Only verified donations can receive certificates');
+      return;
+    }
+    
+    if (!transaction.email) {
+      alert('Cannot send certificate: Donor email is missing');
+      return;
+    }
+    
+    if (!window.confirm(`Send donation certificate to ${transaction.fullName} (${transaction.email})?`)) return;
+    
+    try {
+      // Add this ID to the set of sending certificate IDs
+      setSendingCertificateIds(prev => new Set(prev).add(id));
+      
+      // Call API endpoint to generate and send certificate
+      const response = await api.post(`/donations/${id}/send-certificate`);
+      
+      if (response.data.success) {
+        // Show success message
+        setActionMessage({
+          text: 'Certificate sent successfully!',
+          type: 'success'
+        });
+        
+        // Update local state to reflect certificate sent
+        setTransactions(prevTransactions => 
+          prevTransactions.map(t => 
+            t.id === id ? {
+              ...t,
+              certificate_sent: true,
+              certificate_sent_at: new Date().toISOString()
+            } : t
+          )
+        );
+      } else {
+        throw new Error(response.data.message || 'Failed to send certificate');
+      }
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setActionMessage(null);
+      }, 3000);
+    } catch (error) {
+      console.error('Error sending certificate:', error);
+      setActionMessage({
+        text: 'Failed to send certificate. Please try again.',
+        type: 'error'
+      });
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setActionMessage(null);
+      }, 5000);
+    } finally {
+      // Remove this ID from the set of sending certificate IDs
+      setSendingCertificateIds(prev => {
+        const updated = new Set(prev);
+        updated.delete(id);
+        return updated;
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     try {
       // Extract just the date portion before the 'T'
@@ -369,10 +444,27 @@ const Bank: React.FC = () => {
               >View Proof</button>
             )}</td>
             <td>
-              <button 
-                onClick={() => handleDelete(transaction.id)}
-                className="delete-btn"
-              >Delete</button>
+              <div className="action-button-bank">
+                <button 
+                  onClick={() => handleViewDetails(transaction)}
+                  className="view-button"
+                >View</button>
+                {transaction.email && (
+                  <button 
+                    onClick={() => handleSendCertificate(transaction.id)}
+                    className="certificate-button"
+                    disabled={sendingCertificateIds.has(transaction.id)}
+                    title={transaction.certificate_sent ? 'Certificate already sent' : 'Send donation certificate'}
+                  >
+                    {sendingCertificateIds.has(transaction.id) ? 'Sending...' : 
+                      transaction.certificate_sent ? 'Resend' : 'Certificate'}
+                  </button>
+                )}
+                <button 
+                  onClick={() => handleDelete(transaction.id)}
+                  className="delete-btn"
+                >Delete</button>
+              </div>
             </td>
           </>
         ) : (
@@ -468,6 +560,39 @@ const Bank: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Add message alert banner */}
+      {actionMessage && (
+        <div 
+          className={`action-message ${actionMessage.type}`}
+          style={{
+            padding: '10px 20px',
+            borderRadius: '4px',
+            margin: '10px 0',
+            backgroundColor: actionMessage.type === 'success' ? '#d4edda' : '#f8d7da',
+            color: actionMessage.type === 'success' ? '#155724' : '#721c24',
+            border: `1px solid ${actionMessage.type === 'success' ? '#c3e6cb' : '#f5c6cb'}`,
+            textAlign: 'center',
+            position: 'relative',
+            fontWeight: '500'
+          }}
+        >
+          {actionMessage.text}
+          <span 
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'pointer',
+              fontSize: '18px'
+            }}
+            onClick={() => setActionMessage(null)}
+          >
+            &times;
+          </span>
+        </div>
+      )}
 
       {activeView === 'verified' ? (
         <>
@@ -622,6 +747,32 @@ const Bank: React.FC = () => {
                   <label>Verified By:</label>
                   <p>{selectedTransaction.verifiedBy} on {selectedTransaction.verifiedAt}</p>
                 </div>
+              )}
+              {selectedTransaction.verificationStatus === 'verified' && (
+                <div className="detail-group">
+                  <label>Certificate Status:</label>
+                  <p>
+                    {selectedTransaction.certificate_sent ? 
+                      `Certificate sent on ${selectedTransaction.certificate_sent_at ? formatDate(selectedTransaction.certificate_sent_at) : 'Unknown date'}` : 
+                      'Certificate not sent yet'}
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              {selectedTransaction.verificationStatus === 'verified' && 
+               selectedTransaction.email && (
+                <button 
+                  className="certificate-button"
+                  onClick={() => {
+                    setShowModal(false);
+                    handleSendCertificate(selectedTransaction.id);
+                  }}
+                  disabled={sendingCertificateIds.has(selectedTransaction.id)}
+                >
+                  {sendingCertificateIds.has(selectedTransaction.id) ? 'Sending...' : 
+                    selectedTransaction.certificate_sent ? 'Resend Certificate' : 'Send Certificate'}
+                </button>
               )}
             </div>
           </div>

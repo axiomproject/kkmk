@@ -27,7 +27,8 @@ const createUser = async (
   parentsIncome = null,  // Add parents' income parameter
   skills = null,
   disability = null,     // Add disability parameter
-  documentPaths = null   // Add document paths parameter
+  documentPaths = null,  // Add document paths parameter
+  salaryRange = null     // Add salary range parameter
 ) => {
   try {
     // First check if email or username already exists
@@ -89,6 +90,12 @@ const createUser = async (
     // Format document paths as JSON if provided
     const documentPathsJson = documentPaths ? JSON.stringify(documentPaths) : null;
 
+    // If role is volunteer, extract skill evidence from documentPaths
+    let skillEvidence = null;
+    if (role === 'volunteer' && documentPaths && documentPaths.skillEvidence) {
+      skillEvidence = documentPaths.skillEvidence;
+    }
+
     // Replace pool.query with db.query for consistent connection pooling
     const result = await db.query(
       `INSERT INTO users (
@@ -97,9 +104,10 @@ const createUser = async (
         verification_token, is_verified, role, created_at,
         face_descriptors, face_landmarks, has_face_verification,
         guardian_name, guardian_phone, address, education_level, school,
-        parents_income, skills, disability, document_paths
+        parents_income, skills, disability, document_paths, salary_range,
+        skill_evidence
       ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29) 
       RETURNING *`,
       [
         firstName, middleName, lastName, extension, gender,
@@ -108,7 +116,8 @@ const createUser = async (
         verificationToken, false, role, new Date(),
         face_descriptors, face_landmarks, faceData !== null,
         guardianName, guardianPhone, address, educationLevel, school,
-        parentsIncome, skillsJson, disabilityJson, documentPathsJson
+        parentsIncome, skillsJson, disabilityJson, documentPathsJson, salaryRange,
+        skillEvidence // Add the skill evidence path
       ]
     );
 
@@ -137,7 +146,8 @@ const findUserByEmailOrUsername = async (identifier) => {
             username, profile_photo, cover_photo, intro, 
             known_as, date_of_birth, phone, password, is_verified, role,
             facebook_url, twitter_url, instagram_url, status,
-            guardian_name, guardian_phone, address, education_level, school, skills, disability
+            guardian_name, guardian_phone, address, education_level, school, skills, disability,
+            salary_range
      FROM users 
      WHERE email = $1 OR username = $1`,
     [identifier]
@@ -190,7 +200,8 @@ const updateUserDetails = async (
   educationLevel,
   school,
   skills,
-  disability
+  disability,
+  salaryRange
 ) => {
   // First get the current user data to ensure we don't override the email with null
   const userResult = await db.query('SELECT email, role, first_name, middle_name, last_name, name_extension FROM users WHERE id = $1', [userId]);
@@ -286,6 +297,33 @@ const updateUserDetails = async (
       fullName, // Use our constructed fullName instead of the provided name parameter
       emailToUse, username, dateOfBirth, phone, intro, knownAs,
       skillsJson, disabilityJson, userId
+    ];
+  }
+  else if (userRole === 'sponsor') {
+    query = `
+      UPDATE users 
+      SET first_name = COALESCE($1, first_name),
+          middle_name = COALESCE($2, middle_name),
+          last_name = COALESCE($3, last_name),
+          name_extension = COALESCE($4, name_extension),
+          gender = COALESCE($5, gender),
+          name = $6, /* Always update the name field with our constructed fullName */
+          email = $7, 
+          username = COALESCE($8, username),
+          date_of_birth = COALESCE($9, date_of_birth),
+          phone = COALESCE($10, phone),
+          intro = COALESCE($11, intro),
+          known_as = COALESCE($12, known_as),
+          salary_range = COALESCE($13, salary_range)
+      WHERE id = $14 
+      RETURNING id, email, name, first_name, middle_name, last_name, name_extension, gender,
+                username, profile_photo, cover_photo, intro, known_as, date_of_birth, phone, salary_range`;
+    
+    params = [
+      firstName, middleName, lastName, extension, gender, 
+      fullName, // Use our constructed fullName instead of the provided name parameter
+      emailToUse, username, dateOfBirth, phone, intro, knownAs,
+      salaryRange, userId
     ];
   }
   else {

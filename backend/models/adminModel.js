@@ -138,7 +138,8 @@ const AdminModel = {
           last_login,
           skills,
           disability,
-          gender
+          gender,
+          skill_evidence  /* Add skill_evidence field */
         FROM users
         WHERE role = 'volunteer'
         ORDER BY created_at DESC
@@ -190,7 +191,8 @@ const AdminModel = {
           last_login,
           skills,
           disability,
-          gender
+          gender,
+          skill_evidence  /* Add skill_evidence field */
         FROM users
         WHERE id = $1 AND role = 'volunteer'
       `, [id]);
@@ -360,44 +362,101 @@ const AdminModel = {
   },
 
   async createVolunteer(volunteerData) {
-    const { 
-      name, 
-      username, 
-      email, 
-      password, 
-      phone,
-      date_of_birth, 
-      status = 'active',
-      is_verified = false,
-      skills,
-      disability,
-      gender
-    } = volunteerData;
-    
-    const result = await db.query(`
-      INSERT INTO users (
-        name, username, email, password, 
-        phone, date_of_birth, role, status, 
-        is_verified, created_at, skills, disability, gender
-      ) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $12) 
-      RETURNING id, name, email, username, phone, date_of_birth, status, is_verified
-    `, [
-      name, 
-      username, 
-      email, 
-      password, 
-      phone,
-      date_of_birth, 
-      'volunteer', 
-      status, 
-      is_verified,
-      skills,
-      disability,
-      gender
-    ]);
-    
-    return result.rows[0];
+    try {
+      const { 
+        name, 
+        username, 
+        email, 
+        password, 
+        phone,
+        date_of_birth, 
+        status = 'active',
+        is_verified = false,
+        skills,
+        disability,
+        gender,
+        skill_evidence, // Add skill evidence parameter
+        first_name,
+        middle_name,
+        last_name,
+        name_extension
+      } = volunteerData;
+      
+      // Log what we're getting for skill_evidence
+      console.log('Creating volunteer with skill_evidence:', skill_evidence);
+      
+      // Helper function to truncate strings to fit column limits
+      const truncate = (value, maxLength) => {
+        if (!value) return null;
+        return typeof value === 'string' && value.length > maxLength 
+          ? value.substring(0, maxLength) 
+          : value;
+      };
+      
+      // Process skills array to JSON string if needed
+      const skillsJson = skills ? 
+        (typeof skills === 'string' ? skills : JSON.stringify(skills)) : null;
+      
+      // Process disability to JSON string if needed
+      const disabilityJson = disability ? 
+        (typeof disability === 'string' ? disability : JSON.stringify(disability)) : null;
+      
+      // First check if the username or email already exists
+      const existingUserResult = await db.query(
+        'SELECT id FROM users WHERE username = $1 OR email = $2',
+        [username, email]
+      );
+      
+      if (existingUserResult.rows.length > 0) {
+        const error = new Error('Username or email already exists');
+        error.status = 409;
+        throw error;
+      }
+      
+      // Log all values for debugging
+      console.log('Volunteer field values before insertion:', {
+        gender: gender ? `${gender} (length: ${gender.length})` : null,
+        name_extension: name_extension ? `${name_extension} (length: ${name_extension.length})` : null,
+        status: status ? `${status} (length: ${status.length})` : null
+      });
+      
+      const result = await db.query(`
+        INSERT INTO users (
+          name, username, email, password, 
+          phone, date_of_birth, role, status, 
+          is_verified, created_at, skills, disability, gender,
+          skill_evidence, first_name, middle_name, last_name, name_extension
+        ) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10, $11, $12, $13, $14, $15, $16, $17) 
+        RETURNING id, name, email, username, phone, date_of_birth, status, is_verified, skill_evidence
+      `, [
+        truncate(name, 100), 
+        truncate(username, 50), 
+        truncate(email, 100), 
+        password, 
+        truncate(phone, 20),
+        date_of_birth, 
+        'volunteer', 
+        truncate(status, 10),  // Truncate status to 10 chars
+        is_verified,
+        skillsJson,
+        disabilityJson,
+        truncate(gender, 10),  // Truncate gender to 10 chars
+        skill_evidence, 
+        truncate(first_name, 50) || null,
+        truncate(middle_name, 50) || null,
+        truncate(last_name, 50) || null,
+        truncate(name_extension, 10) || null  // Truncate name_extension to 10 chars
+      ]);
+      
+      // Log the result after insertion
+      console.log('Volunteer created in database with result:', result.rows[0]);
+      
+      return result.rows[0];
+    } catch (error) {
+      console.error('Error creating volunteer in model:', error);
+      throw error;
+    }
   },
 
   async bulkDeleteVolunteers(ids) {

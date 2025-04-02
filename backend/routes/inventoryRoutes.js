@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../config/db');
 const { authenticateToken } = require('../middleware/auth');
 const notificationUtils = require('../utils/notificationUtils'); // Add this import
+const emailService = require('../services/emailService'); // Add this line
 
 // Define standard categories to use across the system
 const STANDARD_CATEGORIES = [
@@ -1274,6 +1275,228 @@ router.post('/create-test-distribution/:recipientId', async (req, res) => {
   } catch (error) {
     console.error('Error creating test distribution:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// New endpoint to send certificate for regular donations
+router.post('/regular/:id/send-certificate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // First, get the donation details
+    const donationResult = await db.query(
+      'SELECT * FROM regular_donations WHERE id = $1',
+      [id]
+    );
+    
+    const donation = donationResult.rows[0];
+    if (!donation) {
+      return res.status(404).json({ error: 'Donation not found' });
+    }
+    
+    // Check if donation is verified
+    if (donation.verification_status !== 'verified') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Only verified donations can receive certificates' 
+      });
+    }
+    
+    // Check if donor email exists
+    if (!donation.email) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Donor email is missing' 
+      });
+    }
+    
+    // Format the donation type for the certificate
+    const donationDetails = {
+      type: 'Inventory',
+      itemName: donation.item,
+      quantity: donation.quantity,
+      unit: donation.unit,
+      category: donation.category
+    };
+    
+    // Send certificate email
+    await emailService.sendInventoryCertificateEmail(
+      donation.email,
+      donation.donator_name,
+      donationDetails,
+      donation.created_at || new Date(),
+      donation.id
+    );
+    
+    // Try to update the certificate_sent status
+    try {
+      // First check if columns exist
+      const columnsExist = await db.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'regular_donations' 
+        AND column_name IN ('certificate_sent', 'certificate_sent_at')
+      `);
+      
+      // Only attempt to update if both columns exist
+      if (columnsExist.rows.length === 2) {
+        await db.query(
+          `UPDATE regular_donations 
+           SET certificate_sent = true,
+               certificate_sent_at = NOW()
+           WHERE id = $1`,
+          [id]
+        );
+        console.log('Updated certificate_sent status in database');
+      } else {
+        console.warn('Certificate columns do not exist in the database yet.');
+        // Create the columns if they don't exist yet
+        await db.query(`
+          ALTER TABLE regular_donations 
+          ADD COLUMN IF NOT EXISTS certificate_sent BOOLEAN DEFAULT false,
+          ADD COLUMN IF NOT EXISTS certificate_sent_at TIMESTAMP
+        `);
+        
+        // Then update the record
+        await db.query(
+          `UPDATE regular_donations 
+           SET certificate_sent = true,
+               certificate_sent_at = NOW()
+           WHERE id = $1`,
+          [id]
+        );
+        console.log('Created certificate columns and updated status');
+      }
+    } catch (dbError) {
+      // Log the error but don't fail the request
+      console.error('Error updating certificate status in database:', dbError);
+      // The certificate was still sent, so we'll return success
+    }
+    
+    // Return success regardless of database update
+    res.json({ 
+      success: true,
+      message: 'Certificate sent successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error sending certificate:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to send certificate',
+      error: error.message 
+    });
+  }
+});
+
+// New endpoint to send certificate for in-kind donations
+router.post('/inkind/:id/send-certificate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // First, get the donation details
+    const donationResult = await db.query(
+      'SELECT * FROM inkind_donations WHERE id = $1',
+      [id]
+    );
+    
+    const donation = donationResult.rows[0];
+    if (!donation) {
+      return res.status(404).json({ error: 'Donation not found' });
+    }
+    
+    // Check if donation is verified
+    if (donation.verification_status !== 'verified') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Only verified donations can receive certificates' 
+      });
+    }
+    
+    // Check if donor email exists
+    if (!donation.email) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Donor email is missing' 
+      });
+    }
+    
+    // Format the donation type for the certificate
+    const donationDetails = {
+      type: 'In-Kind',
+      itemName: donation.item,
+      quantity: donation.quantity,
+      unit: donation.unit,
+      category: donation.category
+    };
+    
+    // Send certificate email
+    await emailService.sendInventoryCertificateEmail(
+      donation.email,
+      donation.donator_name,
+      donationDetails,
+      donation.created_at || new Date(),
+      donation.id
+    );
+    
+    // Try to update the certificate_sent status
+    try {
+      // First check if columns exist
+      const columnsExist = await db.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'inkind_donations' 
+        AND column_name IN ('certificate_sent', 'certificate_sent_at')
+      `);
+      
+      // Only attempt to update if both columns exist
+      if (columnsExist.rows.length === 2) {
+        await db.query(
+          `UPDATE inkind_donations 
+           SET certificate_sent = true,
+               certificate_sent_at = NOW()
+           WHERE id = $1`,
+          [id]
+        );
+        console.log('Updated certificate_sent status in database');
+      } else {
+        console.warn('Certificate columns do not exist in the database yet.');
+        // Create the columns if they don't exist yet
+        await db.query(`
+          ALTER TABLE inkind_donations 
+          ADD COLUMN IF NOT EXISTS certificate_sent BOOLEAN DEFAULT false,
+          ADD COLUMN IF NOT EXISTS certificate_sent_at TIMESTAMP
+        `);
+        
+        // Then update the record
+        await db.query(
+          `UPDATE inkind_donations 
+           SET certificate_sent = true,
+               certificate_sent_at = NOW()
+           WHERE id = $1`,
+          [id]
+        );
+        console.log('Created certificate columns and updated status');
+      }
+    } catch (dbError) {
+      // Log the error but don't fail the request
+      console.error('Error updating certificate status in database:', dbError);
+      // The certificate was still sent, so we'll return success
+    }
+    
+    // Return success regardless of database update
+    res.json({ 
+      success: true,
+      message: 'Certificate sent successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error sending certificate:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to send certificate',
+      error: error.message 
+    });
   }
 });
 

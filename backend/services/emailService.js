@@ -1086,6 +1086,563 @@ const sendDistributionDetailedVerificationEmail = async (adminEmail, scholarName
   await sendMail(adminEmail, emailSubject, htmlContent);
 };
 
+// Add a new function to send donation certificate
+const sendDonationCertificateEmail = async (email, donorName, scholarName, amount, donationDate, donationId, isGeneralDonation = false) => {
+  try {
+    // Format the amount with currency symbol
+    const formattedAmount = typeof amount === 'number' 
+      ? new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount)
+      : `₱${amount}`; // Fallback if amount is a string
+    
+    // Format the date in a nicer way
+    const formattedDate = new Date(donationDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    // Current year for the certificate
+    const currentYear = new Date().getFullYear();
+    
+    // Adjust the email subject and content based on the donation type
+    const donationType = isGeneralDonation ? 'Monetary Donation' : 'Scholar Donation';
+    
+    const mailOptions = {
+      from: {
+        name: 'KMFI Donations',
+        address: process.env.EMAIL_USER
+      },
+      to: email,
+      subject: `Your ${donationType} Certificate`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4CAF50;">Your Donation Certificate</h1>
+          
+          <p>Dear ${donorName},</p>
+          
+          <p>Thank you for your generous ${isGeneralDonation ? 'donation' : 'scholar donation'} to KMFI Foundation. 
+          Attached to this email is your official Certificate of Donation for your contribution of 
+          <strong>${formattedAmount}</strong>${!isGeneralDonation ? ` to support <strong>${scholarName}</strong>` : ''}.</p>
+          
+          <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f9f9f9; border-radius: 5px;">
+            <p style="font-size: 18px; margin: 0;">Thank you for making a difference!</p>
+          </div>
+          
+          <p>Your certificate serves as an official record of your charitable contribution. 
+          If you have any questions regarding your donation or certificate, please don't hesitate to contact us.</p>
+          
+          <p>With gratitude,<br/>
+          The KMFI Team</p>
+          
+          <hr style="border: 1px solid #eee; margin: 20px 0;">
+          
+          <p style="color: #666; font-size: 12px;">
+            Donation Reference: #${donationId}<br/>
+            This is an automated email. Please do not reply to this message.
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `KMFI_${isGeneralDonation ? 'Donation' : 'Scholar_Donation'}_Certificate_${donationId}.pdf`,
+          content: await generateDonationCertificatePDF(donorName, scholarName, amount, formattedDate, donationId, currentYear, isGeneralDonation)
+        }
+      ]
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Donation certificate email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending donation certificate email:', error);
+    throw error;
+  }
+};
+
+// Helper function to generate the PDF certificate
+const generateDonationCertificatePDF = async (donorName, scholarName, amount, donationDate, donationId, year, isGeneralDonation = false) => {
+  try {
+    // Use PDFKit to generate the PDF
+    const PDFDocument = require('pdfkit');
+    const fs = require('fs');
+    const path = require('path');
+    const { Buffer } = require('buffer');
+
+    // Format the amount for display with proper Philippine Peso sign
+    const formattedAmount = typeof amount === 'number' 
+      ? `PHP ${new Intl.NumberFormat('en-PH', { maximumFractionDigits: 2, minimumFractionDigits: 2 }).format(amount)}`
+      : `PHP ${amount}`;
+
+    // Only extract first name if this is a scholar donation
+    let scholarText = '';
+    if (!isGeneralDonation && scholarName) {
+      // Try to extract first name only - take everything before the first space
+      const nameParts = scholarName.trim().split(' ');
+      if (nameParts.length > 0 && nameParts[0] !== 'undefined' && nameParts[0] !== 'null') {
+        scholarText = `to support the education of ${nameParts[0]}`;
+      } else {
+        scholarText = `to support a KMFI Scholar`;
+      }
+    }
+
+    console.log(`Generating ${isGeneralDonation ? 'general' : 'scholar'} donation certificate for ${donorName}`);
+
+    return new Promise((resolve, reject) => {
+      // Create a PDF document
+      const doc = new PDFDocument({
+        size: 'LETTER',
+        margin: 50,
+        layout: 'landscape'
+      });
+
+      // Buffer to store PDF data
+      const chunks = [];
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // Page dimensions for reference
+      const pageWidth = 792;  // Width of landscape letter
+      const pageHeight = 612; // Height of landscape letter
+      
+      // Define colors for the certificate
+      const primaryColor = '#4b2e83'; // Deep purple
+      const secondaryColor = '#85754d'; // Gold
+      const textColor = '#333333';
+      
+      // Create a decorative border - using standard methods instead of gradient
+      doc.rect(20, 20, pageWidth - 40, pageHeight - 40)
+         .lineWidth(10)
+         .stroke(secondaryColor);
+         
+      // Add a decorative inner border
+      doc.rect(40, 40, pageWidth - 80, pageHeight - 80)
+         .lineWidth(2)
+         .stroke(primaryColor);
+      
+      // Try to load KMFI logo if available
+      try {
+        // Try different paths to find the logo
+        const possiblePaths = [
+          path.join(__dirname, '../../public/images/kmfi-logo.png'),
+          path.join(__dirname, '../public/images/kmfi-logo.png'),
+          path.join(__dirname, '../../frontend/public/images/kmfi-logo.png')
+        ];
+        
+        let logoPath = null;
+        for (const p of possiblePaths) {
+          if (fs.existsSync(p)) {
+            logoPath = p;
+            break;
+          }
+        }
+
+        if (logoPath) {
+          // Calculate the center position (x) based on the page width
+          const logoWidth = 120; // Set desired logo width
+          const centerX = (pageWidth - logoWidth) / 2;
+          
+          // Place the logo at the top center
+          doc.image(logoPath, centerX, 50, { width: logoWidth });
+        } else {
+          console.warn('Could not find logo image in any expected locations');
+        }
+      } catch (err) {
+        console.warn('Could not load logo image:', err);
+      }
+
+      // Add decorative elements
+      // Left corner ornament
+      doc.circle(60, 60, 15)
+         .fillAndStroke(secondaryColor, primaryColor);
+         
+      // Right corner ornament
+      doc.circle(pageWidth - 60, 60, 15)
+         .fillAndStroke(secondaryColor, primaryColor);
+         
+      // Bottom left corner ornament
+      doc.circle(60, pageHeight - 60, 15)
+         .fillAndStroke(secondaryColor, primaryColor);
+         
+      // Bottom right corner ornament
+      doc.circle(pageWidth - 60, pageHeight - 60, 15)
+         .fillAndStroke(secondaryColor, primaryColor);
+
+      // Certificate title with stylish underline
+      doc.font('Helvetica-Bold')
+         .fontSize(32)
+         .fillColor(primaryColor)
+         .text('CERTIFICATE OF DONATION', 0, 130, { align: 'center' });
+         
+      // Add decorative line under title
+      const titleLineY = 170;
+      doc.moveTo(pageWidth/2 - 180, titleLineY)
+         .lineTo(pageWidth/2 + 180, titleLineY)
+         .lineWidth(3)
+         .stroke(secondaryColor);
+
+      // Certificate body with elegant typography
+      doc.font('Helvetica')
+         .fontSize(16)
+         .fillColor(textColor)
+         .text('This is to certify that', 0, 190, { align: 'center' });
+         
+      doc.font('Helvetica-Bold')
+         .fontSize(26)
+         .fillColor(primaryColor)
+         .text(donorName, 0, 220, { align: 'center' });
+         
+      doc.font('Helvetica')
+         .fontSize(16)
+         .fillColor(textColor)
+         .text(`has generously donated ${formattedAmount} to`, 0, 260, { align: 'center' });
+         
+      doc.font('Helvetica-Bold')
+         .fontSize(22)
+         .fillColor(primaryColor)
+         .text('KMFI Foundation', 0, 290, { align: 'center' });
+      
+      // Different text based on donation type
+      if (!isGeneralDonation && scholarText) {
+        doc.font('Helvetica')
+           .fontSize(16)
+           .fillColor(textColor)
+           .text(scholarText, 0, 325, { align: 'center' });
+      } else {
+        // For general donations, add descriptive text
+        doc.font('Helvetica')
+           .fontSize(16)
+           .fillColor(textColor)
+           .text('to support programs for underprivileged communities', 0, 325, { align: 'center' });
+      }
+         
+      doc.font('Helvetica')
+         .fontSize(16)
+         .fillColor(textColor)
+         .text(`on ${donationDate}`, 0, 355, { align: 'center' });
+
+      // Add a decorative line above signature
+      const signatureLineY = 390;
+      doc.moveTo(pageWidth/2 - 150, signatureLineY)
+         .lineTo(pageWidth/2 + 150, signatureLineY)
+         .lineWidth(1)
+         .stroke(secondaryColor);
+
+      // SIMPLIFIED SIGNATURE APPROACH - Just show the name without trying to draw a signature
+      // Add the name directly
+      doc.font('Helvetica-Bold')
+         .fontSize(14)
+         .fillColor(primaryColor)
+         .text('Evangeline T. Aquino', pageWidth/2, signatureLineY + 20, { align: 'center' });
+         
+      doc.font('Helvetica')
+         .fontSize(12)
+         .fillColor(textColor)
+         .text('Program Director', pageWidth/2, signatureLineY + 40, { align: 'center' });
+
+      // Add decorative elements
+      doc.circle(pageWidth/2, signatureLineY + 15, 8)
+         .fill(secondaryColor);
+
+      // Add certificate ID and date with stylish formatting
+      doc.rect(50, 500, 300, 30)
+         .fillColor('#f5f5f5')
+         .fill();
+         
+      doc.font('Helvetica')
+         .fontSize(10)
+         .fillColor(primaryColor)
+         .text(`Certificate ID: DON-${donationId}`, 55, 510);
+
+      // Add footer text with refined typography
+      doc.fontSize(10)
+         .fillColor('#666666')
+         .text(`© ${year} KMFI Foundation. All Rights Reserved.`, 0, 530, { align: 'center' });
+
+      doc.fontSize(9)
+         .fillColor('#888888')
+         .text('This certificate is automatically generated and is valid without a signature.', 0, 550, { align: 'center' });
+
+      // Finalize the PDF
+      doc.end();
+    });
+  } catch (error) {
+    console.error('Error generating donation certificate PDF:', error);
+    throw error;
+  }
+};
+
+// New function to send inventory certificate
+const sendInventoryCertificateEmail = async (email, donorName, donationDetails, donationDate, donationId) => {
+  try {
+    // Format the date in a nicer way
+    const formattedDate = new Date(donationDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    
+    // Current year for the certificate
+    const currentYear = new Date().getFullYear();
+    
+    const mailOptions = {
+      from: {
+        name: 'KMFI Donations',
+        address: process.env.EMAIL_USER
+      },
+      to: email,
+      subject: `Your ${donationDetails.type} Donation Certificate`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #4CAF50;">Your Donation Certificate</h1>
+          
+          <p>Dear ${donorName},</p>
+          
+          <p>Thank you for your generous donation to KMFI Foundation. 
+          Attached to this email is your official Certificate of Donation for your contribution of 
+          <strong>${donationDetails.quantity} ${donationDetails.unit} of ${donationDetails.itemName}</strong>
+          (${donationDetails.category}).</p>
+          
+          <div style="text-align: center; margin: 30px 0; padding: 20px; background-color: #f9f9f9; border-radius: 5px;">
+            <p style="font-size: 18px; margin: 0;">Thank you for making a difference!</p>
+          </div>
+          
+          <p>Your certificate serves as an official record of your charitable contribution. 
+          If you have any questions regarding your donation or certificate, please don't hesitate to contact us.</p>
+          
+          <p>With gratitude,<br/>
+          The KMFI Team</p>
+          
+          <hr style="border: 1px solid #eee; margin: 20px 0;">
+          
+          <p style="color: #666; font-size: 12px;">
+            Donation Reference: #${donationId}<br/>
+            This is an automated email. Please do not reply to this message.
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `KMFI_${donationDetails.type}_Donation_Certificate_${donationId}.pdf`,
+          content: await generateInventoryCertificatePDF(
+            donorName, 
+            donationDetails, 
+            formattedDate, 
+            donationId, 
+            currentYear
+          )
+        }
+      ]
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Inventory donation certificate email sent:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Error sending inventory donation certificate email:', error);
+    throw error;
+  }
+};
+
+// Helper function to generate the PDF certificate for inventory items
+const generateInventoryCertificatePDF = async (donorName, donationDetails, donationDate, donationId, year) => {
+  try {
+    // Use PDFKit to generate the PDF
+    const PDFDocument = require('pdfkit');
+    const fs = require('fs');
+    const path = require('path');
+    const { Buffer } = require('buffer');
+
+    // Format the donation details for display
+    const formattedDonation = `${donationDetails.quantity} ${donationDetails.unit} of ${donationDetails.itemName}`;
+    
+    return new Promise((resolve, reject) => {
+      // Create a PDF document
+      const doc = new PDFDocument({
+        size: 'LETTER',
+        margin: 50,
+        layout: 'landscape'
+      });
+
+      // Buffer to store PDF data
+      const chunks = [];
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // Page dimensions for reference
+      const pageWidth = 792;  // Width of landscape letter
+      const pageHeight = 612; // Height of landscape letter
+      
+      // Define colors for the certificate
+      const primaryColor = '#4b2e83'; // Deep purple
+      const secondaryColor = '#85754d'; // Gold
+      const textColor = '#333333';
+      
+      // Create a decorative border - using standard methods instead of gradient
+      doc.rect(20, 20, pageWidth - 40, pageHeight - 40)
+         .lineWidth(10)
+         .stroke(secondaryColor);
+         
+      // Add a decorative inner border
+      doc.rect(40, 40, pageWidth - 80, pageHeight - 80)
+         .lineWidth(2)
+         .stroke(primaryColor);
+      
+      // Try to load KMFI logo if available
+      try {
+        // Try different paths to find the logo
+        const possiblePaths = [
+          path.join(__dirname, '../../public/images/kmfi-logo.png'),
+          path.join(__dirname, '../public/images/kmfi-logo.png'),
+          path.join(__dirname, '../../frontend/public/images/kmfi-logo.png')
+        ];
+        
+        let logoPath = null;
+        for (const p of possiblePaths) {
+          if (fs.existsSync(p)) {
+            logoPath = p;
+            break;
+          }
+        }
+
+        if (logoPath) {
+          // Calculate the center position (x) based on the page width
+          const logoWidth = 120; // Set desired logo width
+          const centerX = (pageWidth - logoWidth) / 2;
+          
+          // Place the logo at the top center
+          doc.image(logoPath, centerX, 50, { width: logoWidth });
+        } else {
+          console.warn('Could not find logo image in any expected locations');
+        }
+      } catch (err) {
+        console.warn('Could not load logo image:', err);
+      }
+
+      // Add decorative elements
+      // Left corner ornament
+      doc.circle(60, 60, 15)
+         .fillAndStroke(secondaryColor, primaryColor);
+         
+      // Right corner ornament
+      doc.circle(pageWidth - 60, 60, 15)
+         .fillAndStroke(secondaryColor, primaryColor);
+         
+      // Bottom left corner ornament
+      doc.circle(60, pageHeight - 60, 15)
+         .fillAndStroke(secondaryColor, primaryColor);
+         
+      // Bottom right corner ornament
+      doc.circle(pageWidth - 60, pageHeight - 60, 15)
+         .fillAndStroke(secondaryColor, primaryColor);
+
+      // Certificate title with stylish underline
+      doc.font('Helvetica-Bold')
+         .fontSize(32)
+         .fillColor(primaryColor)
+         .text('CERTIFICATE OF DONATION', 0, 130, { align: 'center' });
+         
+      // Add decorative line under title
+      const titleLineY = 170;
+      doc.moveTo(pageWidth/2 - 180, titleLineY)
+         .lineTo(pageWidth/2 + 180, titleLineY)
+         .lineWidth(3)
+         .stroke(secondaryColor);
+
+      // Certificate body with elegant typography
+      doc.font('Helvetica')
+         .fontSize(16)
+         .fillColor(textColor)
+         .text('This is to certify that', 0, 190, { align: 'center' });
+         
+      doc.font('Helvetica-Bold')
+         .fontSize(26)
+         .fillColor(primaryColor)
+         .text(donorName, 0, 220, { align: 'center' });
+         
+      doc.font('Helvetica')
+         .fontSize(16)
+         .fillColor(textColor)
+         .text(`has generously donated`, 0, 260, { align: 'center' });
+         
+      doc.font('Helvetica-Bold')
+         .fontSize(22)
+         .fillColor(primaryColor)
+         .text(formattedDonation, 0, 285, { align: 'center' });
+         
+      doc.font('Helvetica')
+         .fontSize(16)
+         .fillColor(textColor)
+         .text(`to`, 0, 315, { align: 'center' });
+         
+      doc.font('Helvetica-Bold')
+         .fontSize(22)
+         .fillColor(primaryColor)
+         .text('KMFI Foundation', 0, 340, { align: 'center' });
+         
+      doc.font('Helvetica')
+         .fontSize(16)
+         .fillColor(textColor)
+         .text(`on ${donationDate}`, 0, 370, { align: 'center' });
+
+      // Add a decorative line above signature
+      const signatureLineY = 410;
+      doc.moveTo(pageWidth/2 - 150, signatureLineY)
+         .lineTo(pageWidth/2 + 150, signatureLineY)
+         .lineWidth(1)
+         .stroke(secondaryColor);
+
+      // SIMPLIFIED SIGNATURE APPROACH - Just show the name without trying to draw a signature
+      // Add the name directly
+      doc.font('Helvetica-Bold')
+         .fontSize(14)
+         .fillColor(primaryColor)
+         .text('Evangeline T. Aquino', pageWidth/2, signatureLineY + 20, { align: 'center' });
+         
+      doc.font('Helvetica')
+         .fontSize(12)
+         .fillColor(textColor)
+         .text('Program Director', pageWidth/2, signatureLineY + 40, { align: 'center' });
+
+      // Add decorative elements
+      doc.circle(pageWidth/2, signatureLineY + 15, 8)
+         .fill(secondaryColor);
+
+      // Add certificate ID and date with stylish formatting
+      doc.rect(50, 500, 300, 30)
+         .fillColor('#f5f5f5')
+         .fill();
+         
+      doc.font('Helvetica')
+         .fontSize(10)
+         .fillColor(primaryColor)
+         .text(`Certificate ID: INV-${donationId}`, 55, 510);
+
+      // Add donation category as a subtle watermark
+      doc.font('Helvetica')
+         .fontSize(10)
+         .fillColor('#e6e6e6')
+         .text(`Category: ${donationDetails.category}`, pageWidth - 200, 510);
+
+      // Add footer text with refined typography
+      doc.fontSize(10)
+         .fillColor('#666666')
+         .text(`© ${year} KMFI Foundation. All Rights Reserved.`, 0, 530, { align: 'center' });
+
+      doc.fontSize(9)
+         .fillColor('#888888')
+         .text('This certificate is automatically generated and is valid without a signature.', 0, 550, { align: 'center' });
+
+      // Finalize the PDF
+      doc.end();
+    });
+  } catch (error) {
+    console.error('Error generating inventory certificate PDF:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -1105,5 +1662,7 @@ module.exports = {
   sendDistributionNotificationEmail, // Add the new export
   sendDistributionVerificationEmail, // Add the new export
   sendDistributionDetailedVerificationEmail, // Add the new detailed verification export
+  sendDonationCertificateEmail, // Add the new function to exports
+  sendInventoryCertificateEmail, // Add the new function to exports
   sendMail
 };

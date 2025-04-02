@@ -191,7 +191,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/forum', forumRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/scholars', scholarRoutes); // Move scholar routes before auth routes
-app.use('/api/scholardonations', scholarDonationRoutes); // Add this line
+app.use('/api/scholardonations', scholarDonationRoutes); // Ensure this line is present and correct
 app.use('/api/events', eventRoutes);  // Add this line to register event routes
 app.use('/api', userRoutes);  // Add this line before authRoutes
 app.use('/api', authRoutes);

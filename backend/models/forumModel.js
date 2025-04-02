@@ -73,12 +73,22 @@ const forumModel = {
         authorId: postData.authorId
       });
 
+      // Get approval status from post data or set default based on user role
+      let approvalStatus = postData.approval_status || 'pending';
+      
+      // If user is admin or staff, auto-approve their posts
+      if (author.role === 'admin' || author.role === 'staff') {
+        approvalStatus = 'approved';
+      }
+      
+      console.log('Post approval status:', approvalStatus);
+
       // Create the base post first - replace db.one with client.query
       const postResult = await client.query(`
         INSERT INTO forum_posts 
-        (title, content, author_id, category, type, image_url, event_id, author_role)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, title, content, author_id, category, type, image_url, event_id, created_at`,
+        (title, content, author_id, category, type, image_url, event_id, author_role, approval_status)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id, title, content, author_id, category, type, image_url, event_id, created_at, approval_status`,
         [
           postData.title,
           postData.content,
@@ -87,7 +97,8 @@ const forumModel = {
           postData.type,
           postData.imageUrl || null,
           eventId, // Add eventId to the insert
-          author.role // Add role to the post
+          author.role, // Add role to the post
+          approvalStatus // Add approval status
         ]
       );
       
@@ -168,7 +179,8 @@ const forumModel = {
         author_avatar: authorDetails.profile_photo,
         author_role: authorDetails.role,
         comments: [],
-        poll: pollData // Add poll data to returned post
+        poll: pollData, // Add poll data to returned post
+        approval_status: approvalStatus
       };
       
       console.log('Returning post with author info:', {
@@ -221,6 +233,8 @@ const forumModel = {
         a.source as author_source,
         to_char(p.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
         p.image_url,
+        p.approval_status,
+        p.rejection_reason,
         COALESCE(
           json_agg(
             json_build_object(
@@ -1426,6 +1440,378 @@ const forumModel = {
       client.release();
     }
   },
+
+  async approvePost(postId, userId) {
+    const client = await db.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Convert IDs to integers
+      const postIdInt = parseInt(postId, 10);
+      const userIdInt = parseInt(userId, 10);
+      
+      if (isNaN(postIdInt) || isNaN(userIdInt)) {
+        throw new Error('Invalid post or user ID');
+      }
+      
+      // Check if user is admin or staff
+      const isAdminOrStaff = await client.query(`
+        SELECT 1 FROM (
+          SELECT id FROM admin_users WHERE id = $1
+          UNION
+          SELECT id FROM staff_users WHERE id = $1
+        ) AS auth_users
+      `, [userIdInt]);
+      
+      if (isAdminOrStaff.rows.length === 0) {
+        throw new Error('Only admin or staff can approve posts');
+      }
+      
+      // Update the post approval status
+      const updateResult = await client.query(`
+        UPDATE forum_posts
+        SET approval_status = 'approved', rejection_reason = NULL
+        WHERE id = $1
+        RETURNING id, title, approval_status
+      `, [postIdInt]);
+      
+      if (updateResult.rows.length === 0) {
+        throw new Error('Post not found');
+      }
+      
+      // Get post author information
+      const postAuthorResult = await client.query(`
+        SELECT 
+          p.author_id,
+          CASE 
+            WHEN EXISTS (SELECT 1 FROM admin_users WHERE id = p.author_id) THEN 'admin'
+            WHEN EXISTS (SELECT 1 FROM staff_users WHERE id = p.author_id) THEN 'staff'
+            ELSE 'user'
+          END as author_type
+        FROM forum_posts p
+        WHERE p.id = $1
+      `, [postIdInt]);
+      
+      if (postAuthorResult.rows.length > 0) {
+        const post = postAuthorResult.rows[0];
+        
+        // Create notification for post author
+        if (post.author_id !== userIdInt) {
+          // Get approver's name and avatar
+          const approverResult = await client.query(`
+            SELECT 
+              COALESCE(a.name, s.name) as name,
+              COALESCE(a.profile_photo, s.profile_photo) as profile_photo,
+              CASE 
+                WHEN a.id IS NOT NULL THEN 'admin'
+                ELSE 'staff'
+              END as role
+            FROM (
+              SELECT NULL as id, NULL as name, NULL as profile_photo
+              WHERE false
+              UNION ALL
+              SELECT id, name, profile_photo FROM admin_users WHERE id = $1
+              UNION ALL
+              SELECT id, name, profile_photo FROM staff_users WHERE id = $1
+            ) combined
+            LEFT JOIN admin_users a ON combined.id = a.id AND a.id = $1
+            LEFT JOIN staff_users s ON combined.id = s.id AND s.id = $1
+          `, [userIdInt]);
+          
+          if (approverResult.rows.length > 0) {
+            const approver = approverResult.rows[0];
+            
+            // Determine the correct table for the recipient
+            let targetTable;
+            if (post.author_type === 'admin') {
+              targetTable = 'admin_users';
+            } else if (post.author_type === 'staff') {
+              targetTable = 'staff_users';
+            } else {
+              targetTable = 'users';
+            }
+            
+            // Get avatar URL
+            let avatarUrl = approver.profile_photo;
+            if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('data:')) {
+              const filename = avatarUrl.split('/').pop();
+              if (approver.role === 'admin') {
+                avatarUrl = `/uploads/admin/${filename}`;
+              } else {
+                avatarUrl = `/uploads/staff/${filename}`;
+              }
+            }
+            
+            // Create notification
+            await client.query(`
+              INSERT INTO notifications 
+              (user_id, type, content, related_id, actor_id, actor_name, actor_avatar)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, [
+              post.author_id,
+              'post_approved',
+              `Your post has been approved by ${approver.name}`,
+              postIdInt,
+              userIdInt,
+              approver.name,
+              avatarUrl
+            ]);
+          }
+        }
+      }
+      
+      await client.query('COMMIT');
+      
+      return updateResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+  
+  async rejectPost(postId, userId, reason) {
+    const client = await db.connect();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Convert IDs to integers
+      const postIdInt = parseInt(postId, 10);
+      const userIdInt = parseInt(userId, 10);
+      
+      if (isNaN(postIdInt) || isNaN(userIdInt)) {
+        throw new Error('Invalid post or user ID');
+      }
+      
+      // Check if user is admin or staff
+      const isAdminOrStaff = await client.query(`
+        SELECT 1 FROM (
+          SELECT id FROM admin_users WHERE id = $1
+          UNION
+          SELECT id FROM staff_users WHERE id = $1
+        ) AS auth_users
+      `, [userIdInt]);
+      
+      if (isAdminOrStaff.rows.length === 0) {
+        throw new Error('Only admin or staff can reject posts');
+      }
+      
+      // Use default rejection reason if none provided
+      const rejectionReason = reason || 'Content does not meet community guidelines';
+      
+      // Update the post approval status
+      const updateResult = await client.query(`
+        UPDATE forum_posts
+        SET approval_status = 'rejected', rejection_reason = $1
+        WHERE id = $2
+        RETURNING id, title, approval_status, rejection_reason
+      `, [rejectionReason, postIdInt]);
+      
+      if (updateResult.rows.length === 0) {
+        throw new Error('Post not found');
+      }
+      
+      // Get post author information
+      const postAuthorResult = await client.query(`
+        SELECT 
+          p.author_id,
+          CASE 
+            WHEN EXISTS (SELECT 1 FROM admin_users WHERE id = p.author_id) THEN 'admin'
+            WHEN EXISTS (SELECT 1 FROM staff_users WHERE id = p.author_id) THEN 'staff'
+            ELSE 'user'
+          END as author_type
+        FROM forum_posts p
+        WHERE p.id = $1
+      `, [postIdInt]);
+      
+      if (postAuthorResult.rows.length > 0) {
+        const post = postAuthorResult.rows[0];
+        
+        // Create notification for post author
+        if (post.author_id !== userIdInt) {
+          // Get rejecter's name and avatar
+          const rejecterResult = await client.query(`
+            SELECT 
+              COALESCE(a.name, s.name) as name,
+              COALESCE(a.profile_photo, s.profile_photo) as profile_photo,
+              CASE 
+                WHEN a.id IS NOT NULL THEN 'admin'
+                ELSE 'staff'
+              END as role
+            FROM (
+              SELECT NULL as id, NULL as name, NULL as profile_photo
+              WHERE false
+              UNION ALL
+              SELECT id, name, profile_photo FROM admin_users WHERE id = $1
+              UNION ALL
+              SELECT id, name, profile_photo FROM staff_users WHERE id = $1
+            ) combined
+            LEFT JOIN admin_users a ON combined.id = a.id AND a.id = $1
+            LEFT JOIN staff_users s ON combined.id = s.id AND s.id = $1
+          `, [userIdInt]);
+          
+          if (rejecterResult.rows.length > 0) {
+            const rejecter = rejecterResult.rows[0];
+            
+            // Determine the correct table for the recipient
+            let targetTable;
+            if (post.author_type === 'admin') {
+              targetTable = 'admin_users';
+            } else if (post.author_type === 'staff') {
+              targetTable = 'staff_users';
+            } else {
+              targetTable = 'users';
+            }
+            
+            // Get avatar URL
+            let avatarUrl = rejecter.profile_photo;
+            if (avatarUrl && !avatarUrl.startsWith('http') && !avatarUrl.startsWith('data:')) {
+              const filename = avatarUrl.split('/').pop();
+              if (rejecter.role === 'admin') {
+                avatarUrl = `/uploads/admin/${filename}`;
+              } else {
+                avatarUrl = `/uploads/staff/${filename}`;
+              }
+            }
+            
+            // Create notification
+            await client.query(`
+              INSERT INTO notifications 
+              (user_id, type, content, related_id, actor_id, actor_name, actor_avatar)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `, [
+              post.author_id,
+              'post_rejected',
+              `Your post has been rejected. Reason: ${rejectionReason}`,
+              postIdInt,
+              userIdInt,
+              rejecter.name,
+              avatarUrl
+            ]);
+          }
+        }
+      }
+      
+      await client.query('COMMIT');
+      
+      return updateResult.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+  
+  // Add method to get pending posts count for admins/staff
+  async getPendingPostsCount() {
+    try {
+      const result = await db.query(`
+        SELECT COUNT(*) as count
+        FROM forum_posts
+        WHERE approval_status = 'pending'
+      `);
+      
+      return parseInt(result.rows[0].count, 10);
+    } catch (error) {
+      console.error('Error getting pending posts count:', error);
+      throw error;
+    }
+  },
+  
+  // Add method to get posts by approval status (for pending approval filter)
+  async getPostsByApprovalStatus(status) {
+    try {
+      if (!['pending', 'approved', 'rejected'].includes(status)) {
+        throw new Error('Invalid approval status');
+      }
+      
+      const result = await db.query(`
+        WITH author_info AS (
+          SELECT id, name, profile_photo, role, 'user' as source 
+          FROM users
+          UNION ALL
+          SELECT id, name, profile_photo, 'admin' as role, 'admin' as source 
+          FROM admin_users
+          UNION ALL
+          SELECT id, name, profile_photo, 'staff' as role, 'staff' as source 
+          FROM staff_users
+        ),
+        comment_authors AS (
+          SELECT id, name, profile_photo, role 
+          FROM users
+          UNION ALL
+          SELECT id, name, profile_photo, 'admin' as role 
+          FROM admin_users
+          UNION ALL
+          SELECT id, name, profile_photo, 'staff' as role 
+          FROM staff_users
+        )
+        SELECT 
+          p.*,
+          a.name as author_name,
+          a.profile_photo as author_avatar,
+          a.role as author_role,
+          a.source as author_source,
+          to_char(p.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at,
+          p.image_url,
+          p.approval_status,
+          p.rejection_reason,
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'id', c.id,
+                'content', c.content,
+                'author_id', c.author_id,
+                'author_name', ca.name,
+                'author_avatar', ca.profile_photo,
+                'author_role', ca.role,
+                'created_at', to_char(c.created_at, 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+                'likes', c.likes
+              ) ORDER BY c.created_at DESC
+            ) FILTER (WHERE c.id IS NOT NULL),
+            '[]'
+          ) as comments,
+          CASE 
+            WHEN p.type = 'poll' THEN 
+              json_build_object(
+                'id', pl.id,
+                'question', pl.question,
+                'totalVotes', pl.total_votes,
+                'options', (
+                  SELECT json_agg(
+                    json_build_object(
+                      'id', po.id,
+                      'text', po.text,
+                      'votes', po.votes
+                    )
+                  )
+                  FROM forum_poll_options po
+                  WHERE po.poll_id = pl.id
+                )
+              )
+            ELSE NULL
+          END as poll
+        FROM forum_posts p
+        LEFT JOIN author_info a ON p.author_id = a.id
+        LEFT JOIN forum_comments c ON p.id = c.post_id
+        LEFT JOIN comment_authors ca ON c.author_id = ca.id
+        LEFT JOIN forum_polls pl ON p.id = pl.post_id
+        WHERE p.approval_status = $1
+        GROUP BY p.id, pl.id, a.name, a.profile_photo, a.role, a.source
+        ORDER BY p.created_at DESC
+      `, [status]);
+      
+      return result.rows;
+    } catch (error) {
+      console.error(`Error getting ${status} posts:`, error);
+      throw error;
+    }
+  },
+
 };
 
 module.exports = forumModel;

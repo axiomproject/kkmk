@@ -14,6 +14,8 @@ export interface Post {
   image_url?: string;
   poll?: Poll;
   author_role?: string;
+  approval_status?: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
 }
 
 // ...existing interfaces...

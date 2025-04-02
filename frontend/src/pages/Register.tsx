@@ -34,12 +34,14 @@ interface ValidationErrors {
   psaDocument?: string;
   parentsId?: string;
   reportCard?: string;
+  salaryRange?: string;
+  skillEvidence?: string;
 }
 
 interface SkillOption {
   value: string;
   label: string;
-  examples: string;
+  description: string;
 }
 
 const Register: React.FC = () => {
@@ -88,6 +90,11 @@ const Register: React.FC = () => {
   const [hasDisability, setHasDisability] = useState<boolean | null>(null);
   const [disabilityType, setDisabilityType] = useState<string[]>([]);
   const [otherDisabilityDetails, setOtherDisabilityDetails] = useState('');
+  const [skillEvidence, setSkillEvidence] = useState<File | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<string>('');
+  
+  // Add new state variable for sponsor salary range
+  const [salaryRange, setSalaryRange] = useState('');
   
   const navigate = useNavigate();
 
@@ -101,18 +108,23 @@ const Register: React.FC = () => {
     'Graduate School'
   ];
   
-  // Volunteer skills options with examples
+  // Updated volunteer skills options with more realistic community support skills
   const skillOptions: SkillOption[] = [
-    { value: 'teaching', label: 'Teaching', examples: 'Tutoring, mentoring, curriculum development' },
-    { value: 'programming', label: 'Programming', examples: 'Web development, mobile apps, data analysis' },
-    { value: 'writing', label: 'Writing', examples: 'Content creation, grant writing, editing' },
-    { value: 'design', label: 'Design', examples: 'Graphic design, UI/UX, illustration' },
-    { value: 'fundraising', label: 'Fundraising', examples: 'Event organization, donor relations, crowdfunding' },
-    { value: 'counseling', label: 'Counseling', examples: 'Emotional support, career guidance, conflict resolution' },
-    { value: 'logistics', label: 'Logistics', examples: 'Event planning, transportation coordination, resource management' },
-    { value: 'medical', label: 'Medical', examples: 'First aid, health education, medical assistance' },
-    { value: 'social_media', label: 'Social Media', examples: 'Content strategy, community management, analytics' },
-    { value: 'photography', label: 'Photography/Videography', examples: 'Event documentation, promotional material creation' },
+    { value: 'tutoring', label: 'Tutoring/Academic Support', description: 'Helping students with homework, teaching subjects, conducting study sessions' },
+    { value: 'mentoring', label: 'Mentoring', description: 'Providing guidance, career advice, and personal development support' },
+    { value: 'counseling', label: 'Community Counseling', description: 'Offering emotional support, conflict resolution, and basic mental health services' },
+    { value: 'healthcare', label: 'Healthcare Support', description: 'First aid, health education, medical assistance, health awareness programs' },
+    { value: 'arts_culture', label: 'Arts & Culture Programs', description: 'Teaching music, art, dance, theater, organizing cultural events' },
+    { value: 'sports_recreation', label: 'Sports & Recreation', description: 'Coaching sports, organizing games, planning recreational activities' },
+    { value: 'environmental', label: 'Environmental Projects', description: 'Clean-ups, recycling initiatives, environmental education' },
+    { value: 'food_distribution', label: 'Food Distribution', description: 'Preparing meals, distributing food packages, managing food banks' },
+    { value: 'shelter_support', label: 'Shelter Support', description: 'Working in shelters, housing programs, construction assistance' },
+    { value: 'administrative', label: 'Administrative Support', description: 'Office management, data entry, record keeping, documentation' },
+    { value: 'event_planning', label: 'Event Planning', description: 'Organizing community events, fundraisers, awareness programs' },
+    { value: 'technical', label: 'Technical Support', description: 'Computer skills training, tech troubleshooting, digital literacy programs' },
+    { value: 'elderly_support', label: 'Elderly Support', description: 'Elder care, companionship, assistance with daily activities' },
+    { value: 'child_care', label: 'Child Care', description: 'Childcare services, after-school programs, recreational activities for children' },
+    { value: 'translation', label: 'Translation/Interpretation', description: 'Language services for non-native speakers in the community' },
   ];
 
   // Available disability types
@@ -333,6 +345,13 @@ const Register: React.FC = () => {
         newErrors.skills = 'Please select at least one skill';
       }
       
+      // Validate evidence if skills are selected
+      if (skills.length > 0 && !skillEvidence) {
+        newErrors.skillEvidence = 'Please upload evidence for at least one of your skills';
+      } else if (skillEvidence && skillEvidence.size > 5 * 1024 * 1024) { // 5MB limit
+        newErrors.skillEvidence = 'File is too large (max 5MB)';
+      }
+      
       if (hasDisability === null) {
         newErrors.disability = 'Please specify if you have any disability';
       }
@@ -343,6 +362,13 @@ const Register: React.FC = () => {
       
       if (hasDisability === true && disabilityType.length > 0 && !otherDisabilityDetails.trim()) {
         newErrors.disabilityDetails = 'Please provide details about your disability';
+      }
+    }
+
+    // Sponsor specific validations
+    if (role === 'sponsor') {
+      if (!salaryRange) {
+        newErrors.salaryRange = 'Salary range is required';
       }
     }
 
@@ -428,6 +454,9 @@ const handleSubmit = async (event: React.FormEvent) => {
     } else if (role === 'volunteer') {
       formData.append('skills', JSON.stringify(skills));
       
+      // Add skill evidence file
+      if (skillEvidence) formData.append('skillEvidence', skillEvidence);
+      
       // Create a properly structured disability object
       if (hasDisability === true) {
         const disabilityObject = {
@@ -440,6 +469,8 @@ const handleSubmit = async (event: React.FormEvent) => {
         // Even if user has no disability, save this information
         formData.append('disability', JSON.stringify({ hasDisability: false }));
       }
+    } else if (role === 'sponsor') {
+      formData.append('salaryRange', salaryRange);
     }
     
     // First check for potential conflicts before full submission
@@ -686,13 +717,42 @@ const handleSubmit = async (event: React.FormEvent) => {
     setTimeout(() => setStep('form'), 50);
   };
 
-  const handleSkillChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Replace handleSkillChange with a new function for dropdown selection
+  const handleSkillSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     
-    if (e.target.checked) {
+    if (value && !skills.includes(value)) {
+      setSelectedSkill(value);
       setSkills(prev => [...prev, value]);
-    } else {
-      setSkills(prev => prev.filter(skill => skill !== value));
+      
+      if (errors.skills) {
+        setErrors(prev => ({
+          ...prev,
+          skills: undefined
+        }));
+      }
+    }
+  };
+
+  const handleRemoveSkill = (skill: string) => {
+    setSkills(prev => prev.filter(s => s !== skill));
+    
+    // If removing all skills, clear the evidence too
+    if (skills.length <= 1) {
+      setSkillEvidence(null);
+    }
+  };
+
+  // Add handler for skill evidence file upload
+  const handleSkillEvidenceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSkillEvidence(file);
+    
+    if (file && errors.skillEvidence) {
+      setErrors(prev => ({
+        ...prev,
+        skillEvidence: undefined
+      }));
     }
   };
 
@@ -1150,6 +1210,35 @@ const renderSuccessPopup = () => (
     }
   };
 
+  // Add handler for salary range change
+  const handleSalaryRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSalaryRange(e.target.value);
+    if (errors.salaryRange) {
+      setErrors(prev => ({
+        ...prev,
+        salaryRange: undefined
+      }));
+    }
+  };
+
+  // Add function to render skill badge
+  const renderSkillBadge = (skill: string) => {
+    const skillOption = skillOptions.find(option => option.value === skill);
+    return (
+      <div key={skill} className="skill-badge">
+        <span className="skill-label">{skillOption?.label || skill}</span>
+        <button 
+          type="button"
+          className="remove-skill-btn"
+          onClick={() => handleRemoveSkill(skill)}
+          title="Remove skill"
+        >
+          ×
+        </button>
+      </div>
+    );
+  };
+
   const renderRegistrationForm = () => (
     <div className="registration-form">
       <h4>Complete your registration</h4>
@@ -1602,36 +1691,109 @@ const renderSuccessPopup = () => (
         {role === 'volunteer' && (
           <div className="form-section">
             <h5>Volunteer Skills</h5>
-            <p className="skills-info">Select all the skills that you would like to volunteer:</p>
+            <p className="skills-info">Select skills that you would like to volunteer in our community support events:</p>
             
-            <div className="skills-grid">
-              {skillOptions.map((skill) => (
-                <div key={skill.value} className="skill-checkbox-container">
-                  <div className="skill-checkbox">
-                    <input
-                      type="checkbox"
-                      id={`skill-${skill.value}`}
-                      value={skill.value}
-                      checked={skills.includes(skill.value)}
-                      onChange={(e) => {
-                        handleSkillChange(e);
-                        if (errors.skills && e.target.checked) {
-                          setErrors(prev => ({
-                            ...prev,
-                            skills: undefined
-                          }));
-                        }
-                      }}
-                    />
-                    <label htmlFor={`skill-${skill.value}`}>{skill.label}</label>
-                  </div>
-                  <p className="skill-examples">{skill.examples}</p>
-                </div>
-              ))}
+            {/* Replace checkbox grid with dropdown */}
+            <div className="form-group">
+              <label htmlFor="skills">Select Skills *</label>
+              <select
+                id="skills"
+                value={selectedSkill}
+                onChange={handleSkillSelect}
+                className={errors.skills ? 'error-input' : ''}
+              >
+                <option value="">-- Select a skill to add --</option>
+                {skillOptions.map(skill => (
+                  <option 
+                    key={skill.value} 
+                    value={skill.value}
+                    disabled={skills.includes(skill.value)}
+                  >
+                    {skill.label}
+                  </option>
+                ))}
+              </select>
+              {errors.skills && <span className="error-text">{errors.skills}</span>}
             </div>
-            {errors.skills && <span className="error-text skills-error">{errors.skills}</span>}
             
-            {/* Disability section for volunteers */}
+            {/* Display selected skills as badges */}
+            {skills.length > 0 && (
+              <div className="selected-skills">
+                <label>Your selected skills:</label>
+                <div className="skill-badges">
+                  {skills.map(skill => renderSkillBadge(skill))}
+                </div>
+                
+                {/* Show description for selected skills */}
+                <div className="skills-description">
+                  {skills.map(skill => {
+                    const skillOption = skillOptions.find(option => option.value === skill);
+                    return skillOption ? (
+                      <div key={skill} className="skill-description-item">
+                        <strong>{skillOption.label}:</strong> {skillOption.description}
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {/* Add skill evidence upload */}
+            {skills.length > 0 && (
+              <div className="form-group document-upload-container">
+                <label htmlFor="skillEvidence">Skill Evidence/Certificate * <span className="upload-hint">(Certificate, proof of training, or other evidence)</span></label>
+                <div className={`file-upload-wrapper ${errors.skillEvidence ? 'has-error' : ''}`}>
+                  {!skillEvidence ? (
+                    <>
+                      <label htmlFor="skillEvidence" className="file-upload-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                        </svg>
+                        <span>Upload evidence of your skills</span>
+                      </label>
+                      <input
+                        type="file"
+                        id="skillEvidence"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleSkillEvidenceChange}
+                        className="file-input"
+                      />
+                    </>
+                  ) : (
+                    <div className="file-preview">
+                      <div className="file-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5V8H19v12H5V4h8v-.5zM7 13h10v1H7v-1zm0 3h10v1H7v-1zm0-6h5v1H7v-1z"/>
+                        </svg>
+                        <span className="file-name">{skillEvidence.name}</span>
+                      </div>
+                      <button 
+                        type="button" 
+                        className="remove-file-btn"
+                        onClick={() => {
+                          setSkillEvidence(null);
+                          if (errors.skillEvidence) {
+                            setErrors(prev => ({
+                              ...prev,
+                              skillEvidence: undefined
+                            }));
+                          }
+                        }}
+                        title="Remove file"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
+                          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <p className="evidence-hint">Upload a certificate, training record, or proof of experience for your primary skill.</p>
+                {errors.skillEvidence && <span className="error-text">{errors.skillEvidence}</span>}
+              </div>
+            )}
+            
+            {/* Disability section for volunteers - keep existing code */}
             <h5 className="mt-4">Disability Information</h5>
             <p className="disability-info">As an inclusive organization, we welcome volunteers of all abilities. This information helps us provide appropriate support.</p>
             
@@ -1720,6 +1882,31 @@ const renderSuccessPopup = () => (
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Sponsor specific fields */}
+        {role === 'sponsor' && (
+          <div className="form-section">
+            <h5>Sponsor Information</h5>
+            <div className="form-group">
+              <label htmlFor="salaryRange">Monthly Income/Salary Range *</label>
+              <select
+                id="salaryRange"
+                value={salaryRange}
+                onChange={handleSalaryRangeChange}
+                className={errors.salaryRange ? 'error-input' : ''}
+              >
+                <option value="">Select income range</option>
+                <option value="P20,000 - P30,000">P20,000 - P30,000</option>
+                <option value="P30,001 - P50,000">P30,001 - P50,000</option>
+                <option value="P50,001 - P70,000">P50,001 - P70,000</option>
+                <option value="P70,001 - P100,000">P70,001 - P100,000</option>
+                <option value="P100,001 - P150,000">P100,001 - P150,000</option>
+                <option value="P150,001 and above">P150,001 and above</option>
+              </select>
+              {errors.salaryRange && <span className="error-text">{errors.salaryRange}</span>}
+            </div>
           </div>
         )}
         
@@ -1816,3 +2003,5 @@ const renderSuccessPopup = () => (
 };
 
 export default Register;
+
+

@@ -19,7 +19,7 @@ const authenticateToken = authMiddleware;
 const authenticateAdmin = roleAuth(['admin']); // This creates a middleware that only allows admin role
 
 // Configure multer for file upload
-const storage = multer.diskStorage({
+const profileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const userRole = req.user.role;
     const uploadDir = `uploads/${userRole}`;
@@ -37,8 +37,8 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
-  storage,
+const profileUpload = multer({ 
+  storage: profileStorage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif/;
@@ -52,6 +52,89 @@ const upload = multer({
   }
 });
 
+// Ensure only admin users can access these routes
+router.use(authenticateToken, (req, res, next) => {
+  if (req.user.role !== 'admin' && req.user.role !== 'staff') {
+    return res.status(403).json({ error: 'Access denied: Admin rights required' });
+  }
+  next();
+});
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    console.log('Multer processing file:', file.fieldname);
+    // Create specific directory for file type
+    let uploadPath = 'uploads';
+    
+    // Use a dedicated path for volunteer evidence files
+    if (file.fieldname === 'skillEvidence') {
+      uploadPath = 'uploads/volunteer-evidence';
+      console.log('Using path for skill evidence:', uploadPath);
+    } else if (file.fieldname === 'adminPhoto') {
+      uploadPath = 'uploads/admin';
+    }
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadPath)) {
+      console.log('Creating directory:', uploadPath);
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    // Create a unique filename with timestamp
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
+    console.log('Generated filename:', filename);
+    cb(null, filename);
+  }
+});
+
+// Set file filter for allowed file types
+const fileFilter = (req, file, cb) => {
+  console.log('Checking file type:', file.mimetype);
+  // Accept common document and image types
+  if (
+    file.mimetype === 'application/pdf' || 
+    file.mimetype === 'image/jpeg' || 
+    file.mimetype === 'image/png' ||
+    file.mimetype === 'image/jpg'
+  ) {
+    cb(null, true);
+  } else {
+    console.log('Rejected file with mimetype:', file.mimetype);
+    cb(new Error('Invalid file type. Only PDF, JPEG, and PNG are allowed.'), false);
+  }
+};
+
+// Configure multer upload
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: fileFilter
+});
+
+// Configure multipart form parser for volunteer creation
+const volunteerUpload = upload.fields([
+  { name: 'skillEvidence', maxCount: 1 }
+]);
+
+// Add logging middleware for all multipart requests
+router.use((req, res, next) => {
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
+    console.log('Multipart form detected:', {
+      path: req.path,
+      method: req.method,
+      contentType: req.headers['content-type']
+    });
+  }
+  next();
+});
+
 // User management
 router.get('/users', roleAuth(['admin', 'staff']), adminController.getUsers);
 router.put('/users/:id', roleAuth(['admin', 'staff']), adminController.updateUser);
@@ -60,7 +143,7 @@ router.delete('/users/:id', roleAuth(['admin', 'staff']), adminController.delete
 
 // Volunteer management - Update these routes
 router.get('/volunteers', roleAuth(['admin', 'staff']), adminController.getVolunteers);
-router.post('/volunteers', roleAuth(['admin', 'staff']), adminController.createVolunteer);
+router.post('/volunteers', roleAuth(['admin', 'staff']), volunteerUpload, adminController.createVolunteer);
 
 // Move bulk delete BEFORE the /:id routes
 router.delete('/volunteers/bulk', roleAuth(['admin', 'staff']), async (req, res) => {
@@ -90,9 +173,9 @@ router.delete('/volunteers/bulk', roleAuth(['admin', 'staff']), async (req, res)
   }
 });
 
-// Then place the individual routes after
+// Update this route to include the file upload middleware
 router.get('/volunteers/:id', roleAuth(['admin', 'staff']), adminController.getVolunteerById);
-router.put('/volunteers/:id', roleAuth(['admin', 'staff']), adminController.updateVolunteer);
+router.put('/volunteers/:id', roleAuth(['admin', 'staff']), volunteerUpload, adminController.updateVolunteer);
 router.delete('/volunteers/:id', roleAuth(['admin', 'staff']), adminController.deleteVolunteer);
 
 // Staff management (admin only) - Reorder routes to put bulk delete first
@@ -211,7 +294,7 @@ router.get('/items-distributed', authMiddleware, async (req, res) => {
 router.post('/profile-photo', 
   authMiddleware, // Add main auth middleware first
   roleAuth(['admin', 'staff']), 
-  upload.single('profilePhoto'), 
+  profileUpload.single('profilePhoto'), 
   async (req, res) => {
     try {
       if (!req.file) {

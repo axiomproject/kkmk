@@ -28,6 +28,7 @@ interface VolunteerProps {
     past_events?: Event[];
     skills?: string[]; // Added skills field
     disability?: Disability | null; // Added disability field
+    skill_evidence?: string; // Add skill evidence field
   };
   onClose: () => void;
 }
@@ -42,31 +43,44 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// Skill name mapping for display
+// Updated skill name mapping for display - matching our new realistic skills
 const skillLabels: Record<string, string> = {
-  'teaching': 'Teaching',
-  'programming': 'Programming',
-  'writing': 'Writing',
-  'design': 'Design',
-  'fundraising': 'Fundraising',
-  'counseling': 'Counseling',
-  'logistics': 'Logistics',
-  'medical': 'Medical',
-  'social_media': 'Social Media',
-  'photography': 'Photography/Videography'
+  'tutoring': 'Tutoring/Academic Support',
+  'mentoring': 'Mentoring',
+  'counseling': 'Community Counseling',
+  'healthcare': 'Healthcare Support',
+  'arts_culture': 'Arts & Culture Programs',
+  'sports_recreation': 'Sports & Recreation',
+  'environmental': 'Environmental Projects',
+  'food_distribution': 'Food Distribution',
+  'shelter_support': 'Shelter Support',
+  'administrative': 'Administrative Support',
+  'event_planning': 'Event Planning',
+  'technical': 'Technical Support',
+  'elderly_support': 'Elderly Support',
+  'child_care': 'Child Care',
+  'translation': 'Translation/Interpretation'
 };
 
 const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) => {
+  // Add debugging logs
+  console.log('Volunteer data received:', {
+    id: volunteer.id,
+    name: volunteer.name,
+    skillEvidence: volunteer.skill_evidence,
+    skills: volunteer.skills
+  });
+
   // Parse skills and disability if they're strings
-  let parsedSkills = volunteer.skills;
+  let parsedSkills = volunteer.skills || []; // Add default empty array
   let parsedDisability = volunteer.disability;
 
   if (typeof volunteer.skills === 'string') {
     try {
       parsedSkills = JSON.parse(volunteer.skills);
     } catch (e) {
-      console.error('Error parsing skills:', e);
-      parsedSkills = [];
+      console.error(`Error parsing skills for volunteer ${volunteer.id}:`, e);
+      parsedSkills = []; // Ensure we have an empty array on error
     }
   }
 
@@ -74,7 +88,7 @@ const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) =>
     try {
       parsedDisability = JSON.parse(volunteer.disability);
     } catch (e) {
-      console.error('Error parsing disability:', e);
+      console.error(`Error parsing disability for volunteer ${volunteer.id}:`, e);
       parsedDisability = null;
     }
   }
@@ -91,6 +105,23 @@ const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) =>
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const
   };
+
+  // Function to render skill badges with labels - with null checking
+  const renderSkillBadges = (skills: string[] | undefined) => {
+    if (!skills || !Array.isArray(skills) || skills.length === 0) {
+      return <div className="no-skills">No skills specified</div>;
+    }
+
+    return skills.map(skill => (
+      <div key={skill} className="skill-badge">
+        {skillLabels[skill] || skill}
+      </div>
+    ));
+  };
+
+  // Check if the volunteer has skill evidence
+  const hasSkillEvidence = volunteer.skill_evidence && volunteer.skill_evidence.length > 0;
+  console.log('Has skill evidence:', hasSkillEvidence, volunteer.skill_evidence);
 
   return (
     <div className="volunteer-view-modal-overlay" onClick={onClose}>
@@ -135,22 +166,36 @@ const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) =>
             </div>
           </div>
           
-          {/* Skills Section */}
-          {parsedSkills && parsedSkills.length > 0 && (
+          {/* Skills Section - WITH PROPER NULL CHECK */}
+          {parsedSkills && Array.isArray(parsedSkills) && parsedSkills.length > 0 && (
             <div className="volunteer-info-section" style={skillsContainerStyle}>
               <h3>Skills</h3>
               <div className="skills-list" style={skillsBadgesStyle}>
-                {parsedSkills.map((skill: string) => (
-                  <div key={skill} className="skill-badge">
-                    {skillLabels[skill] || skill}
-                  </div>
-                ))}
+                {renderSkillBadges(parsedSkills)}
               </div>
+              
+              {/* Add skill evidence section if available */}
+              {hasSkillEvidence && (
+                <div className="skill-evidence">
+                  <p><strong>Skill Evidence:</strong></p>
+                  <a 
+                    href={volunteer.skill_evidence} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="evidence-link"
+                  >
+                    <div className="evidence-badge">
+                      <i className="material-icons">description</i>
+                      <span>View Certificate/Evidence</span>
+                    </div>
+                  </a>
+                </div>
+              )}
             </div>
           )}
           
-          {/* Disability Section */}
-          {parsedDisability && (
+          {/* Disability Section - WITH PROPER NULL CHECK */}
+          {parsedDisability && parsedDisability.types && Array.isArray(parsedDisability.types) && (
             <div className="volunteer-info-section">
               <h3>Disability Information</h3>
               <div className="disability-info">

@@ -5,6 +5,7 @@ import '../styles/StudentProfile.css';
 import '../routes/paths';
 import PATHS from '../routes/paths';
 import { formatDate } from '../utils/dateUtils';
+import { useAuth } from '../contexts/AuthContext'; // Add this import
 
 // Update StudentDetails interface to match the new data structure
 interface StudentDetails {
@@ -63,6 +64,39 @@ const StudentProfile: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
+  const { user } = useAuth(); // Get the current user from auth context
+
+  // Add helper function for determining appropriate fundraiser amount range based on salary range
+  const getSuggestedAmountRange = (salaryRange: string) => {
+    console.log("Processing salary range in StudentProfile:", salaryRange);
+    
+    // Extract numeric values from salary range (assuming format like "P30,001 - P50,000")
+    const matches = salaryRange.match(/P([\d,]+) - P([\d,]+)/);
+    
+    if (!matches || matches.length < 3) {
+      // Handle "P150,001 and above" case or any parsing errors
+      if (salaryRange.includes("and above")) {
+        console.log("High earner detected, suggesting high-need students");
+        return { min: 20000, max: 150000 };
+      }
+      console.log("Could not parse salary range, using default filter");
+      return null; // Default to no filter if we can't parse
+    }
+    
+    // Parse numeric values (removing commas)
+    const minSalary = parseInt(matches[1].replace(/,/g, ''), 10);
+    const maxSalary = parseInt(matches[2].replace(/,/g, ''), 10);
+    
+    console.log("Parsed salary range:", { minSalary, maxSalary });
+    
+    // Adjust calculation to be more inclusive for lower salary ranges
+    const suggestedMin = Math.max(3000, Math.floor(minSalary * 0.15)); // Minimum 3,000 pesos
+    const suggestedMax = Math.min(150000, Math.ceil(maxSalary * 0.7));  // Maximum 150,000 pesos
+    
+    console.log("Calculated amount range for filtering:", { suggestedMin, suggestedMax });
+    
+    return { min: suggestedMin, max: suggestedMax };
+  };
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -71,7 +105,38 @@ const StudentProfile: React.FC = () => {
         const response = await api.get('/scholars');
         if (!response.data) throw new Error('No data returned');
         
-        setStudents(response.data);
+        // Filter out inactive, unverified, and non-active scholars first
+        let activeStudents = response.data.filter((student: StudentDetails) => 
+          student.is_verified && 
+          student.status === 'active'
+        );
+        
+        // Apply sponsor-specific filtering if the user is a sponsor
+        if (user && user.role === 'sponsor' && user.salaryRange) {
+          console.log("Sponsor found with salary range in StudentProfile:", user.salaryRange);
+          
+          const amountRange = getSuggestedAmountRange(user.salaryRange);
+          
+          if (amountRange) {
+            // Filter students based on the sponsor's suggested amount range
+            const sponsorRelevantStudents = activeStudents.filter((student: StudentDetails) => {
+              const matchesRange = student.amount_needed >= amountRange.min && student.amount_needed <= amountRange.max;
+              console.log(`Student ${student.first_name} (amount: ${student.amount_needed}) matches range: ${matchesRange}`);
+              return matchesRange;
+            });
+            
+            console.log("Students matching sponsor's range:", sponsorRelevantStudents.length);
+            
+            // Only apply the filter if we have enough matches
+            if (sponsorRelevantStudents.length > 0) {
+              activeStudents = sponsorRelevantStudents;
+            } else {
+              console.log("No matches found for sponsor's range, showing all active students");
+            }
+          }
+        }
+        
+        setStudents(activeStudents);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching students:', err);
@@ -81,19 +146,10 @@ const StudentProfile: React.FC = () => {
     };
 
     fetchStudents();
-  }, []);
+  }, [user]); // Add user dependency to re-fetch when user changes
 
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
-      // Filter out scholars based on verification and status
-      // Only show active and approved scholars
-      if (
-        !student.is_verified || // Filter unverified scholars
-        student.status !== 'active' // Only show active scholars (exclude inactive, graduated, etc)
-      ) {
-        return false;
-      }
-      
       const searchTerm = searchQuery.toLowerCase();
       const matchesSearch = 
         student.first_name?.toLowerCase().includes(searchTerm) ||
@@ -185,6 +241,16 @@ const StudentProfile: React.FC = () => {
         <p className="student-profile-desc">
           Each student's educational journey requires different levels of support. The progress bar shows how close they are to reaching their educational funding goals. You can contribute any amount to help them achieve their dreams.
         </p>
+
+        {/* Add sponsor-specific message if user is a sponsor */}
+        {user && user.role === 'sponsor' && (
+          <div className="sponsor-message">
+            <p>
+              The students shown below have been tailored based on your financial capacity.
+              These matches consider your salary range to suggest appropriate sponsorship opportunities.
+            </p>
+          </div>
+        )}
 
         <div className="student-profile-filters">
           <input 

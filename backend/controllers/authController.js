@@ -26,7 +26,8 @@ const register = async (req, res, next) => {
       firstName, middleName, lastName, extension, gender, 
       name, username, email, phone, password, dateOfBirth, 
       role, faceData, guardianName, guardianPhone, address, 
-      educationLevel, school, parentsIncome, skills, disability 
+      educationLevel, school, parentsIncome, skills, disability,
+      salaryRange  // Extract salaryRange from request
     } = req.body;
 
     // Log the received role to debug the issue
@@ -63,7 +64,8 @@ const register = async (req, res, next) => {
         firstName, middleName, lastName, extension, gender,
         name, username, email, phone, password, dateOfBirth, 
         userRole, faceData, guardianName, guardianPhone, address, 
-        educationLevel, school, parentsIncome, skills, disability
+        educationLevel, school, parentsIncome, skills, disability,
+        salaryRange  // Pass salaryRange to createUser
       );
 
       // Send verification email if email is provided
@@ -212,7 +214,8 @@ const login = async (req, res) => {
       role: user.role,  // Add role to response
       facebookUrl: user.facebook_url || "",
       twitterUrl: user.twitter_url || "",
-      instagramUrl: user.instagram_url || ""
+      instagramUrl: user.instagram_url || "",
+      salaryRange: user.salary_range || ""  // Include salary_range in the response
     };
     
     console.log('Sending user response:', userResponse); // Debug log

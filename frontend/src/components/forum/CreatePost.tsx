@@ -165,6 +165,11 @@ const CreatePost: React.FC<CreatePostProps> = ({ onPostCreate, eventId, category
     
     formData.append('type', postType);
 
+    // Set initial approval status based on user role
+    // Admins and staff posts are auto-approved, regular users require approval
+    const needsApproval = !['admin', 'staff'].includes(user?.role || '');
+    formData.append('approval_status', needsApproval ? 'pending' : 'approved');
+
     if (selectedImage) {
       formData.append('image', selectedImage);
     }

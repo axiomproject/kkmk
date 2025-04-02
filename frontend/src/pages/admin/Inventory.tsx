@@ -21,6 +21,8 @@ interface BaseDonation {
   rejectionReason?: string;
   expirationDate?: string;
   unit: QuantityUnit;
+  certificate_sent?: boolean;
+  certificate_sent_at?: string;
 }
 
 interface RegularDonation extends BaseDonation {
@@ -759,22 +761,54 @@ const AdminInventory: React.FC = () => {
     }
   };
 
+  // Define individual fetch functions
+  const fetchRegularItems = async () => {
+    try {
+      const response = await api.get('/inventory/regular');
+      setRegularItems(response.data);
+    } catch (error) {
+      console.error('Error fetching regular items:', error);
+    }
+  };
+
+  const fetchInkindItems = async () => {
+    try {
+      const response = await api.get('/inventory/inkind');
+      setInkindItems(response.data);
+    } catch (error) {
+      console.error('Error fetching in-kind items:', error);
+    }
+  };
+
+  const fetchDistributions = async () => {
+    try {
+      const response = await api.get('/inventory/distributions');
+      setDistributions(response.data);
+    } catch (error) {
+      console.error('Error fetching distributions:', error);
+    }
+  };
+
   // Update the fetchItems function to use fetchAll
   const fetchItems = useCallback(() => fetchAll(), []);
 
   // Fetch items on component mount - fixed to prevent infinite loop
   useEffect(() => {
-    fetchItems();
+    const loadData = async () => {
+      await Promise.all([
+        fetchRegularItems(),
+        fetchInkindItems(),
+        fetchDistributions()
+      ]);
+    };
     
-    // Set up interval to fetch data periodically (every 5 minutes) instead of constant polling
-    const intervalId = setInterval(() => {
-      console.log('Scheduled data refresh');
-      fetchItems();
-    }, 300000); // 5 minutes in milliseconds
+    loadData();
+
+    // Set a reasonable interval (e.g., every 30 seconds) instead of continuous polling
+    const interval = setInterval(loadData, 30000);
     
-    // Cleanup interval on component unmount
-    return () => clearInterval(intervalId);
-  }, []); // Empty dependency array means this runs once on mount
+    return () => clearInterval(interval);
+  }, []); // Empty dependency array since we just want this on mount
 
   // Update useEffect to calculate expiring items only when needed
   useEffect(() => {
@@ -1209,6 +1243,17 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
                     >
                       Distribute
                     </button>
+                    {item.verificationStatus === 'verified' && item.email && (
+                      <button 
+                        className="certificate-button"
+                        onClick={() => handleSendCertificate(item)}
+                        disabled={sendingCertificateIds.has(`${item.type}-${item.id}`)}
+                        title={item.certificate_sent ? 'Certificate already sent' : 'Send donation certificate'}
+                      >
+                        {sendingCertificateIds.has(`${item.type}-${item.id}`) ? 'Sending...' : 
+                          item.certificate_sent ? 'Resend' : 'Certificate'}
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -1874,6 +1919,96 @@ const renderInventoryTable = (view: 'regular' | 'in-kind') => {
       }
     }
   }, [regularItems.length, inkindItems.length]); // Only depend on these two state variables
+
+  // Add state to track which items are currently sending certificates
+  const [sendingCertificateIds, setSendingCertificateIds] = useState<Set<string>>(new Set());
+  const [actionMessage, setActionMessage] = useState<{text: string, type: 'success' | 'error'} | null>(null);
+  
+  // Add function to handle sending certificates
+  const handleSendCertificate = async (item: DonationItem) => {
+    if (!item || !item.id) return;
+    
+    // Only allow for verified items
+    if (item.verificationStatus !== 'verified') {
+      alert('Only verified donations can receive certificates');
+      return;
+    }
+    
+    if (!item.email) {
+      alert('Cannot send certificate: Donor email is missing');
+      return;
+    }
+    
+    const itemType = item.type;
+    const itemId = item.id;
+    const uniqueId = `${itemType}-${itemId}`;
+    
+    if (!window.confirm(`Send donation certificate to ${item.donatorName} (${item.email})?`)) return;
+    
+    try {
+      // Add this ID to the set of sending certificate IDs
+      setSendingCertificateIds(prev => new Set(prev).add(uniqueId));
+      
+      // Call API endpoint to generate and send certificate
+      const response = await api.post(`/inventory/${itemType}/${itemId}/send-certificate`);
+      
+      if (response.data.success) {
+        // Show success message
+        setActionMessage({
+          text: 'Certificate sent successfully!',
+          type: 'success'
+        });
+        
+        // Update local state to reflect certificate sent
+        if (itemType === 'regular') {
+          setRegularItems(prevItems => 
+            prevItems.map(i => 
+              i.id === itemId ? {
+                ...i,
+                certificate_sent: true,
+                certificate_sent_at: new Date().toISOString()
+              } : i
+            )
+          );
+        } else {
+          setInkindItems(prevItems => 
+            prevItems.map(i => 
+              i.id === itemId ? {
+                ...i,
+                certificate_sent: true,
+                certificate_sent_at: new Date().toISOString()
+              } : i
+            )
+          );
+        }
+      } else {
+        throw new Error(response.data.message || 'Failed to send certificate');
+      }
+      
+      // Clear message after 3 seconds
+      setTimeout(() => {
+        setActionMessage(null);
+      }, 3000);
+    } catch (error) {
+      console.error('Error sending certificate:', error);
+      setActionMessage({
+        text: 'Failed to send certificate. Please try again.',
+        type: 'error'
+      });
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setActionMessage(null);
+      }, 5000);
+    } finally {
+      // Remove this ID from the set of sending certificate IDs
+      setSendingCertificateIds(prev => {
+        const updated = new Set(prev);
+        updated.delete(uniqueId);
+        return updated;
+      });
+    }
+  };
 
   return (
     <div className="inventory-container">

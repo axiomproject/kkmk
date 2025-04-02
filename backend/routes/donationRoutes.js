@@ -380,6 +380,110 @@ router.post('/monetary', upload.single('proofOfPayment'), async (req, res) => {
   }
 });
 
+// New endpoint to send donation certificate
+router.post('/:id/send-certificate', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // First, get the donation details
+    const donationResult = await db.query(
+      'SELECT * FROM monetary_donations WHERE id = $1',
+      [id]
+    );
+    
+    const donation = donationResult.rows[0];
+    if (!donation) {
+      return res.status(404).json({ error: 'Donation not found' });
+    }
+    
+    // Check if donation is verified
+    if (donation.verification_status !== 'verified') {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Only verified donations can receive certificates' 
+      });
+    }
+    
+    // Check if donor email exists
+    if (!donation.email) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Donor email is missing' 
+      });
+    }
+    
+    // Send certificate email - pass true for isGeneralDonation to use the generic template
+    await emailService.sendDonationCertificateEmail(
+      donation.email,
+      donation.full_name,
+      'KKMK Scholar', // Still pass the scholar name but it won't be used in the template
+      donation.amount,
+      donation.date || donation.created_at,
+      donation.id,
+      true // Set isGeneralDonation flag to true for monetary donations
+    );
+    
+    // Try to update the certificate_sent status if the columns exist
+    try {
+      // First check if columns exist
+      const columnsExist = await db.query(`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name = 'monetary_donations' 
+        AND column_name IN ('certificate_sent', 'certificate_sent_at')
+      `);
+      
+      // Only attempt to update if both columns exist
+      if (columnsExist.rows.length === 2) {
+        await db.query(
+          `UPDATE monetary_donations 
+           SET certificate_sent = true,
+               certificate_sent_at = NOW()
+           WHERE id = $1`,
+          [id]
+        );
+        console.log('Updated certificate_sent status in database');
+      } else {
+        console.warn('Certificate columns do not exist in the database yet.');
+        // You could create the columns here if they don't exist yet:
+        await db.query(`
+          ALTER TABLE monetary_donations 
+          ADD COLUMN IF NOT EXISTS certificate_sent BOOLEAN DEFAULT false,
+          ADD COLUMN IF NOT EXISTS certificate_sent_at TIMESTAMP
+        `);
+        
+        // Then update the record
+        await db.query(
+          `UPDATE monetary_donations 
+           SET certificate_sent = true,
+               certificate_sent_at = NOW()
+           WHERE id = $1`,
+          [id]
+        );
+        console.log('Created certificate columns and updated status');
+      }
+    } catch (dbError) {
+      // Log the error but don't fail the request
+      console.error('Error updating certificate status in database:', dbError);
+      // The certificate was still sent, so we'll return success
+    }
+    
+    // Return success regardless of database update
+    res.json({ 
+      success: true,
+      message: 'Certificate sent successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Error sending certificate:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to send certificate',
+      error: error.message 
+    });
+  }
+});
+
 // Helper functions for sending emails
 async function sendDonationVerifiedEmail(email, name, amount, paymentMethod) {
   const formattedAmount = parseFloat(amount).toLocaleString('en-PH', {

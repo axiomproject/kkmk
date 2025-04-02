@@ -74,13 +74,30 @@ router.post('/posts', upload.single('image'), async (req, res) => {
             });
         }
 
+        // Get user role to determine approval status
+        const authorId = req.body.authorId;
+        const userRoleResult = await db.query(`
+          SELECT 
+            CASE 
+              WHEN EXISTS (SELECT 1 FROM admin_users WHERE id = $1) THEN 'admin'
+              WHEN EXISTS (SELECT 1 FROM staff_users WHERE id = $1) THEN 'staff'
+              ELSE 'user'
+            END as role
+        `, [authorId]);
+        
+        const userRole = userRoleResult.rows[0]?.role || 'user';
+        
+        // Set initial approval status based on role
+        const approvalStatus = ['admin', 'staff'].includes(userRole) ? 'approved' : 'pending';
+        
         // Clean the text just in case
         const postData = {
             ...req.body,
             title: profanityFilter.clean(req.body.title),
             content: profanityFilter.clean(req.body.content),
             imageUrl: req.file ? `/uploads/forum/${req.file.filename}` : null,
-            poll: req.body.poll ? JSON.parse(req.body.poll) : undefined
+            poll: req.body.poll ? JSON.parse(req.body.poll) : undefined,
+            approval_status: approvalStatus // Add approval status
         };
 
         // Clean poll options if they exist
@@ -597,6 +614,142 @@ router.get('/analytics', async (req, res) => {
   } catch (error) {
     console.error('Error getting forum analytics:', error);
     res.status(500).json({ error: 'Failed to get forum analytics' });
+  }
+});
+
+// Add endpoint for pending posts count
+router.get('/pending-posts-count', async (req, res) => {
+  try {
+    // Check if user is admin or staff
+    const userId = req.query.userId;
+    if (!userId) {
+      return res.status(403).json({ error: 'Authentication required' });
+    }
+    
+    const userCheckResult = await db.query(`
+      SELECT 1 FROM (
+        SELECT id FROM admin_users WHERE id = $1
+        UNION
+        SELECT id FROM staff_users WHERE id = $1
+      ) AS auth_users
+    `, [userId]);
+    
+    if (userCheckResult.rows.length === 0) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    const count = await forumModel.getPendingPostsCount();
+    res.json({ count });
+  } catch (error) {
+    console.error('Error fetching pending posts count:', error);
+    res.status(500).json({ error: 'Failed to fetch pending posts count' });
+  }
+});
+
+// Add endpoint for fetching posts by approval status
+router.get('/posts/status/:status', async (req, res) => {
+  try {
+    const { status } = req.params;
+    const userId = req.query.userId;
+    
+    if (!userId) {
+      return res.status(403).json({ error: 'Authentication required' });
+    }
+    
+    // Verify user is admin or staff
+    const userCheckResult = await db.query(`
+      SELECT 1 FROM (
+        SELECT id FROM admin_users WHERE id = $1
+        UNION
+        SELECT id FROM staff_users WHERE id = $1
+      ) AS auth_users
+    `, [userId]);
+    
+    if (userCheckResult.rows.length === 0) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status parameter' });
+    }
+    
+    const posts = await forumModel.getPostsByApprovalStatus(status);
+    res.json(posts);
+  } catch (error) {
+    console.error(`Error fetching ${req.params.status} posts:`, error);
+    res.status(500).json({ error: `Failed to fetch ${req.params.status} posts` });
+  }
+});
+
+// Add endpoint for approving posts
+router.post('/posts/:postId/approve', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    // Verify user is admin or staff
+    const userCheckResult = await db.query(`
+      SELECT 
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM admin_users WHERE id = $1) THEN 'admin'
+          WHEN EXISTS (SELECT 1 FROM staff_users WHERE id = $1) THEN 'staff'
+          ELSE NULL
+        END as role
+    `, [userId]);
+    
+    const userRole = userCheckResult.rows[0]?.role;
+    if (!userRole) {
+      return res.status(403).json({ error: 'Only administrators and staff can approve posts' });
+    }
+    
+    const updatedPost = await forumModel.approvePost(postId, userId);
+    res.json(updatedPost);
+  } catch (error) {
+    console.error('Error approving post:', error);
+    res.status(500).json({ 
+      error: 'Failed to approve post', 
+      details: error.message 
+    });
+  }
+});
+
+// Add endpoint for rejecting posts
+router.post('/posts/:postId/reject', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId, reason } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+    
+    // Verify user is admin or staff
+    const userCheckResult = await db.query(`
+      SELECT 
+        CASE 
+          WHEN EXISTS (SELECT 1 FROM admin_users WHERE id = $1) THEN 'admin'
+          WHEN EXISTS (SELECT 1 FROM staff_users WHERE id = $1) THEN 'staff'
+          ELSE NULL
+        END as role
+    `, [userId]);
+    
+    const userRole = userCheckResult.rows[0]?.role;
+    if (!userRole) {
+      return res.status(403).json({ error: 'Only administrators and staff can reject posts' });
+    }
+    
+    const updatedPost = await forumModel.rejectPost(postId, userId, reason);
+    res.json(updatedPost);
+  } catch (error) {
+    console.error('Error rejecting post:', error);
+    res.status(500).json({ 
+      error: 'Failed to reject post', 
+      details: error.message 
+    });
   }
 });
 
