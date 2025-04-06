@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaMapMarkerAlt, FaCalendarAlt, FaClock } from "react-icons/fa";
+import { FaMapMarkerAlt, FaCalendarAlt, FaClock, FaStar, FaUser, FaCheckCircle, FaUsers } from "react-icons/fa";
 import Carousel from "react-bootstrap/Carousel";
+import Tabs from "react-bootstrap/Tabs";
+import Tab from "react-bootstrap/Tab";
 import api from '../../config/axios'; // Replace axios import
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../../styles/Layout.css";
 import { motion } from "framer-motion";
-
-// Remove axios.defaults.baseURL configuration
+import { useAuth } from '../../contexts/AuthContext';
+import { User } from '../../types/auth';
 
 // Update the BackendEvent interface to include both camelCase and snake_case properties
 interface BackendEvent {
@@ -30,6 +32,22 @@ interface BackendEvent {
     phone: string;
     email: string;
   };
+  skillRequirements?: { skill: string, count: number }[]; // Add this line for skill requirements
+  skill_requirements?: { skill: string, count: number }[] | string; // Add snake_case version
+  isPast?: boolean;
+  successMetrics?: {
+    volunteersParticipated: number;
+    scholarsHelped: number;
+  };
+  total_scholars?: number;  // Add this field for total scholars
+  current_scholars?: number; // Add this field for current scholars
+  feedback?: {
+    id: number;
+    user_name: string;
+    rating: number;
+    comment: string;
+    created_at: string;
+  }[];
 }
 
 // Update Event interface to match BackendEvent
@@ -49,14 +67,56 @@ interface Event {
     phone: string;
     email: string;
   };
+  skillRequirements?: { skill: string, count: number }[]; // Add this line for skill requirements
+  isPast?: boolean;
+  successMetrics?: {
+    volunteersParticipated: number;
+    scholarsHelped: number;
+  };
+  totalScholars?: number;
+  currentScholars?: number;
+  feedback?: {
+    id: number;
+    userName: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+  }[];
+}
+
+// Add new interface for past events with success metrics
+interface PastEvent extends Event {
+  isPast: boolean;
+  successMetrics?: {
+    volunteersParticipated: number;
+    scholarsHelped: number;
+  };
+  totalScholars?: number;
+  currentScholars?: number;
+  feedback?: {
+    id: number;
+    userName: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+  }[];
 }
 
 const EventPage: React.FC = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
+  const [pastEvents, setPastEvents] = useState<PastEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const defaultImage = '/images/default-event.png'; // Define default image path
+  const { user } = useAuth(); // Get the current user to check skills
+  
+  // Add state for recommended events
+  const [recommendedEvents, setRecommendedEvents] = useState<Event[]>([]);
+  const [otherEvents, setOtherEvents] = useState<Event[]>([]);
+  
+  // Add state for active tab
+  const [activeTab, setActiveTab] = useState<string>("featured");
 
   const formatTimeForDisplay = (time24h: string) => {
     if (!time24h) return '';
@@ -106,34 +166,170 @@ const EventPage: React.FC = () => {
   const fetchEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get<BackendEvent[]>('/admin/events');
+      // Use the public endpoint without auth requirements - notice no /api prefix
+      const response = await api.get<BackendEvent[]>('/events');
       console.log('Raw event data:', response.data);
 
       const currentDate = new Date();
-      const futureEvents = response.data
-        .filter(event => {
-          const eventDate = new Date(event.date);
-          return eventDate >= currentDate;
-        })
-        .map(event => {
-          console.log(`Processing event ${event.id}, image: ${event.image}`);
-          return {
-            ...event,
-            // Use the updated function to handle image URLs properly
-            image: getImageUrl(event.image),
-            // Handle both camelCase and snake_case properties
-            totalVolunteers: parseInt(String(event.total_volunteers ?? event.totalVolunteers ?? 0)),
-            currentVolunteers: parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0)),
-            startTime: event.start_time ?? event.startTime ?? '',
-            endTime: event.end_time ?? event.endTime ?? ''
+      
+      // Process all events
+      const processedEvents = response.data.map(event => {
+        // Add extensive debug logging for skill requirements
+        console.log(`Processing event ${event.id}, title: ${event.title}`);
+        
+        // Debug log for skill requirements
+        console.log(`Event ${event.id} skill requirements:`, 
+          event.skillRequirements || event.skill_requirements || 'None');
+        
+        // Make sure we properly extract the skill requirements
+        let processedSkillRequirements = null;
+        
+        // Try to get skill requirements from either property name
+        if (event.skillRequirements) {
+          processedSkillRequirements = event.skillRequirements;
+        } else if (event.skill_requirements) {
+          processedSkillRequirements = event.skill_requirements;
+        }
+        
+        // If skill requirements is a string, try to parse it
+        if (typeof processedSkillRequirements === 'string') {
+          try {
+            processedSkillRequirements = JSON.parse(processedSkillRequirements);
+            console.log('Parsed skill requirements from string:', processedSkillRequirements);
+          } catch (e) {
+            console.error('Failed to parse skill requirements:', e);
+            processedSkillRequirements = [];
+          }
+        }
+        
+        // Check if the event is in the past
+        const eventDate = new Date(event.date);
+        const isPast = eventDate < currentDate;
+        
+        // Generate or calculate success metrics for past events
+        let successMetrics;
+        if (isPast) {
+          // For past events, simulate or calculate success metrics
+          // In a real app, this would come from the backend
+          const volunteersParticipated = parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0));
+          
+          // Use the actual scholar count from the event data if available
+          const scholarsHelped = parseInt(String(event.current_scholars ?? 0));
+          
+          successMetrics = {
+            volunteersParticipated,
+            scholarsHelped
           };
-        });
+        }
 
-      console.log('Transformed events with resolved images:', futureEvents);
+        // Process feedback data if it exists
+        let processedFeedback;
+        if (event.feedback && Array.isArray(event.feedback)) {
+          processedFeedback = event.feedback.map(item => ({
+            id: item.id,
+            userName: item.user_name,
+            rating: item.rating,
+            comment: item.comment,
+            createdAt: item.created_at
+          }));
+        }
+
+        // Add mock feedback data for testing purposes if there's no feedback
+        // This is temporary and should be removed in production
+        if (isPast && (!processedFeedback || processedFeedback.length === 0)) {
+          processedFeedback = [
+            {
+              id: 100000 + parseInt(String(event.id)),
+              userName: "John Volunteer",
+              rating: 5,
+              comment: "This was an amazing experience! I learned so much while helping others.",
+              createdAt: "2023-11-15T14:30:00Z"
+            },
+            {
+              id: 200000 + parseInt(String(event.id)),
+              userName: "Maria Helper",
+              rating: 4,
+              comment: "Very well organized event. The scholars were incredibly grateful for our help.",
+              createdAt: "2023-11-14T10:15:00Z"
+            }
+          ];
+        }
+        
+        return {
+          ...event,
+          // Use the updated function to handle image URLs properly
+          image: getImageUrl(event.image),
+          // Handle both camelCase and snake_case properties
+          totalVolunteers: parseInt(String(event.total_volunteers ?? event.totalVolunteers ?? 0)),
+          currentVolunteers: parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0)),
+          startTime: event.start_time ?? event.startTime ?? '',
+          endTime: event.end_time ?? event.endTime ?? '',
+          // Ensure we're setting skillRequirements correctly
+          skillRequirements: processedSkillRequirements,
+          // Add the scholar counts to the processed event
+          totalScholars: parseInt(String(event.total_scholars ?? 0)),
+          currentScholars: parseInt(String(event.current_scholars ?? 0)),
+          // Add past event flag and success metrics
+          isPast,
+          ...(successMetrics && { successMetrics }),
+          feedback: processedFeedback
+        };
+      });
+
+      // Now separate future and past events
+      const futureEvents = processedEvents.filter(event => !event.isPast);
+      const pastEventsList = processedEvents.filter(event => event.isPast) as PastEvent[];
+      
+      console.log('Transformed future events:', futureEvents.length);
+      console.log('Transformed past events:', pastEventsList.length);
+      
+      // Debug each event's skill requirements 
+      futureEvents.forEach(event => {
+        console.log(`Event ${event.id} (${event.title}) final skill requirements:`, 
+          JSON.stringify(event.skillRequirements));
+      });
+      
       setEvents(futureEvents);
+      setPastEvents(pastEventsList);
+      
+      // After loading events, categorize them based on user skills
+      if (user && user.role === 'volunteer' && user.skills) {
+        let userSkills: string[] = [];
+        
+        // Handle different possible formats of user.skills
+        if (typeof user.skills === 'string') {
+          try {
+            userSkills = JSON.parse(user.skills);
+          } catch (e) {
+            console.error('Error parsing user skills:', e);
+          }
+        } else if (Array.isArray(user.skills)) {
+          userSkills = user.skills;
+        }
+        
+        console.log('User skills before categorization:', userSkills);
+        
+        // Debug which events match user skills
+        futureEvents.forEach(event => {
+          if (event.skillRequirements && event.skillRequirements.length > 0) {
+            const matchingSkills = event.skillRequirements.filter(
+                (req: { skill: string, count: number }) => userSkills.includes(req.skill)
+              );
+            console.log(`Event ${event.id} (${event.title}) matching skills:`, 
+              matchingSkills.length > 0 ? matchingSkills.map((m: { skill: string, count: number }) => m.skill) : 'None');
+          }
+        });
+        
+        categorizeEvents(futureEvents, userSkills);
+      } else {
+        // If not a volunteer or no skills, put all in otherEvents
+        setRecommendedEvents([]);
+        setOtherEvents(futureEvents);
+      }
+      
     } catch (error) {
       console.error('Failed to fetch events:', error);
-      setError('Failed to load events');
+      setError('Failed to load events. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -141,7 +337,7 @@ const EventPage: React.FC = () => {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [user]); // Add user as dependency to re-categorize when user changes
 
   const formatDateForDisplay = (dateString: string) => {
     try {
@@ -167,6 +363,49 @@ const EventPage: React.FC = () => {
 
   const handleCardClick = (eventId: number) => {
     navigate(`/event/${eventId}`);
+  };
+
+  // Function to sort events into recommended and other categories
+  const categorizeEvents = (eventsList: Event[], userSkills: string[]) => {
+    if (!userSkills || userSkills.length === 0 || !Array.isArray(userSkills)) {
+      // If no skills, all events go to others
+      setRecommendedEvents([]);
+      setOtherEvents(eventsList);
+      return;
+    }
+    
+    const recommended: Event[] = [];
+    const others: Event[] = [];
+    
+    eventsList.forEach(event => {
+      // Check if event has skill requirements and there's at least one match with user skills
+      if (event.skillRequirements && 
+          event.skillRequirements.some((req: { skill: string, count: number }) => userSkills.includes(req.skill))) {
+        recommended.push(event);
+      } else {
+        others.push(event);
+      }
+    });
+    
+    setRecommendedEvents(recommended);
+    setOtherEvents(others);
+    
+    console.log('User skills:', userSkills);
+    console.log('Recommended events:', recommended.length);
+    console.log('Other events:', others.length);
+  };
+
+  // Helper to render stars based on rating
+  const renderStars = (rating: number) => {
+    return (
+      <div className="feedback-stars">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <span key={star} className={star <= rating ? "star filled" : "star"}>
+            ★
+          </span>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -203,65 +442,286 @@ const EventPage: React.FC = () => {
         </Carousel>
       </section>
 
-      <section className="featured-events">
-        <h6 className="featured-events-title">Featured Events</h6>
-        {isLoading && <div>Loading events...</div>}
-        {error && <div className="error-message">{error}</div>}
-        
-        <div className="events-grid">
-          {events.map((event) => {
-            // Match the admin page's volunteer calculations
-            const volunteersNeeded = event.totalVolunteers - event.currentVolunteers;
-            const progress = (event.currentVolunteers / event.totalVolunteers) * 100;
+      <section className="events-section">
+        <Tabs
+          activeKey={activeTab}
+          onSelect={(k) => setActiveTab(k || "featured")}
+          className="event-tabs mb-4"
+          fill
+        >
+          <Tab eventKey="featured" title="Featured Events">
+            {isLoading && <div className="loading-indicator">Loading events...</div>}
+            {error && <div className="error-message">{error}</div>}
+            
+            {/* Recommended Events Section - Only show if user is a volunteer and there are recommendations */}
+            {user && user.role === 'volunteer' && recommendedEvents.length > 0 && (
+              <>
+                <h2 className="section-title recommended-title">
+                  <span className="highlight">Recommended For You</span> 
+                  <span className="subtitle">Based on your skills</span>
+                </h2>
+                <div className="events-grid recommended-grid">
+                  {recommendedEvents.map((event) => {
+                    // Match the admin page's volunteer calculations
+                    const volunteersNeeded = event.totalVolunteers - event.currentVolunteers;
+                    const progress = (event.currentVolunteers / event.totalVolunteers) * 100;
 
-            return (
-              <div
-                key={event.id}
-                className="event-card"
-                onClick={() => handleCardClick(event.id)}
-              >
-                <img 
-                  src={event.image || defaultImage} 
-                  alt={event.title} 
-                  className="event-image"
-                  onError={(e) => {
-                    console.error(`Failed to load image: ${event.image}`);
-                    const target = e.target as HTMLImageElement;
-                    target.src = defaultImage; // Use our defined default image constant
-                    target.onerror = null; // Prevent infinite loop
-                  }} 
-                />
-                <h4>{event.title}</h4>
-                <p><FaMapMarkerAlt /> {event.location}</p>
-                <p><FaCalendarAlt /> {formatDateForDisplay(event.date)}</p>
-                {event.startTime && event.endTime && (
-                  <p><FaClock /> {getDisplayTime(event.startTime, event.endTime)}</p>
-                )}
-                <div className="progress-bar-container">
-                  <div
-                    className="progress-bar"
-                   
-                  >
-                    <span className="progress-percentage">
-                      {progress < 5 ? '' : `${Math.round(progress)}%`}
-                    </span>
-                  </div>
-                  {progress < 5 && (
-                    <span className="progress-percentage">
-                      {Math.round(progress)}%
-                    </span>
-                  )}
+                    return (
+                      <div 
+                        key={event.id} 
+                        className="event-card recommended"
+                        onClick={() => handleCardClick(event.id)}
+                      >
+                        <div className="event-image">
+                          <img 
+                            src={event.image || defaultImage} 
+                            alt={event.title} 
+                            className="event-image"
+                            onError={(e) => {
+                              console.error(`Failed to load image: ${event.image}`);
+                              const target = e.target as HTMLImageElement;
+                              target.src = defaultImage; // Use our defined default image constant
+                              target.onerror = null; // Prevent infinite loop
+                            }} 
+                          />
+                          <div className="recommended-badge">
+                            <FaStar /> Matches Your Skills
+                          </div>
+                        </div>
+                        <div className="event-content">
+                          <h4>{event.title}</h4>
+                          <p><FaMapMarkerAlt /> {event.location}</p>
+                          <p><FaCalendarAlt /> {formatDateForDisplay(event.date)}</p>
+                          {event.startTime && event.endTime && (
+                            <p><FaClock /> {getDisplayTime(event.startTime, event.endTime)}</p>
+                          )}
+                          <div className="progress-bar-container">
+                            <div
+                              className="progress-bar"
+                              style={{ 
+                                width: `${progress}%`,
+                                backgroundColor: progress === 100 ? '#28a745' : undefined
+                              }}
+                            >
+                              <span className="progress-percentage">
+                                {progress < 5 ? '' : `${Math.round(progress)}%`}
+                              </span>
+                            </div>
+                            {progress < 5 && (
+                              <span className="progress-percentage">
+                                {Math.round(progress)}%
+                              </span>
+                            )}
+                          </div>
+                          <p className="volunteers-needed">
+                            {volunteersNeeded > 0
+                              ? `${volunteersNeeded} more volunteers needed`
+                              : "No more volunteers needed"}
+                          </p>
+                          <p className="event-status">Status: {event.status}</p>
+                          
+                          {/* Display matching skills */}
+                          {event.skillRequirements && user?.skills && (
+                            <div className="matching-skills">
+                              <div className="skills-label">Matching Skills:</div>
+                              <div className="skills-badges">
+                                {event.skillRequirements
+                                  .filter(req => 
+                                    Array.isArray(user.skills) && user.skills.includes(req.skill)
+                                  )
+                                  .map(req => (
+                                    <span key={req.skill} className="skill-badge">
+                                      {req.skill.replace('_', ' ')}
+                                    </span>
+                                  ))
+                                }
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <p className="volunteers-needed">
-                  {volunteersNeeded > 0
-                    ? `${volunteersNeeded} more volunteers needed`
-                    : "No more volunteers needed"}
-                </p>
-                <p className="event-status">Status: {event.status}</p>
+              </>
+            )}
+
+            {/* Other Events Section */}
+            <h2 className={`section-title ${user && user.role === 'volunteer' && recommendedEvents.length > 0 ? 'other-events' : ''}`}>
+              {user && user.role === 'volunteer' && recommendedEvents.length > 0 
+                ? <span className="other-events-title">
+                    <span className="highlight">Other Events</span>
+                    <span className="subtitle">Browse all available opportunities</span>
+                  </span>
+                : 'All Events'}
+            </h2>
+            
+            {otherEvents.length > 0 ? (
+              <div className="events-grid">
+                {otherEvents.map((event) => {
+                  // Match the admin page's volunteer calculations
+                  const volunteersNeeded = event.totalVolunteers - event.currentVolunteers;
+                  const progress = (event.currentVolunteers / event.totalVolunteers) * 100;
+
+                  return (
+                    <div
+                      key={event.id}
+                      className="event-card"
+                      onClick={() => handleCardClick(event.id)}
+                    >
+                      <img 
+                        src={event.image || defaultImage} 
+                        alt={event.title} 
+                        className="event-image"
+                        onError={(e) => {
+                          console.error(`Failed to load image: ${event.image}`);
+                          const target = e.target as HTMLImageElement;
+                          target.src = defaultImage; // Use our defined default image constant
+                          target.onerror = null; // Prevent infinite loop
+                        }} 
+                      />
+                      <h4>{event.title}</h4>
+                      <p><FaMapMarkerAlt /> {event.location}</p>
+                      <p><FaCalendarAlt /> {formatDateForDisplay(event.date)}</p>
+                      {event.startTime && event.endTime && (
+                        <p><FaClock /> {getDisplayTime(event.startTime, event.endTime)}</p>
+                      )}
+                      <div className="progress-bar-container">
+                        <div
+                          className="progress-bar"
+                          style={{ 
+                            width: `${progress}%`,
+                            backgroundColor: progress === 100 ? '#28a745' : undefined
+                          }}
+                        >
+                          <span className="progress-percentage">
+                            {progress < 5 ? '' : `${Math.round(progress)}%`}
+                          </span>
+                        </div>
+                        {progress < 5 && (
+                          <span className="progress-percentage">
+                            {Math.round(progress)}%
+                          </span>
+                        )}
+                      </div>
+                      <p className="volunteers-needed">
+                        {volunteersNeeded > 0
+                          ? `${volunteersNeeded} more volunteers needed`
+                          : "No more volunteers needed"}
+                      </p>
+                      <p className="event-status">Status: {event.status}</p>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            ) : (
+              <div className="no-events">
+                {recommendedEvents.length > 0 
+                  ? 'No other events available at the moment.' 
+                  : 'No events available at the moment.'}
+              </div>
+            )}
+          </Tab>
+          
+          <Tab eventKey="past" title="Past Events">
+            <div className="past-events-container">
+              <h2 className="section-title">
+                <span className="highlight">Past Events</span> </h2>
+                <h5>
+                <span className="subtitle">Our successful community initiatives</span></h5>
+             
+              
+              {isLoading && <div className="loading-indicator">Loading past events...</div>}
+              {error && <div className="error-message">{error}</div>}
+              
+              {pastEvents.length > 0 ? (
+                <div className="past-events-list">
+                  {pastEvents.map((event) => (
+                    <div key={event.id} className="past-event-card">
+                      <div className="past-event-image">
+                        <img 
+                          src={event.image || defaultImage} 
+                          alt={event.title} 
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = defaultImage;
+                            target.onerror = null;
+                          }} 
+                        />
+                        <div className="past-event-badge">
+                          <FaCheckCircle /> Completed
+                        </div>
+                      </div>
+                      <div className="past-event-content">
+                        <h3>{event.title}</h3>
+                        <p className="past-event-date">
+                          <FaCalendarAlt /> {formatDateForDisplay(event.date)}
+                        </p>
+                        <p className="past-event-location">
+                          <FaMapMarkerAlt /> {event.location}
+                        </p>
+                        
+                        <div className="past-event-metrics">
+                          <div className="metric">
+                            <FaUsers className="metric-icon" />
+                            <div className="metric-content">
+                              <span className="metric-value">
+                                {event.successMetrics?.volunteersParticipated || event.currentVolunteers}
+                              </span>
+                              <span className="metric-label">Volunteers Participated</span>
+                            </div>
+                          </div>
+                          
+                          <div className="metric">
+                            <FaUser className="metric-icon" />
+                            <div className="metric-content">
+                              <span className="metric-value">
+                                {event.currentScholars || event.successMetrics?.scholarsHelped || 0}
+                              </span>
+                              <span className="metric-label">Scholar Members Helped</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <p className="past-event-success-message">
+                          This event was successfully completed with {event.successMetrics?.volunteersParticipated || event.currentVolunteers} volunteers 
+                          who made a positive impact by helping {event.currentScholars || event.successMetrics?.scholarsHelped || 0} scholar members.
+                        </p>
+                        
+                        {/* Add volunteer feedback section */}
+                        {event.feedback && event.feedback.length > 0 ? (
+                          <div className="past-event-feedback">
+                            <h4>Volunteer Feedback</h4>
+                            <div className="feedback-items">
+                              {/* Show up to 2 feedback items */}
+                              {event.feedback.slice(0, 2).map((item) => (
+                                <div key={item.id} className="feedback-item">
+                                  <div className="feedback-header">
+                                    <span className="feedback-author">{item.userName}</span>
+                                    {renderStars(item.rating)}
+                                  </div>
+                                  <p className="feedback-comment">"{item.comment}"</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="no-feedback">
+                            <p>No volunteer feedback available for this event.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="no-events">
+                  No past events available at the moment.
+                </div>
+              )}
+            </div>
+          </Tab>
+        </Tabs>
       </section>
     </motion.div>
   );

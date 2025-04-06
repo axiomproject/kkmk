@@ -1,62 +1,193 @@
 const db = require('../config/db');
 
+// Add new methods for skill assignments
 const EventModel = {
   async getAllEvents() {
-    // Replace db.query with the already-using db.query (this is already correct)
-    const result = await db.query(`
-      SELECT 
-        id,
-        title,
-        date,
-        description,
-        location,
-        image,
-        latitude,
-        longitude,
-        status,
-        created_at,
-        total_volunteers,
-        current_volunteers,
-        contact_phone,
-        contact_email,
-        start_time,
-        end_time,
-        requirements
-      FROM events 
-      ORDER BY date DESC
-    `);
-    
-    // Add debug logging for requirements field
-    console.log('Events with requirements:', result.rows.map(e => ({
-      id: e.id,
-      title: e.title,
-      requirements: e.requirements
-    })));
-    
-    return result.rows;
+    try {
+      // Add debug log to trace the query execution
+      console.log('Executing getAllEvents query...');
+      
+      // Make sure we're explicitly requesting skill_requirements
+      const result = await db.query(`
+        SELECT 
+          id,
+          title,
+          date,
+          description,
+          location,
+          image,
+          latitude,
+          longitude,
+          status,
+          created_at,
+          total_volunteers,
+          current_volunteers,
+          total_scholars,
+          current_scholars,
+          contact_phone,
+          contact_email,
+          start_time,
+          end_time,
+          requirements,
+          skill_requirements::text as skill_requirements
+        FROM events 
+        ORDER BY date DESC
+      `);
+      
+      console.log(`Found ${result.rows.length} events`);
+      
+      // Process the result to parse JSON fields
+      const events = result.rows.map(event => {
+        const processedEvent = { ...event };
+        
+        // Parse skill_requirements JSON if it exists
+        if (event.skill_requirements) {
+          try {
+            console.log(`Raw skill_requirements for event ${event.id}:`, event.skill_requirements);
+            processedEvent.skill_requirements = JSON.parse(event.skill_requirements);
+            console.log(`Parsed skill_requirements for event ${event.id}:`, processedEvent.skill_requirements);
+          } catch (e) {
+            console.error(`Error parsing skill_requirements JSON for event ${event.id}:`, e);
+            console.error('Raw value:', event.skill_requirements);
+            processedEvent.skill_requirements = [];
+          }
+        } else {
+          console.log(`No skill_requirements found for event ${event.id}`);
+          processedEvent.skill_requirements = [];
+        }
+        
+        return processedEvent;
+      });
+      
+      // Add debug logging
+      events.forEach(event => {
+        console.log(`Event ${event.id} skill_requirements:`, 
+          event.skill_requirements || 'None');
+      });
+      
+      return events;
+    } catch (error) {
+      console.error('Error in getAllEvents:', error);
+      throw error;
+    }
   },
 
   async getEventById(id) {
-    // Replace db.oneOrNone with db.query
-    const result = await db.query('SELECT * FROM events WHERE id = $1', [id]);
-    return result.rows.length ? result.rows[0] : null;
+    try {
+      const result = await db.query(`
+        SELECT 
+          *,
+          skill_requirements::text as skill_requirements_text
+        FROM events 
+        WHERE id = $1
+      `, [id]);
+      
+      if (result.rows.length > 0) {
+        const event = result.rows[0];
+        // Parse skill_requirements JSON if it exists
+        if (event.skill_requirements_text) {
+          try {
+            event.skill_requirements = JSON.parse(event.skill_requirements_text);
+            console.log(`Parsed skill_requirements for event ${event.id}:`, event.skill_requirements);
+          } catch (e) {
+            console.error(`Error parsing skill_requirements JSON for event ${event.id}:`, e);
+            console.error('Raw value:', event.skill_requirements_text);
+            event.skill_requirements = [];
+          }
+        } else {
+          event.skill_requirements = [];
+        }
+        delete event.skill_requirements_text; // Remove the text version
+        return event;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error in getEventById:', error);
+      throw error;
+    }
+  },
+
+  async submitScholarFeedback(userId, eventId, feedback) {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // First check if the scholar has already provided feedback for this event
+      const existingFeedbackCheck = await client.query(`
+        SELECT id FROM event_feedback
+        WHERE event_id = $1 AND user_id = $2
+      `, [eventId, userId]);
+      
+      if (existingFeedbackCheck.rows.length > 0) {
+        throw new Error('You have already submitted feedback for this event');
+      }
+      
+      // Insert event feedback
+      const eventFeedbackResult = await client.query(`
+        INSERT INTO event_feedback 
+          (user_id, event_id, rating, comment, user_type)
+        VALUES ($1, $2, $3, $4, 'scholar')
+        RETURNING *
+      `, [userId, eventId, feedback.eventRating, feedback.eventComment]);
+      
+      // Insert volunteer feedback
+      const volunteerFeedbackResult = await client.query(`
+        INSERT INTO scholar_volunteer_feedback
+          (event_id, scholar_id, volunteer_comment)
+        VALUES ($1, $2, $3)
+        RETURNING *
+      `, [eventId, userId, feedback.volunteerComment]);
+      
+      await client.query('COMMIT');
+      
+      return {
+        eventFeedback: eventFeedbackResult.rows[0],
+        volunteerFeedback: volunteerFeedbackResult.rows[0],
+        message: 'Feedback submitted successfully'
+      };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error in submitScholarFeedback:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
   },
 
   async createEvent(eventData) {
     const {
       title, date, location, description,
-      totalVolunteers, currentVolunteers, status,
+      totalVolunteers, currentVolunteers, 
+      totalScholars, currentScholars, // Add new scholar fields
+      status,
       contactPhone, contactEmail, startTime, endTime,
-      imagePath, latitude, longitude, requirements
+      imagePath, latitude, longitude, requirements,
+      skillRequirements
     } = eventData;
 
     console.log('Creating event with requirements:', requirements);
+    console.log('Creating event with skill requirements:', skillRequirements);
+    console.log('Creating event with scholar counts:', { totalScholars, currentScholars });
+
+    // Parse skill requirements if it's a string
+    let processedSkillRequirements = skillRequirements;
+    if (typeof skillRequirements === 'string') {
+      try {
+        processedSkillRequirements = JSON.parse(skillRequirements);
+      } catch (e) {
+        console.error('Error parsing skill requirements JSON string:', e);
+        processedSkillRequirements = null;
+      }
+    }
 
     // Debug logging to see what's being sent to the database
     const params = [
       title, date, location, imagePath, description,
       parseInt(totalVolunteers) || 0,
       parseInt(currentVolunteers) || 0,
+      parseInt(totalScholars) || 0, // Add total scholars
+      parseInt(currentScholars) || 0, // Add current scholars
       status,
       contactPhone || '',
       contactEmail || '',
@@ -64,7 +195,8 @@ const EventModel = {
       endTime,
       latitude ? parseFloat(latitude) : null,
       longitude ? parseFloat(longitude) : null,
-      requirements || ''
+      requirements || '',
+      processedSkillRequirements ? JSON.stringify(processedSkillRequirements) : null
     ];
     
     console.log('Database parameters:', params);
@@ -73,27 +205,56 @@ const EventModel = {
     const result = await db.query(
       `INSERT INTO events (
         title, date, location, image, description,
-        total_volunteers, current_volunteers, status,
+        total_volunteers, current_volunteers, 
+        total_scholars, current_scholars,
+        status,
         contact_phone, contact_email, start_time, end_time,
-        latitude, longitude, requirements
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        latitude, longitude, requirements, skill_requirements
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *`,
       params
     );
     
-    console.log('Created event:', result.rows[0]);
-    return result.rows[0];
+    const createdEvent = result.rows[0];
+    
+    // Parse skill_requirements JSON for the return value
+    if (createdEvent.skill_requirements && typeof createdEvent.skill_requirements === 'string') {
+      try {
+        createdEvent.skill_requirements = JSON.parse(createdEvent.skill_requirements);
+      } catch (e) {
+        console.error('Error parsing created event skill_requirements:', e);
+      }
+    }
+    
+    console.log('Created event:', createdEvent);
+    return createdEvent;
   },
 
   async updateEvent(id, eventData) {
     const {
       title, date, location, description,
-      totalVolunteers, currentVolunteers, status,
+      totalVolunteers, currentVolunteers, 
+      totalScholars, currentScholars, // Add new scholar fields
+      status,
       contactPhone, contactEmail, startTime, endTime,
-      imagePath, latitude, longitude, requirements
+      imagePath, latitude, longitude, requirements,
+      skillRequirements
     } = eventData;
 
     console.log('Updating event with requirements:', requirements);
+    console.log('Updating event with skill requirements:', skillRequirements);
+    console.log('Updating event with scholar counts:', { totalScholars, currentScholars });
+
+    // Parse skill requirements if it's a string
+    let processedSkillRequirements = skillRequirements;
+    if (typeof skillRequirements === 'string') {
+      try {
+        processedSkillRequirements = JSON.parse(skillRequirements);
+      } catch (e) {
+        console.error('Error parsing skill requirements JSON string:', e);
+        processedSkillRequirements = null;
+      }
+    }
 
     // Create base array of values
     const values = [
@@ -103,6 +264,8 @@ const EventModel = {
       description,
       parseInt(totalVolunteers),
       parseInt(currentVolunteers),
+      parseInt(totalScholars) || 0, // Add total scholars
+      parseInt(currentScholars) || 0, // Add current scholars
       status,
       contactPhone,
       contactEmail,
@@ -110,7 +273,8 @@ const EventModel = {
       endTime,
       latitude ? parseFloat(latitude) : null,
       longitude ? parseFloat(longitude) : null,
-      requirements || ''
+      requirements || '',
+      processedSkillRequirements ? JSON.stringify(processedSkillRequirements) : null
     ];
     
     console.log('Update values:', values);
@@ -124,14 +288,17 @@ const EventModel = {
         description = $4,
         total_volunteers = $5,
         current_volunteers = $6,
-        status = $7,
-        contact_phone = $8,
-        contact_email = $9,
-        start_time = $10,
-        end_time = $11,
-        latitude = $12,
-        longitude = $13,
-        requirements = $14,
+        total_scholars = $7,
+        current_scholars = $8,
+        status = $9,
+        contact_phone = $10,
+        contact_email = $11,
+        start_time = $12,
+        end_time = $13,
+        latitude = $14,
+        longitude = $15,
+        requirements = $16,
+        skill_requirements = $17,
         updated_at = CURRENT_TIMESTAMP
     `;
 
@@ -150,8 +317,20 @@ const EventModel = {
 
     // Replace db.one with db.query
     const result = await db.query(query, values);
-    console.log('Updated event:', result.rows[0]);
-    return result.rows[0];
+    
+    const updatedEvent = result.rows[0];
+    
+    // Parse skill_requirements JSON for the return value
+    if (updatedEvent.skill_requirements && typeof updatedEvent.skill_requirements === 'string') {
+      try {
+        updatedEvent.skill_requirements = JSON.parse(updatedEvent.skill_requirements);
+      } catch (e) {
+        console.error('Error parsing updated event skill_requirements:', e);
+      }
+    }
+    
+    console.log('Updated event:', updatedEvent);
+    return updatedEvent;
   },
 
   async deleteEvent(id) {
@@ -186,7 +365,8 @@ const EventModel = {
     }
   },
 
-  async joinEvent(eventId, userId) {
+  // Update this method to handle scholar role participants
+  async joinEvent(eventId, userId, userRole) {
     // Replace db.tx with client transaction
     const client = await db.connect();
     try {
@@ -202,20 +382,29 @@ const EventModel = {
         throw new Error('You have already joined this event');
       }
 
-      // Add participant with PENDING status instead of ACTIVE
+      // Add participant with PENDING status
       await client.query(
         'INSERT INTO event_participants(event_id, user_id, status) VALUES($1, $2, $3)',
         [eventId, userId, 'PENDING']
       );
 
-      // Update current_volunteers count
-      const updatedResult = await client.query(
-        `UPDATE events 
-         SET current_volunteers = current_volunteers + 1 
-         WHERE id = $1 AND current_volunteers < total_volunteers 
-         RETURNING *`,
-        [eventId]
-      );
+      // Update counts based on user role
+      let updateQuery;
+      if (userRole === 'scholar') {
+        updateQuery = `
+          UPDATE events 
+          SET current_scholars = current_scholars + 1 
+          WHERE id = $1 AND current_scholars < total_scholars 
+          RETURNING *`;
+      } else {
+        updateQuery = `
+          UPDATE events 
+          SET current_volunteers = current_volunteers + 1 
+          WHERE id = $1 AND current_volunteers < total_volunteers 
+          RETURNING *`;
+      }
+
+      const updatedResult = await client.query(updateQuery, [eventId]);
 
       await client.query('COMMIT');
       return updatedResult.rows[0];
@@ -227,7 +416,8 @@ const EventModel = {
     }
   },
 
-  async unjoinEvent(eventId, userId) {
+  // Update this method to handle scholar role participants
+  async unjoinEvent(eventId, userId, userRole) {
     // Replace db.tx with client transaction
     const client = await db.connect();
     try {
@@ -249,14 +439,23 @@ const EventModel = {
         [eventId, userId]
       );
 
-      // Update current_volunteers count
-      const updatedResult = await client.query(
-        `UPDATE events 
-         SET current_volunteers = current_volunteers - 1 
-         WHERE id = $1 AND current_volunteers > 0
-         RETURNING *`,
-        [eventId]
-      );
+      // Update counts based on user role
+      let updateQuery;
+      if (userRole === 'scholar') {
+        updateQuery = `
+          UPDATE events 
+          SET current_scholars = current_scholars - 1 
+          WHERE id = $1 AND current_scholars > 0
+          RETURNING *`;
+      } else {
+        updateQuery = `
+          UPDATE events 
+          SET current_volunteers = current_volunteers - 1 
+          WHERE id = $1 AND current_volunteers > 0
+          RETURNING *`;
+      }
+
+      const updatedResult = await client.query(updateQuery, [eventId]);
 
       await client.query('COMMIT');
       return updatedResult.rows[0];
@@ -604,6 +803,136 @@ const EventModel = {
       RETURNING *
     `, [userId, eventId, feedback.rating, feedback.comment]);
     return result.rows[0];
+  },
+
+  async getEventParticipantSkills(eventId) {
+    try {
+      const result = await db.query(`
+        SELECT 
+          eps.user_id, 
+          eps.skill, 
+          eps.assigned_at,
+          u.name as user_name
+        FROM event_participant_skills eps
+        JOIN users u ON eps.user_id = u.id
+        WHERE eps.event_id = $1
+        ORDER BY eps.assigned_at DESC
+      `, [eventId]);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error in getEventParticipantSkills:', error);
+      throw error;
+    }
+  },
+
+  async assignSkillToParticipant(eventId, userId, skill, assignedBy) {
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+      
+      // Check if the participant exists and is ACTIVE
+      const participantCheck = await client.query(`
+        SELECT status FROM event_participants 
+        WHERE event_id = $1 AND user_id = $2
+      `, [eventId, userId]);
+      
+      if (participantCheck.rows.length === 0) {
+        throw new Error('Participant not found for this event');
+      }
+      
+      if (participantCheck.rows[0].status !== 'ACTIVE') {
+        throw new Error('Can only assign skills to approved participants');
+      }
+      
+      // If skill is null or empty, remove any assignment
+      if (!skill) {
+        await client.query(`
+          DELETE FROM event_participant_skills
+          WHERE event_id = $1 AND user_id = $2
+        `, [eventId, userId]);
+        
+        await client.query('COMMIT');
+        return { removed: true };
+      }
+      
+      // Check if the skill is valid for this event
+      const eventCheck = await client.query(`
+        SELECT skill_requirements FROM events WHERE id = $1
+      `, [eventId]);
+      
+      if (eventCheck.rows.length === 0) {
+        throw new Error('Event not found');
+      }
+      
+      let skillRequirements = [];
+      if (eventCheck.rows[0].skill_requirements) {
+        try {
+          if (typeof eventCheck.rows[0].skill_requirements === 'string') {
+            skillRequirements = JSON.parse(eventCheck.rows[0].skill_requirements);
+          } else {
+            skillRequirements = eventCheck.rows[0].skill_requirements;
+          }
+        } catch (e) {
+          console.error('Error parsing skill requirements:', e);
+        }
+      }
+      
+      // If event has skill requirements, validate the skill
+      if (skillRequirements.length > 0) {
+        const isValidSkill = skillRequirements.some(req => req.skill === skill);
+        if (!isValidSkill) {
+          throw new Error('Invalid skill for this event');
+        }
+        
+        // Check if there's still capacity for this skill
+        const currentCount = await client.query(`
+          SELECT COUNT(*) FROM event_participant_skills
+          WHERE event_id = $1 AND skill = $2 AND user_id != $3
+        `, [eventId, skill, userId]);
+        
+        const skillRequirement = skillRequirements.find(req => req.skill === skill);
+        if (skillRequirement && parseInt(currentCount.rows[0].count) >= skillRequirement.count) {
+          throw new Error('Skill position is already at maximum capacity');
+        }
+      }
+      
+      // Upsert the skill assignment
+      const result = await client.query(`
+        INSERT INTO event_participant_skills (event_id, user_id, skill, assigned_by)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (event_id, user_id) 
+        DO UPDATE SET 
+          skill = $3, 
+          assigned_at = CURRENT_TIMESTAMP,
+          assigned_by = $4
+        RETURNING *
+      `, [eventId, userId, skill, assignedBy]);
+      
+      await client.query('COMMIT');
+      return result.rows[0];
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  },
+
+  async getParticipantSkillCounts(eventId) {
+    try {
+      const result = await db.query(`
+        SELECT skill, COUNT(*) as count
+        FROM event_participant_skills
+        WHERE event_id = $1
+        GROUP BY skill
+      `, [eventId]);
+      
+      return result.rows;
+    } catch (error) {
+      console.error('Error in getParticipantSkillCounts:', error);
+      throw error;
+    }
   }
 };
 

@@ -1513,7 +1513,6 @@ transform: scale(1.05);
   margin-bottom: 20px;
 }
 .tab-content {
-  opacity: 0;
   transform: translateY(20px);
   transition: all 0.2s ease-in-out;
 }

@@ -117,6 +117,13 @@ interface ReportCardStatus {
   verification_step: number;
 }
 
+// Add this interface for scholar feedback
+interface ScholarFeedback {
+  eventRating: number;
+  eventComment: string;
+  volunteerComment: string;
+}
+
 const VolunteerProfile: React.FC = () => {
   const [value, setValue] = useState(0);
   const [intro, setIntro] = useState("");
@@ -986,10 +993,24 @@ const VolunteerProfile: React.FC = () => {
     if (!currentFeedbackEvent) return;
 
     try {
-      await api.post(
-        `/events/${currentFeedbackEvent.id}/feedback`,
-        { rating, comment: feedbackComment }
-      );
+      // Different submission based on user role
+      if (userType === 'scholar') {
+        // Submit scholar feedback (both for event and volunteers)
+        await api.post(
+          `/events/${currentFeedbackEvent.id}/scholar-feedback`,
+          { 
+            eventRating: scholarFeedback.eventRating, 
+            eventComment: scholarFeedback.eventComment,
+            volunteerComment: scholarFeedback.volunteerComment 
+          }
+        );
+      } else {
+        // Submit volunteer feedback (just about the event)
+        await api.post(
+          `/events/${currentFeedbackEvent.id}/feedback`,
+          { rating, comment: feedbackComment }
+        );
+      }
 
       // Remove current event and show next if available
       const remainingEvents = pendingFeedbackEvents.filter(
@@ -999,9 +1020,17 @@ const VolunteerProfile: React.FC = () => {
       
       if (remainingEvents.length > 0) {
         setCurrentFeedbackEvent(remainingEvents[0]);
-        // Reset form
-        setRating(0);
-        setFeedbackComment("");
+        // Reset form based on user type
+        if (userType === 'scholar') {
+          setScholarFeedback({
+            eventRating: 0,
+            eventComment: "",
+            volunteerComment: ""
+          });
+        } else {
+          setRating(0);
+          setFeedbackComment("");
+        }
       } else {
         setShowFeedbackModal(false);
         setCurrentFeedbackEvent(null);
@@ -1310,6 +1339,13 @@ const handleVerifyDistribution = async (
   }
 };
 
+  // Add state for scholar feedback
+  const [volunteerFeedback, setVolunteerFeedback] = useState<string>("");
+  const [scholarFeedback, setScholarFeedback] = useState<ScholarFeedback>({
+    eventRating: 0,
+    eventComment: "",
+    volunteerComment: ""
+  });
 
   return (
     <div className="page-wrapper">
@@ -1894,33 +1930,83 @@ const handleVerifyDistribution = async (
           <h2>Share Your Experience</h2>
           <p>Please share your experience at:<br/>{currentFeedbackEvent.title}</p>
           
-          <div className="rating-container">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <FaStar
-                key={star}
-                className={`star-icon ${star <= rating ? 'selected' : ''}`}
-                size={32}
-                onClick={() => setRating(star)}
-                color={star <= rating ? "#ffc107" : "#e4e5e9"}
+          {userType === 'scholar' ? (
+            // Scholar feedback form with two sections
+            <div className="scholar-feedback-form">
+              <div className="feedback-section">
+                <h3>Event Experience</h3>
+                <div className="rating-container">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <FaStar
+                      key={star}
+                      className={`star-icon ${star <= scholarFeedback.eventRating ? 'selected' : ''}`}
+                      size={32}
+                      onClick={() => setScholarFeedback({...scholarFeedback, eventRating: star})}
+                      color={star <= scholarFeedback.eventRating ? "#ffc107" : "#e4e5e9"}
+                    />
+                  ))}
+                </div>
+                
+                <textarea
+                  className="feedback-textarea"
+                  value={scholarFeedback.eventComment}
+                  onChange={(e) => setScholarFeedback({...scholarFeedback, eventComment: e.target.value})}
+                  placeholder="Tell us about your experience at this event..."
+                  rows={3}
+                />
+              </div>
+              
+              <div className="feedback-section volunteer-feedback">
+                <h3>Volunteer Feedback</h3>
+                <textarea
+                  className="feedback-textarea"
+                  value={scholarFeedback.volunteerComment}
+                  onChange={(e) => setScholarFeedback({...scholarFeedback, volunteerComment: e.target.value})}
+                  placeholder="Share your thoughts about the volunteers who helped at this event..."
+                  rows={3}
+                />
+              </div>
+              
+              <button 
+                onClick={handleSubmitFeedback}
+                disabled={scholarFeedback.eventRating === 0}
+                className="feedback-submit-button"
+              >
+                Submit Feedback
+              </button>
+            </div>
+          ) : (
+            // Volunteer feedback form (existing)
+            <>
+              <div className="rating-container">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <FaStar
+                    key={star}
+                    className={`star-icon ${star <= rating ? 'selected' : ''}`}
+                    size={32}
+                    onClick={() => setRating(star)}
+                    color={star <= rating ? "#ffc107" : "#e4e5e9"}
+                  />
+                ))}
+              </div>
+              
+              <textarea
+                className="feedback-textarea"
+                value={feedbackComment}
+                onChange={(e) => setFeedbackComment(e.target.value)}
+                placeholder="Tell us about your experience at this event..."
+                rows={4}
               />
-            ))}
-          </div>
-          
-          <textarea
-            className="feedback-textarea"
-            value={feedbackComment}
-            onChange={(e) => setFeedbackComment(e.target.value)}
-            placeholder="Tell us about your experience at this event..."
-            rows={4}
-          />
-          
-          <button 
-            onClick={handleSubmitFeedback}
-            disabled={rating === 0}
-            className="feedback-submit-button"
-          >
-            Submit Feedback
-          </button>
+              
+              <button 
+                onClick={handleSubmitFeedback}
+                disabled={rating === 0}
+                className="feedback-submit-button"
+              >
+                Submit Feedback
+              </button>
+            </>
+          )}
         </div>
       </div>
     )}

@@ -99,6 +99,7 @@ interface FeedbackAnalytics {
       comment: string;
       created_at: string;
       user_name: string;
+      user_role: string;
     }>;
   }>;
   sentimentStats: {
@@ -106,6 +107,14 @@ interface FeedbackAnalytics {
     neutral_feedback: number;
     negative_feedback: number;
   };
+  volunteerFeedback: Array<{
+    event_id: number;
+    event_title: string;
+    volunteer_comment: string;
+    created_at: string;
+    scholar_name: string;
+    scholar_id: number;
+  }>;
 }
 
 const EventFeedbackAnalytics: React.FC = () => {
@@ -125,6 +134,18 @@ const EventFeedbackAnalytics: React.FC = () => {
   const sentimentChartRef = useRef<any>(null);
   const wordCloudContainerRef = useRef<HTMLDivElement>(null);
 
+  const [selectedRole, setSelectedRole] = useState<string>("scholar");
+
+  // Add state for sentiment data
+  const [sentimentData, setSentimentData] = useState({
+    labels: ['Positive', 'Neutral', 'Negative'],
+    datasets: [{
+      data: [0, 0, 0],
+      backgroundColor: ['#4CAF50', '#FFC107', '#FF5252'],
+      borderWidth: 0
+    }]
+  });
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       setLoading(true);
@@ -142,12 +163,6 @@ const EventFeedbackAnalytics: React.FC = () => {
       } catch (error) {
         console.error('Error fetching feedback analytics:', error);
         setError('Failed to load analytics data. Please try again later.');
-        
-        // For development/testing - use mock data if API fails
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Using mock data for development');
-          setAnalytics(getMockAnalyticsData());
-        }
       } finally {
         setLoading(false);
       }
@@ -333,7 +348,7 @@ const EventFeedbackAnalytics: React.FC = () => {
             </div>
             <div class="stat-card">
               <h3>Events with Feedback</h3>
-              <h2>${analytics.overallStats.events_with_feedback}</h2>
+              <h2>${analytics.overallStats.events_with_feedback}</2>
             </div>
           </div>
           
@@ -390,63 +405,216 @@ const EventFeedbackAnalytics: React.FC = () => {
     }
   };
 
+  // When role changes, update charts with filtered data
+  useEffect(() => {
+    if (analytics) {
+      updateSentimentChartForRole();
+    }
+  }, [selectedRole, selectedEvent, filterRating, analytics]);
+
+  // Simplify the sentiment data calculation to focus strictly on user roles
+  const updateSentimentChartForRole = () => {
+    if (!analytics) return;
+
+    let positiveCount = 0;
+    let neutralCount = 0;
+    let negativeCount = 0;
+
+    console.log(`Updating sentiment chart for role: ${selectedRole}`);
+
+    // Get all event feedback, filtered by role and event (if selected)
+    const filteredEvents = analytics.eventStats
+      .filter(event => !selectedEvent || event.id === selectedEvent);
+      
+    if (selectedRole === "scholar") {
+      // SIMPLIFIED: Only count feedback where user_role is scholar
+      // and ignore volunteerFeedback completely
+      filteredEvents.forEach(event => {
+        const scholarFeedback = event.feedback_details.filter(
+          feedback => feedback.user_role === 'scholar' && 
+                     (!filterRating || feedback.rating === filterRating)
+        );
+        
+        scholarFeedback.forEach(feedback => {
+          if (feedback.rating >= 4) positiveCount++;
+          else if (feedback.rating === 3) neutralCount++;
+          else if (feedback.rating <= 2) negativeCount++;
+        });
+      });
+      
+      console.log(`Scholar feedback sentiment counts: ${positiveCount} positive, ${neutralCount} neutral, ${negativeCount} negative`);
+    } else if (selectedRole === "volunteer") {
+      // Only count feedback where user_role is volunteer
+      filteredEvents.forEach(event => {
+        const volunteerFeedback = event.feedback_details.filter(
+          feedback => feedback.user_role === 'volunteer' && 
+                     (!filterRating || feedback.rating === filterRating)
+        );
+        
+        volunteerFeedback.forEach(feedback => {
+          if (feedback.rating >= 4) positiveCount++;
+          else if (feedback.rating === 3) neutralCount++;
+          else if (feedback.rating <= 2) negativeCount++;
+        });
+      });
+      
+      console.log(`Volunteer feedback sentiment counts: ${positiveCount} positive, ${neutralCount} neutral, ${negativeCount} negative`);
+    }
+
+    // If no feedback found for the current filter, use the overall stats
+    if (positiveCount === 0 && neutralCount === 0 && negativeCount === 0) {
+      positiveCount = analytics.sentimentStats.positive_feedback;
+      neutralCount = analytics.sentimentStats.neutral_feedback;
+      negativeCount = analytics.sentimentStats.negative_feedback;
+    }
+
+    // Update sentiment chart data
+    setSentimentData({
+      labels: ['Positive', 'Neutral', 'Negative'],
+      datasets: [{
+        data: [positiveCount, neutralCount, negativeCount],
+        backgroundColor: ['#4CAF50', '#FFC107', '#FF5252'],
+        borderWidth: 0
+      }]
+    });
+  };
+
+  // Simplify the word cloud data generation to focus strictly on user roles
+const getFilteredWordCloudData = () => {
+  if (!analytics) return [];
+  console.log('Selected role for word cloud:', selectedRole);
+
+  // Only process data for the current selected role
+  if (selectedRole === "scholar") {
+    // SCHOLAR-ONLY APPROACH: Only collect comments from event feedback where user_role = 'scholar'
+    let scholarComments: string[] = [];
+    
+    // Get filtered events and only extract scholar feedback
+    analytics.eventStats
+      .filter(event => !selectedEvent || event.id === selectedEvent)
+      .forEach(event => {
+        // Get only scholar feedback
+        const scholarEventFeedback = event.feedback_details.filter(
+          feedback => feedback.user_role === 'scholar' && 
+                     (!filterRating || feedback.rating === filterRating)
+        );
+        
+        // Log what we found
+        console.log(`Event ${event.id}: Found ${scholarEventFeedback.length} scholar feedback comments`);
+        
+        // Add non-empty comments to our array
+        scholarEventFeedback.forEach(feedback => {
+          if (feedback.comment && feedback.comment.trim()) {
+            scholarComments.push(feedback.comment);
+          }
+        });
+      });
+    
+    console.log(`Total scholar comments found: ${scholarComments.length}`);
+    
+    // If no scholar comments, return empty array
+    if (scholarComments.length === 0) {
+      console.log('No scholar comments to analyze');
+      return [];
+    }
+    
+    // Sample the first few comments for debugging
+    if (scholarComments.length > 0) {
+      console.log('Sample scholar comments:', scholarComments.slice(0, 2));
+    }
+    
+    // Process scholar comments only
+    return processCommentsForWordCloud(scholarComments);
+    
+  } else if (selectedRole === "volunteer") {
+    // VOLUNTEER-ONLY APPROACH: Only collect comments from event feedback where user_role = 'volunteer'
+    let volunteerComments: string[] = [];
+    
+    // Get filtered events and only extract volunteer feedback
+    analytics.eventStats
+      .filter(event => !selectedEvent || event.id === selectedEvent)
+      .forEach(event => {
+        // Get only volunteer feedback
+        const volunteerEventFeedback = event.feedback_details.filter(
+          feedback => feedback.user_role === 'volunteer' && 
+                     (!filterRating || feedback.rating === filterRating)
+        );
+        
+        // Log what we found
+        console.log(`Event ${event.id}: Found ${volunteerEventFeedback.length} volunteer feedback comments`);
+        
+        // Add non-empty comments to our array
+        volunteerEventFeedback.forEach(feedback => {
+          if (feedback.comment && feedback.comment.trim()) {
+            volunteerComments.push(feedback.comment);
+          }
+        });
+      });
+    
+    console.log(`Total volunteer comments found: ${volunteerComments.length}`);
+    
+    // If no volunteer comments, return empty array
+    if (volunteerComments.length === 0) {
+      console.log('No volunteer comments to analyze');
+      return [];
+    }
+    
+    // Sample the first few comments for debugging
+    if (volunteerComments.length > 0) {
+      console.log('Sample volunteer comments:', volunteerComments.slice(0, 2));
+    }
+    
+    // Process volunteer comments only
+    return processCommentsForWordCloud(volunteerComments);
+  }
+  
+  // If no role matches or other issue, return empty array
+  return [];
+};
+
+// Helper function to process comments into word cloud data
+const processCommentsForWordCloud = (comments: string[]): { text: string, value: number }[] => {
+  // Join all comments and convert to lowercase
+  const allCommentsText = comments.join(' ').toLowerCase();
+  
+  // Extract words (only alphabetic words with 4+ characters)
+  const words = allCommentsText.match(/\b[a-z]{4,}\b/g) || [];
+  
+  // Define common words to exclude (stop words)
+  const stopWords = new Set([
+    'with', 'this', 'that', 'from', 'have', 'were', 'they', 'will', 
+    'would', 'should', 'could', 'what', 'when', 'where', 'which',
+    'your', 'their', 'very', 'some', 'just', 'because', 'about'
+  ]);
+  
+  // Count word frequency
+  const frequency: { [key: string]: number } = {};
+  words.forEach(word => {
+    if (!stopWords.has(word)) {
+      frequency[word] = (frequency[word] || 0) + 1;
+    }
+  });
+  
+  // Convert to word cloud format
+  return Object.entries(frequency)
+    .map(([text, value]) => ({ text, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 30); // Only keep top 30 words
+};
+
+  // Add type safety check for average_rating
+  const averageRating = analytics?.overallStats?.average_rating !== undefined 
+    ? Number(analytics.overallStats.average_rating).toFixed(1)
+    : '0.0';
+
+  const wordCloudData = analytics?.wordFrequency?.map(({ word, frequency }) => ({
+    text: word,
+    value: frequency
+  })) || [];
+
   if (loading) return <div className="loading-container">Loading analytics data...</div>;
   if (error && !analytics) return <div className="error-container">{error}</div>;
   if (!analytics) return <div className="error-container">No analytics data available</div>;
-
-  // Add type safety check for average_rating
-  const averageRating = typeof analytics.overallStats.average_rating === 'number' 
-    ? analytics.overallStats.average_rating.toFixed(1)
-    : '0.0';
-
-  const wordCloudData = analytics.wordFrequency.map(({ word, frequency }) => ({
-    text: word,
-    value: frequency
-  }));
-
-  const getFilteredWordCloudData = () => {
-    if (!analytics) return [];
-
-    // Get filtered events
-    const filteredEvents = analytics.eventStats
-      .filter(event => !selectedEvent || event.id === selectedEvent);
-
-    // Collect all comments from filtered events and ratings
-    const allComments = filteredEvents.flatMap(event =>
-      event.feedback_details
-        .filter(feedback => !filterRating || feedback.rating === filterRating)
-        .map(feedback => feedback.comment)
-    ).join(' ').toLowerCase();
-
-    // Split into words and count frequency
-    const words = allComments.match(/\b\w+\b/g) || [];
-    const frequency: { [key: string]: number } = {};
-    
-    words.forEach(word => {
-      if (word.length > 3) { // Only count words longer than 3 characters
-        frequency[word] = (frequency[word] || 0) + 1;
-      }
-    });
-
-    // Convert to word cloud format
-    return Object.entries(frequency)
-      .map(([text, value]) => ({ text, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 50); // Keep top 50 words
-  };
-
-  const sentimentData = {
-    labels: ['Positive', 'Neutral', 'Negative'],
-    datasets: [{
-      data: [
-        analytics.sentimentStats.positive_feedback,
-        analytics.sentimentStats.neutral_feedback,
-        analytics.sentimentStats.negative_feedback
-      ],
-      backgroundColor: ['#4CAF50', '#FFC107', '#FF5252'],
-      borderWidth: 0
-    }]
-  };
 
   return (
     <div className="feedback-analytics-container">
@@ -547,11 +715,15 @@ const EventFeedbackAnalytics: React.FC = () => {
 
       <div className="charts-section">
         <div className="sentiment-chart">
-          <h2>Feedback Sentiment Distribution</h2>
+          <h2>
+            {selectedRole === 'scholar' 
+              ? 'Scholar Feedback Sentiment' 
+              : 'Volunteer Feedback Sentiment'}
+          </h2>
           <div>
             <Pie 
-              ref={sentimentChartRef} // Add ref to the chart
-              data={sentimentData} 
+              ref={sentimentChartRef}
+              data={sentimentData}
               options={{ 
                 maintainAspectRatio: true,
                 responsive: true,
@@ -562,6 +734,18 @@ const EventFeedbackAnalytics: React.FC = () => {
                       padding: 20,
                       usePointStyle: true
                     }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        const label = context.label || '';
+                        const value = context.parsed || 0;
+                        const dataset = context.dataset;
+                        const total = dataset.data.reduce((acc: number, data: number) => acc + data, 0);
+                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                        return `${label}: ${value} (${percentage}%)`;
+                      }
+                    }
                   }
                 }
               }} 
@@ -570,9 +754,13 @@ const EventFeedbackAnalytics: React.FC = () => {
         </div>
 
         <div className="word-cloud-container" ref={wordCloudContainerRef}>
-          <h2>Common Feedback Themes</h2>
+          <h2>
+            {selectedRole === 'scholar' 
+              ? 'Top Words in Scholar Feedback' 
+              : 'Top Words in Volunteer Feedback'}
+          </h2>
           <WordCloudWithErrorHandling
-            words={selectedEvent || filterRating ? getFilteredWordCloudData() : wordCloudData}
+            words={getFilteredWordCloudData()}
             options={{
               colors: ['#FF3D00', '#FF6E40', '#FF9E80'],
               fontFamily: 'Inter',
@@ -590,49 +778,158 @@ const EventFeedbackAnalytics: React.FC = () => {
         </div>
       </div>
 
-      <div className="events-feedback">
-        <div className="feedback-filters">
-          <div>
-            <label htmlFor="event-select">Event:</label>
-            <select 
-              id="event-select"
-              onChange={(e) => setSelectedEvent(e.target.value ? Number(e.target.value) : null)}
-              value={selectedEvent || ''}
-            >
-              <option value="">All Events</option>
-              {analytics.eventStats.map(event => (
-                <option key={event.id} value={event.id}>{event.title}</option>
-              ))}
-            </select>
+      {/* NEW: Role selection tabs */}
+      <div className="feedback-role-tabs">
+        <button 
+          className={selectedRole === "scholar" ? "role-tab-active" : ""}
+          onClick={() => setSelectedRole("scholar")}
+        >
+          Scholar Feedback
+        </button>
+        <button 
+          className={selectedRole === "volunteer" ? "role-tab-active" : ""}
+          onClick={() => setSelectedRole("volunteer")}
+        >
+          Volunteer Feedback
+        </button>
+      </div>
+
+      {/* Common filters for both sections */}
+      <div className="feedback-filters">
+        <div>
+          <label htmlFor="event-select">Event:</label>
+          <select 
+            id="event-select"
+            onChange={(e) => setSelectedEvent(e.target.value ? Number(e.target.value) : null)}
+            value={selectedEvent || ''}
+          >
+            <option value="">All Events</option>
+            {analytics.eventStats.map(event => (
+              <option key={event.id} value={event.id}>{event.title}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="rating-select">Rating:</label>
+          <select
+            id="rating-select"
+            onChange={(e) => setFilterRating(e.target.value ? Number(e.target.value) : null)}
+            value={filterRating || ''}
+          >
+            <option value="">All Ratings</option>
+            {[5, 4, 3, 2, 1].map(rating => (
+              <option key={rating} value={rating}>{rating} Stars</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* SCHOLAR FEEDBACK SECTION - MERGED */}
+      {selectedRole === "scholar" && (
+        <div className="scholar-feedback-section">
+          <h2 className="section-title">Scholar Feedback</h2>
+          
+          {/* Regular Event Feedback by Scholars */}
+          <div className="scholar-feedback-category">
+            <h3 className="category-title">Event Feedback</h3>
+            <div className="events-feedback-grid">
+              {analytics.eventStats
+                .filter(event => !selectedEvent || event.id === selectedEvent)
+                .map(event => {
+                  // Filter feedback by scholars
+                  const scholarFeedback = event.feedback_details.filter(
+                    feedback => feedback.user_role === 'scholar' && 
+                    (!filterRating || feedback.rating === filterRating)
+                  );
+                  
+                  if (scholarFeedback.length === 0) return null;
+                  
+                  return (
+                    <div key={`scholar-${event.id}`} className="event-feedback-card scholar-card">
+                      <h3>{event.title}</h3>
+                      <p>Scholar Feedback: {scholarFeedback.length}</p>
+                      <div className="feedback-list">
+                        {scholarFeedback.map((feedback, index) => (
+                          <div key={index} className="feedback-item">
+                            <div className="rating">{'⭐'.repeat(feedback.rating)}</div>
+                            <p>{feedback.comment}</p>
+                            <small>
+                              {feedback.user_name} - 
+                              {new Date(feedback.created_at).toLocaleDateString()}
+                            </small>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }).filter(Boolean)}
+            </div>
+              
+            {/* Show message if no scholar feedback */}
+            {analytics.eventStats
+              .filter(event => !selectedEvent || event.id === selectedEvent)
+              .every(event => !event.feedback_details.find(
+                f => f.user_role === 'scholar' && (!filterRating || f.rating === filterRating)
+              )) && (
+              <div className="no-feedback-container">
+                <p>No scholar feedback found for events.</p>
+              </div>
+            )}
           </div>
-          <div>
-            <label htmlFor="rating-select">Rating:</label>
-            <select
-              id="rating-select"
-              onChange={(e) => setFilterRating(e.target.value ? Number(e.target.value) : null)}
-              value={filterRating || ''}
-            >
-              <option value="">All Ratings</option>
-              {[5, 4, 3, 2, 1].map(rating => (
-                <option key={rating} value={rating}>{rating} Stars</option>
-              ))}
-            </select>
+
+          {/* Scholar Feedback on Volunteers */}
+          <div className="scholar-feedback-category">
+            <h3 className="category-title">Volunteer Feedback</h3>
+            <div className="volunteer-feedback-grid">
+              {analytics.volunteerFeedback
+                .filter(feedback => !selectedEvent || feedback.event_id === selectedEvent)
+                .length === 0 ? (
+                <div className="no-feedback-container">
+                  <p>No volunteer feedback has been submitted by scholars yet.</p>
+                </div>
+              ) : (
+                analytics.volunteerFeedback
+                  .filter(feedback => !selectedEvent || feedback.event_id === selectedEvent)
+                  .map((feedback, index) => (
+                    <div key={index} className="volunteer-feedback-card">
+                      <h3>{feedback.event_title}</h3>
+                      <div className="feedback-item volunteer">
+                        <p className="feedback-comment">{feedback.volunteer_comment}</p>
+                        <div className="feedback-meta">
+                          <span className="scholar-name">Scholar: {feedback.scholar_name}</span>
+                          <span className="feedback-date">
+                            {new Date(feedback.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
           </div>
         </div>
+      )}
 
+      {/* VOLUNTEER FEEDBACK SECTION */}
+      {selectedRole === "volunteer" && (
         <div className="events-feedback-grid">
           {analytics.eventStats
             .filter(event => !selectedEvent || event.id === selectedEvent)
-            .map(event => (
-              <div key={event.id} className="event-feedback-card">
-                <h3>{event.title}</h3>
-                <p>Average Rating: {event.average_rating.toFixed(1)}</p>
-                <p>Total Feedback: {event.feedback_count}</p>
-                
-                <div className="feedback-list">
-                  {event.feedback_details
-                    .filter(feedback => !filterRating || feedback.rating === filterRating)
-                    .map((feedback, index) => (
+            .map(event => {
+              // Filter feedback by volunteers
+              const volunteerFeedback = event.feedback_details.filter(
+                feedback => feedback.user_role === 'volunteer' && 
+                (!filterRating || feedback.rating === filterRating)
+              );
+              
+              if (volunteerFeedback.length === 0) return null;
+              
+              return (
+                <div key={`volunteer-${event.id}`} className="event-feedback-card volunteer-card">
+                  <h3>{event.title}</h3>
+                  <p>Volunteer Feedback: {volunteerFeedback.length}</p>
+                  <div className="feedback-list">
+                    {volunteerFeedback.map((feedback, index) => (
                       <div key={index} className="feedback-item">
                         <div className="rating">{'⭐'.repeat(feedback.rating)}</div>
                         <p>{feedback.comment}</p>
@@ -642,78 +939,25 @@ const EventFeedbackAnalytics: React.FC = () => {
                         </small>
                       </div>
                     ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            }).filter(Boolean)}
+            
+          {/* Show message if no volunteer feedback */}
+          {analytics.eventStats
+            .filter(event => !selectedEvent || event.id === selectedEvent)
+            .every(event => !event.feedback_details.find(
+              f => f.user_role === 'volunteer' && (!filterRating || f.rating === filterRating)
+            )) && (
+            <div className="no-feedback-container">
+              <p>No volunteer feedback found for the selected filters.</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
-};
-
-// Mock data function for development/testing purposes
-const getMockAnalyticsData = (): FeedbackAnalytics => {
-  return {
-    overallStats: {
-      average_rating: 4.2,
-      total_feedback: 125,
-      events_with_feedback: 8
-    },
-    wordFrequency: [
-      { word: "excellent", frequency: 32 },
-      { word: "informative", frequency: 28 },
-      { word: "engaging", frequency: 25 },
-      { word: "helpful", frequency: 20 },
-      { word: "interesting", frequency: 18 }
-    ],
-    eventStats: [
-      {
-        id: 1,
-        title: "Tech Conference 2023",
-        average_rating: 4.5,
-        feedback_count: 45,
-        feedback_details: [
-          {
-            rating: 5,
-            comment: "Excellent event with great speakers",
-            created_at: "2023-06-15T10:30:00Z",
-            user_name: "John Doe"
-          },
-          {
-            rating: 4,
-            comment: "Very informative sessions",
-            created_at: "2023-06-15T11:45:00Z",
-            user_name: "Jane Smith"
-          }
-        ]
-      },
-      {
-        id: 2,
-        title: "Product Launch",
-        average_rating: 3.8,
-        feedback_count: 32,
-        feedback_details: [
-          {
-            rating: 4,
-            comment: "Great product demonstration",
-            created_at: "2023-07-05T14:20:00Z",
-            user_name: "Mike Johnson"
-          },
-          {
-            rating: 3,
-            comment: "Good event but could use better organization",
-            created_at: "2023-07-05T15:10:00Z",
-            user_name: "Sarah Wilson"
-          }
-        ]
-      }
-    ],
-    sentimentStats: {
-      positive_feedback: 87,
-      neutral_feedback: 25,
-      negative_feedback: 13
-    }
-  };
 };
 
 export default EventFeedbackAnalytics;

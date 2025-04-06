@@ -1266,7 +1266,8 @@ router.get('/feedback-analytics', authMiddleware, async (req, res) => {
             'rating', ef.rating,
             'comment', ef.comment,
             'created_at', ef.created_at,
-            'user_name', u.name
+            'user_name', u.name,
+            'user_role', u.role
           )
         ) FILTER (WHERE ef.id IS NOT NULL), '[]') as feedback_details
       FROM events e
@@ -1307,11 +1308,35 @@ router.get('/feedback-analytics', authMiddleware, async (req, res) => {
     const sentimentStatsResult = await db.query(sentimentStatsQuery, params);
     const sentimentStats = sentimentStatsResult.rows[0];
 
+    // NEW: Get scholar volunteer feedback
+    let volunteerFeedbackQuery = `
+      SELECT 
+        e.id as event_id,
+        e.title as event_title,
+        svf.volunteer_comment,
+        svf.created_at,
+        scholars.name as scholar_name,
+        scholars.id as scholar_id
+      FROM scholar_volunteer_feedback svf
+      JOIN events e ON svf.event_id = e.id
+      JOIN users scholars ON svf.scholar_id = scholars.id
+    `;
+    
+    if (dateFilter) {
+      volunteerFeedbackQuery += ` WHERE svf.${dateFilter}`;
+    }
+    
+    volunteerFeedbackQuery += ` ORDER BY svf.created_at DESC`;
+    
+    const volunteerFeedbackResult = await db.query(volunteerFeedbackQuery, params);
+    const volunteerFeedback = volunteerFeedbackResult.rows;
+
     const results = {
       overallStats,
       wordFrequency,
       eventStats,
-      sentimentStats
+      sentimentStats,
+      volunteerFeedback  // Add the new scholar volunteer feedback data
     };
 
     res.json(results);
