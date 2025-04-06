@@ -2665,3 +2665,417 @@ select:focus {
 }
 
 /* ...existing code... */
+
+/* Add these styles to your existing Layout.css file */
+
+/* Event Tabs */
+.event-tabs {
+  margin-top: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.event-tabs .nav-link {
+  color: #555;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  transition: all 0.3s ease;
+}
+
+.event-tabs .nav-link.active {
+  color: #007bff;
+  border-bottom: 3px solid #007bff;
+  background: transparent;
+}
+
+.event-tabs .nav-link:hover {
+  color: #007bff;
+  background: rgba(0, 123, 255, 0.05);
+}
+
+/* Past Events */
+.past-events-container {
+  padding: 20px 0;
+}
+
+.past-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin-top: 20px;
+}
+
+.past-event-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.past-event-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.past-event-image {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.past-event-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.past-event-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #28a745;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.past-event-content {
+  padding: 25px;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.past-event-content h3 {
+  margin-top: 0;
+  font-size: 1.6rem;
+  color: #242424;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 5px;
+}
+
+.past-event-date, .past-event-location {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+.past-event-date svg, .past-event-location svg {
+  color: #EE3F24;
+  font-size: 1.1rem;
+}
+
+.past-event-metrics {
+  display: flex;
+  justify-content: space-between;
+  margin: 15px 0;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.past-event-metrics:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.metric {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 0 10px;
+}
+
+.metric-icon {
+  font-size: 2.2rem;
+  color: #EE3F24;
+  opacity: 0.9;
+}
+
+.metric-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.metric-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333;
+  line-height: 1;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.past-event-success-message {
+  margin: 5px 0 20px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: #444;
+  background-color: rgba(238, 63, 36, 0.05);
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #EE3F24;
+}
+
+.view-details-btn {
+  display: inline-block;
+  background: #EE3F24;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  align-self: flex-start;
+  box-shadow: 0 2px 5px rgba(238, 63, 36, 0.3);
+}
+
+.view-details-btn:hover {
+  background: #d42e13;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(238, 63, 36, 0.4);
+}
+
+/* Responsive styles for past events */
+@media (min-width: 768px) {
+  .past-event-card {
+    flex-direction: row;
+    max-height: 280px; /* Increased height a bit */
+  }
+  
+  .past-event-image {
+    width: 40%;
+    height: 100%;
+  }
+  
+  .past-event-content {
+    width: 60%;
+    overflow-y: auto; /* Allow scrolling if content is too long */
+    max-height: 280px;
+  }
+  
+  .past-event-metrics {
+    margin: 10px 0;
+    padding: 15px;
+  }
+  
+  .metric-icon {
+    font-size: 2rem;
+  }
+  
+  .metric-value {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .past-event-content {
+    padding: 20px;
+  }
+  
+  .past-event-content h3 {
+    font-size: 1.4rem;
+  }
+  
+  .past-event-metrics {
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+  }
+  
+  .metric {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .past-event-success-message {
+    font-size: 0.95rem;
+    padding: 12px;
+  }
+  
+  .view-details-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Additional styling for the past events badge */
+.past-event-badge {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: linear-gradient(135deg, #EE3F24 0%, #d42e13 100%);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+}
+
+.past-event-badge svg {
+  font-size: 1rem;
+}
+
+/* Enhance the hover effect on past event cards */
+.past-event-card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.past-event-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: rgba(238, 63, 36, 0.2);
+}
+
+/* Enhanced Events Section */
+.events-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 30px 40px; /* Increased horizontal padding */
+  position: relative;
+}
+
+/* Past Event Feedback Styling */
+.past-event-feedback {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 10px;
+}
+
+.past-event-feedback h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  font-family: "Poppins", sans-serif;
+  position: relative;
+  padding-left: 22px;
+}
+
+.past-event-feedback h4:before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -10px;
+  font-size: 2.5rem;
+  color: #EE3F24;
+  opacity: 0.6;
+  font-family: serif;
+}
+
+.feedback-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feedback-item {
+  background-color: white;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-left: 3px solid #EE3F24;
+}
+
+.feedback-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.feedback-author {
+  font-weight: 600;
+  color: #242424;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+}
+
+.feedback-stars {
+  color: #aaa;
+  font-size: 1rem;
+  letter-spacing: 2px;
+}
+
+.feedback-stars .star.filled {
+  color: #ffc107;
+}
+
+.feedback-comment {
+  font-style: italic;
+  margin: 0;
+  font-size: 0.9rem;
+  color: #555;
+  line-height: 1.4;
+  font-family: "Poppins", sans-serif;
+}
+
+.no-feedback {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 10px;
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  font-family: "Poppins", sans-serif;
+  font-size: 0.9rem;
+}
+
+/* Adjust past event content for feedback */
+.past-event-content {
+  padding: 25px;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Adjust feedback for small screens */
+@media (max-width: 767px) {
+  .feedback-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .feedback-stars {
+    font-size: 0.9rem;
+  }
+  
+  .past-event-feedback h4 {
+    font-size: 1rem;
+  }
+}

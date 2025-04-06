@@ -344,6 +344,16 @@
   background-color: #ccc;
 }
 
+/* Style volunteer progress bar */
+.progress-bar.volunteer-progress {
+  background: linear-gradient(45deg, #28a745, #34ce57);
+}
+
+/* Style scholar progress bar */
+.progress-bar.scholar-progress {
+  background: linear-gradient(45deg, #007bff, #0097fb);
+}
+
 @media screen and (max-width: 768px) {
   .event-details-container {
     width: 95%;

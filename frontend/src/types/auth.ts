@@ -15,6 +15,7 @@ export interface User {
   hasSubmittedReport?: boolean;
   verificationStep?: number;
   salaryRange?: string; // Add this property
+  skills?: string; // Add this property
 }
 
 export interface LoginResponse {

@@ -20,27 +20,37 @@ app.use('/uploads', (req, res, next) => {
 
 // ...existing code...
 
+// Ensure we have a public route for events that doesn't need authentication
+// This should be BEFORE any auth middleware is applied to the /events route
+app.use('/events', require('./routes/eventRoutes'));
+
 const adminRoutes = require('./routes/adminRoutes');
 const adminAuthRoutes = require('./routes/adminAuthRoutes');
 
 // ...existing middleware...
 
-// Admin routes
+// IMPORTANT: Fix routes configuration to prevent duplicate /api prefixes
+// =====================================================================
+
+// 1. First configure the public routes (no auth required)
+app.use('/events', require('./routes/eventRoutes'));
+
+// 2. Configure authenticated routes with proper middleware
+// Make sure we don't mount the same routes twice - remove this line:
+// app.use('/api', eventRoutes); // REMOVE THIS LINE - it causes duplication
+
+// 3. Configure authenticated routes correctly
+app.use('/api/events', authMiddleware, require('./routes/eventRoutes'));
+
+// 4. Keep other routes as they are
 app.use('/api/admin', adminRoutes);
-
-// Admin authentication routes
 app.use('/api/admin/auth', adminAuthRoutes);
-
-// Event routes
-const eventRoutes = require('./routes/eventRoutes');
-app.use('/api', eventRoutes);
-
-// Add this to your existing routes
 app.use('/api/content', require('./routes/contentRoutes'));
 
 // Add staff routes
 const staffRoutes = require('./routes/staffRoutes');
 app.use('/api/staff', staffRoutes);
+app.use('/donations', donationRoutes);
 
 // Add static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -48,5 +58,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Add donation routes
 const donationRoutes = require('./routes/donationRoutes');
 app.use('/donations', donationRoutes);
+
+// For authenticated routes, make sure middleware is applied correctly
+// Protected routes should use the /api prefix
+app.use('/api/events', authMiddleware, require('./routes/eventRoutes'));
 
 

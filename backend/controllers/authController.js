@@ -215,7 +215,8 @@ const login = async (req, res) => {
       facebookUrl: user.facebook_url || "",
       twitterUrl: user.twitter_url || "",
       instagramUrl: user.instagram_url || "",
-      salaryRange: user.salary_range || ""  // Include salary_range in the response
+      salaryRange: user.salary_range || "",  // Include salary_range in the response
+      skills: user.skills || ""  // Include salary_range in the response
     };
     
     console.log('Sending user response:', userResponse); // Debug log

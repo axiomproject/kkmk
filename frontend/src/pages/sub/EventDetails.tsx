@@ -16,6 +16,8 @@ interface Event {
   description: string;
   totalVolunteers: number;
   currentVolunteers: number;
+  totalScholars: number;     // Add these new fields
+  currentScholars: number;   // Add these new fields
   status: string;
   contact: {
     phone: string;
@@ -77,12 +79,13 @@ const EventDetails: React.FC = () => {
     return `${baseUrl}/uploads/events/${path}`;
   };
 
-  // Update fetchEventDetails to include requirements field
+  // Update fetchEventDetails to use the public endpoint
   const fetchEventDetails = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const response = await api.get(`/admin/events/${eventId}`);
+      // Use the public endpoint without auth requirements - notice no /api or /admin prefix
+      const response = await api.get(`/events/${eventId}`);
       console.log('Raw event data:', response.data);
       
       // Process the image URL properly
@@ -95,6 +98,8 @@ const EventDetails: React.FC = () => {
         image: processedImageUrl,
         totalVolunteers: parseInt(response.data.total_volunteers) || 0,
         currentVolunteers: parseInt(response.data.current_volunteers) || 0,
+        totalScholars: parseInt(response.data.total_scholars) || 0,
+        currentScholars: parseInt(response.data.current_scholars) || 0,
         contact: {
           phone: response.data.contact_phone || response.data.contact?.phone || '',
           email: response.data.contact_email || response.data.contact?.email || ''
@@ -113,10 +118,12 @@ const EventDetails: React.FC = () => {
     }
   };
 
+  // Update checkParticipation to handle unauthenticated users and fix route paths
   const checkParticipation = async () => {
-    if (!user) return;
+    if (!user) return; // Exit early if no user logged in
+    
     try {
-      // Check if user is rejected from this event
+      // Fix the route path - removing the duplicate /api prefix
       const rejectionResponse = await api.get(`/events/${eventId}/check-rejection`);
       if (rejectionResponse.data.isRejected) {
         setIsRejected(true);
@@ -124,11 +131,14 @@ const EventDetails: React.FC = () => {
         return; // Exit early if user is rejected
       }
 
+      // Fix the route path - removing the duplicate /api prefix
       const response = await api.get(`/events/${eventId}/check-participation`);
       setHasJoined(response.data.hasJoined);
-      setParticipantStatus(response.data.status || ''); // Add this line
+      setParticipantStatus(response.data.status || '');
     } catch (error) {
       console.error('Failed to check participation status:', error);
+      // Don't set any error state for participation check failures
+      // as this could be a normal condition for unauthenticated users
     }
   };
 
@@ -213,7 +223,7 @@ const EventDetails: React.FC = () => {
     const scrollY = window.scrollY;
     document.documentElement.style.setProperty('--scroll-y', `${scrollY}px`);
     
-    // Show requirements modal
+    // Show requirements modal for both volunteers and scholars
     setShowRequirementsModal(true);
   };
 
@@ -223,15 +233,21 @@ const EventDetails: React.FC = () => {
       setIsJoining(true);
       setJoinError(null);
       
+      console.log('Joining event with user role:', user?.role);
+      
       try {
-        const response = await api.post(`/events/${eventId}/join`);
+        // Ensure we always send the user role in the request body
+        const response = await api.post(`/events/${eventId}/join`, {
+          role: user?.role || 'volunteer' // Default to volunteer if role is somehow missing
+        });
 
-        // Update local event data with new volunteer count
+        // Update local event data with new volunteer/scholar count
         if (event) {
           const updatedEvent = response.data.event;
           setEvent({
             ...event,
             currentVolunteers: updatedEvent.current_volunteers,
+            currentScholars: updatedEvent.current_scholars
           });
         }
 
@@ -262,29 +278,77 @@ const EventDetails: React.FC = () => {
     }
   };
 
+  // Replace the entire handleUnjoinEvent function with this completely reworked version
   const handleUnjoinEvent = async () => {
     try {
+      // First set joining state to true to disable the button
       setIsJoining(true);
-      setJoinError(null);
       
-      const response = await api.post(`/events/${eventId}/unjoin`);
+      // IMMEDIATELY update UI state - don't wait for the response
+      // This is an optimistic update so user sees immediate feedback
+      setHasJoined(false);
+      setParticipantStatus('');
+      
+      console.log('Starting unjoin process - UI already updated');
+      
+      // Always send the role in the request body
+      const response = await api.post(`/events/${eventId}/unjoin`, {
+        role: user?.role || 'volunteer'
+      }).catch(error => {
+        // If we get "you have not joined this event" error, ignore it
+        // This can happen if the backend state is already updated
+        if (error.response?.data?.error === 'You have not joined this event') {
+          console.log('Got expected "not joined" error - ignoring');
+          return { data: { message: 'Already left event', success: true } };
+        }
+        // For other errors, rethrow
+        throw error;
+      });
 
-      // Update local event data with new volunteer count
-      if (event) {
+      console.log('Unjoin response received:', response.data);
+
+      // Update local event data with new volunteer/scholar count if available
+      if (event && response.data.event) {
         const updatedEvent = response.data.event;
-        setEvent({
-          ...event,
-          currentVolunteers: updatedEvent.current_volunteers,
+        console.log('Updating event counts with:', {
+          volunteers: updatedEvent.current_volunteers,
+          scholars: updatedEvent.current_scholars
+        });
+        
+        setEvent(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            currentVolunteers: updatedEvent.current_volunteers,
+            currentScholars: updatedEvent.current_scholars
+          };
         });
       }
-
-      setHasJoined(false);
+      
+      // Force reload the page to ensure everything is in a fresh state
+      // This is the most reliable way to fix the stubborn UI issues
+      window.location.reload();
       
     } catch (error: any) {
       console.error('Failed to unjoin event:', error.response || error);
+      
+      // If there was an error, revert our optimistic UI update
+      setHasJoined(true);
+      
+      // Check if it's the "not joined" error, which we can ignore silently
+      if (error.response?.data?.error === 'You have not joined this event') {
+        console.log('Got "not joined" error during catch - forcing reload');
+        window.location.reload();
+        return;
+      }
+      
+      // Display error message for other errors
       setJoinError(error.response?.data?.error || 'Failed to unjoin event');
     } finally {
-      setIsJoining(false);
+      // Set joining false after a short delay
+      setTimeout(() => {
+        setIsJoining(false);
+      }, 300);
     }
   };
 
@@ -293,24 +357,42 @@ const EventDetails: React.FC = () => {
     console.log('Current user:', user);
   }, [user]);
 
-  // Update the buttonText function
+  // Update the buttonText function to properly handle scholar role
   const buttonText = () => {
+    console.log('Button state:', { 
+      hasJoined, 
+      participantStatus, 
+      isJoining, 
+      isRejected 
+    });
+    
     if (!event) return '';
     if (isRejected) return 'Joining Restricted';
     if (event.status === 'CLOSED') return 'Event Closed';
-    if (volunteersNeeded <= 0 && !hasJoined) return 'Fully Booked';
+    if (volunteersNeeded <= 0 && scholarsNeeded <= 0 && !hasJoined) return 'Fully Booked';
     if (hasJoined) {
       if (participantStatus === 'PENDING') return 'Pending Approval';
       return 'Leave Event';
     }
     if (!user) return 'Sign Up';
-    if (user.role === 'sponsor' || user.role === 'scholar') {
+    if (user.role === 'sponsor') {
       return 'Contact Admin';
     }
     return 'Join';
   };
 
-  // Update handleButtonClick to check for rejection
+  // Add a new useEffect to detect if leave button was pressed
+  useEffect(() => {
+    if (!isJoining && !hasJoined) {
+      console.log('Leave button was pressed. Current state:', { 
+        hasJoined, 
+        participantStatus,
+        isJoining
+      });
+    }
+  }, [isJoining, hasJoined]);
+
+  // Update handleButtonClick to handle the leave click better
   const handleButtonClick = () => {
     // If user has been rejected, show the rejection reason
     if (isRejected) {
@@ -318,8 +400,8 @@ const EventDetails: React.FC = () => {
       return;
     }
     
-    // Add handling for sponsor and scholar roles
-    if (user && (user.role === 'sponsor' || user.role === 'scholar')) {
+    // Update this condition to only restrict sponsors, not scholars
+    if (user && user.role === 'sponsor') {
       // You can customize this message or action
       alert('Please contact the admin if you would like to join this event.');
       return;
@@ -343,9 +425,21 @@ const EventDetails: React.FC = () => {
         return;
       }
       
+      console.log('Leave button clicked, hasJoined =', hasJoined);
+      
       // Add confirmation before leaving the event
       const confirmLeave = window.confirm("Are you sure you want to leave this event?");
       if (confirmLeave) {
+        console.log('Leave confirmed, calling handleUnjoinEvent');
+        
+        // Visibly change the button text immediately for better UX
+        const button = document.querySelector('.volunteer-button2');
+        if (button) {
+          button.textContent = 'Leaving...';
+          button.classList.add('leaving');
+          button.setAttribute('disabled', 'true');
+        }
+        
         handleUnjoinEvent();
       }
     } else {
@@ -408,9 +502,17 @@ const formatRequirements = (requirements: string) => {
   if (error) return <div className="error-message">{error}</div>;
   if (!event) return <div>Event not found</div>;
 
-  const progress = Math.min((event.currentVolunteers / event.totalVolunteers) * 100, 100);
+  const volunteerProgress = Math.min((event.currentVolunteers / event.totalVolunteers) * 100, 100);
+  const scholarProgress = Math.min((event.currentScholars / event.totalScholars) * 100, 100);
   const volunteersNeeded = Math.max(event.totalVolunteers - event.currentVolunteers, 0);
+  const scholarsNeeded = Math.max(event.totalScholars - event.currentScholars, 0);
   const daysLeft = getDaysLeft(event.date);
+
+  // Add this new helper function to check if user can view scholar info
+  const canViewScholarInfo = () => {
+    if (!user) return false;
+    return user.role === 'scholar' || user.role === 'admin' || user.role === 'staff';
+  };
 
   return (
     <motion.div 
@@ -471,28 +573,47 @@ const formatRequirements = (requirements: string) => {
           <div className="event-details-info-side">
             <strong>Volunteer Progress:</strong>
             <div className="progress-bar-container">
-              <div className="progress-bar">
+              <div 
+                className="progress-bar volunteer-progress"
+                style={{ width: `${volunteerProgress}%` }}
+              >
                 <span className="progress-percentage">
-                  {progress < 5 ? '' : `${Math.round(progress)}%`}
+                  {volunteerProgress < 5 ? '' : `${Math.round(volunteerProgress)}%`}
                 </span>
               </div>
-              {progress < 5 && (
-                <span className="progress-percentage">
-                  {Math.round(progress)}%
-                </span>
-              )}
             </div>
           </div>
           <p className="event-details-info-side">
             <strong>Volunteers Needed:  {volunteersNeeded > 0 ? volunteersNeeded : "Goal Reached!"}</strong>{" "}
            
           </p>
-          {volunteersNeeded > 0 ? (
+          {/* Scholar progress section - only visible to scholars and admin/staff */}
+          {canViewScholarInfo() && (
+            <>
+              <div className="event-details-info-side">
+                <strong>Scholar Progress:</strong>
+                <div className="progress-bar-container">
+                  <div 
+                    className="progress-bar scholar-progress"
+                    style={{ width: `${scholarProgress}%` }}
+                  >
+                    <span className="progress-percentage">
+                      {scholarProgress < 5 ? '' : `${Math.round(scholarProgress)}%`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <p className="event-details-info-side">
+                <strong>Scholars Needed: {scholarsNeeded > 0 ? scholarsNeeded : "Goal Reached!"}</strong>
+              </p>
+            </>
+          )}
+          {(volunteersNeeded > 0 || (canViewScholarInfo() && scholarsNeeded > 0)) ? (
             daysLeft > 0 && (
-              <p>{daysLeft} Days Left to volunteer</p>
+              <p>{daysLeft} Days Left to join</p>
             )
           ) : (
-            <p><strong>Thank you!</strong> We've reached our volunteer goal</p>
+            <p><strong>Thank you!</strong> We've reached our volunteer{canViewScholarInfo() ? ' and scholar' : ''} goals</p>
           )}
           {isRejected && (
             <div className="event-rejection-message">

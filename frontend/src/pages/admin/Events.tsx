@@ -23,20 +23,25 @@ Icon.Default.mergeOptions({
 interface SkillOption {
   value: string;
   label: string;
-  examples: string;
+  description: string;
 }
 
 const skillOptions: SkillOption[] = [
-  { value: 'first_aid', label: 'First Aid', examples: 'CPR, Basic Life Support' },
-  { value: 'teaching', label: 'Teaching', examples: 'Tutoring, Workshop Facilitation' },
-  { value: 'construction', label: 'Construction', examples: 'Building, Carpentry, Plumbing' },
-  { value: 'cooking', label: 'Cooking', examples: 'Food Preparation, Serving' },
-  { value: 'technical', label: 'Technical', examples: 'IT, Audio/Visual Equipment' },
-  { value: 'language', label: 'Languages', examples: 'Translation, Interpretation' },
-  { value: 'medical', label: 'Medical', examples: 'Nursing, Doctor, Therapy' },
-  { value: 'organizing', label: 'Organizing', examples: 'Event Planning, Coordination' },
-  { value: 'counseling', label: 'Counseling', examples: 'Mental Health Support, Guidance' },
-  { value: 'arts', label: 'Arts', examples: 'Music, Visual Arts, Performance' }
+  { value: 'tutoring', label: 'Tutoring/Academic Support', description: 'Helping students with homework, teaching subjects, conducting study sessions' },
+  { value: 'mentoring', label: 'Mentoring', description: 'Providing guidance, career advice, and personal development support' },
+  { value: 'counseling', label: 'Community Counseling', description: 'Offering emotional support, conflict resolution, and basic mental health services' },
+  { value: 'healthcare', label: 'Healthcare Support', description: 'First aid, health education, medical assistance, health awareness programs' },
+  { value: 'arts_culture', label: 'Arts & Culture Programs', description: 'Teaching music, art, dance, theater, organizing cultural events' },
+  { value: 'sports_recreation', label: 'Sports & Recreation', description: 'Coaching sports, organizing games, planning recreational activities' },
+  { value: 'environmental', label: 'Environmental Projects', description: 'Clean-ups, recycling initiatives, environmental education' },
+  { value: 'food_distribution', label: 'Food Distribution', description: 'Preparing meals, distributing food packages, managing food banks' },
+  { value: 'shelter_support', label: 'Shelter Support', description: 'Working in shelters, housing programs, construction assistance' },
+  { value: 'administrative', label: 'Administrative Support', description: 'Office management, data entry, record keeping, documentation' },
+  { value: 'event_planning', label: 'Event Planning', description: 'Organizing community events, fundraisers, awareness programs' },
+  { value: 'technical', label: 'Technical Support', description: 'Computer skills training, tech troubleshooting, digital literacy programs' },
+  { value: 'elderly_support', label: 'Elderly Support', description: 'Elder care, companionship, assistance with daily activities' },
+  { value: 'child_care', label: 'Child Care', description: 'Childcare services, after-school programs, recreational activities for children' },
+  { value: 'translation', label: 'Translation/Interpretation', description: 'Language services for non-native speakers in the community' },
 ];
 
 // Update the EventType interface to include latitude and longitude
@@ -49,6 +54,8 @@ interface EventType {
   description: string;
   totalVolunteers: number;
   currentVolunteers: number;
+  totalScholars: number;    // Add this line
+  currentScholars: number;  // Add this line
   status: 'OPEN' | 'CLOSED';
   contact: {
     phone: string;
@@ -59,6 +66,13 @@ interface EventType {
   latitude?: number | null;  // Add this line
   longitude?: number | null; // Add this line
   requirements?: string; // Add this line
+  skillRequirements?: SkillRequirement[] | null; // Add this line
+}
+
+// Add a new interface for skill requirements
+interface SkillRequirement {
+  skill: string;
+  count: number;
 }
 
 // Update the Participant interface
@@ -75,6 +89,7 @@ interface Participant {
     types?: string[];
     details?: string;
   } | null;
+  role: string; // Add this line to include the role
 }
 
 interface AddVolunteerForm {
@@ -102,6 +117,8 @@ interface EventFormData {
   description: string;
   totalVolunteers: number;
   currentVolunteers: number;
+  totalScholars: number;    // Add this line
+  currentScholars: number;  // Add this line
   status: 'OPEN' | 'CLOSED';
   contact: {
     phone: string;
@@ -112,6 +129,7 @@ interface EventFormData {
   latitude: number | null;
   longitude: number | null;
   requirements: string; // Add this line
+  skillRequirements: SkillRequirement[]; // Add this line
 }
 
 interface MapPosition {
@@ -289,6 +307,8 @@ const AdminEvents: React.FC = () => {
     description: '',
     totalVolunteers: 0,
     currentVolunteers: 0,
+    totalScholars: 0,     // Add this line
+    currentScholars: 0,   // Add this line
     contact: {
       phone: '',
       email: ''
@@ -298,12 +318,15 @@ const AdminEvents: React.FC = () => {
     endTime: '',
     latitude: null,
     longitude: null,
-    requirements: '' // Add this line with default empty string
+    requirements: '', // Add this line with default empty string
+    skillRequirements: [] // Initialize as empty array
   });
 
   const [validationErrors, setValidationErrors] = useState({
     totalVolunteers: '',
-    currentVolunteers: ''
+    currentVolunteers: '',
+    totalScholars: '',    // Add this line
+    currentScholars: ''   // Add this line
   });
 
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
@@ -324,26 +347,50 @@ const AdminEvents: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [suggestionsPosition, setSuggestionsPosition] = useState({ top: 0, left: 0 });
 
-  const validateVolunteers = (total: number, current: number) => {
+  const validateVolunteers = (
+    totalVol: number, 
+    currentVol: number,
+    totalSch: number,
+    currentSch: number
+  ) => {
     const errors = {
       totalVolunteers: '',
-      currentVolunteers: ''
+      currentVolunteers: '',
+      totalScholars: '',    // Add this line
+      currentScholars: ''   // Add this line
     };
 
-    if (total <= 0) {
-      errors.totalVolunteers = 'Total volunteers must be greater than 0';
+    // Original volunteer validations
+    if (totalVol < 0) {
+      errors.totalVolunteers = 'Total volunteers cannot be negative';
     }
 
-    if (current < 0) {
+    if (currentVol < 0) {
       errors.currentVolunteers = 'Current volunteers cannot be negative';
     }
 
-    if (current > total) {
+    if (currentVol > totalVol) {
       errors.currentVolunteers = 'Current volunteers cannot exceed total volunteers';
     }
 
+    // Add validation for scholar counts
+    if (totalSch < 0) {
+      errors.totalScholars = 'Total scholars cannot be negative';
+    }
+
+    if (currentSch < 0) {
+      errors.currentScholars = 'Current scholars cannot be negative';
+    }
+
+    if (currentSch > totalSch) {
+      errors.currentScholars = 'Current scholars cannot exceed total scholars';
+    }
+
     setValidationErrors(errors);
-    return !errors.totalVolunteers && !errors.currentVolunteers;
+    return !errors.totalVolunteers && 
+           !errors.currentVolunteers &&
+           !errors.totalScholars &&
+           !errors.currentScholars;
   };
 
   const convertTo24Hour = (time12h: string) => {
@@ -402,6 +449,8 @@ const AdminEvents: React.FC = () => {
       description: '',
       totalVolunteers: 0,
       currentVolunteers: 0,
+      totalScholars: 0,     // Reset scholar counts
+      currentScholars: 0,   // Reset scholar counts
       contact: {
         phone: '',
         email: ''
@@ -411,7 +460,8 @@ const AdminEvents: React.FC = () => {
       endTime: '',
       latitude: null,
       longitude: null,
-      requirements: '' // Reset requirements
+      requirements: '', // Reset requirements
+      skillRequirements: [] // Initialize with empty array for new events
     });
   };
 
@@ -442,6 +492,8 @@ const handleShow = (event?: EventType) => {
       description: event.description,
       totalVolunteers: event.totalVolunteers || 0,
       currentVolunteers: event.currentVolunteers || 0,
+      totalScholars: event.totalScholars || 0,       // Add scholar count
+      currentScholars: event.currentScholars || 0,   // Add scholar count
       contact: {
         phone: event.contact?.phone || '',
         email: event.contact?.email || ''
@@ -451,7 +503,8 @@ const handleShow = (event?: EventType) => {
       endTime: event.endTime || '',
       latitude: event.latitude || null,
       longitude: event.longitude || null,
-      requirements: event.requirements || '' // Ensure requirements is populated with empty string fallback
+      requirements: event.requirements || '', // Ensure requirements is populated with empty string fallback
+      skillRequirements: event.skillRequirements || [] // Add skill requirements
     };
     
     console.log('Setting form data to:', fullFormData);
@@ -473,6 +526,8 @@ const handleShow = (event?: EventType) => {
       description: '',
       totalVolunteers: 0,
       currentVolunteers: 0,
+      totalScholars: 0,     // Initialize scholar counts
+      currentScholars: 0,   // Initialize scholar counts
       contact: {
         phone: '',
         email: ''
@@ -482,7 +537,8 @@ const handleShow = (event?: EventType) => {
       endTime: '',
       latitude: null,
       longitude: null,
-      requirements: '' // Initialize with empty string for new events
+      requirements: '', // Initialize with empty string for new events
+      skillRequirements: [] // Initialize with empty array for new events
     });
   }
   setShowModal(true);
@@ -513,6 +569,16 @@ const fetchEvents = async () => {
       const transformedEvents = response.data.map(event => {
         // Debug log for requirements field
         console.log(`Event ${event.id} requirements:`, event.requirements);
+        console.log(`Event ${event.id} skill_requirements:`, event.skill_requirements);
+        
+        // Ensure skill_requirements is always an array
+        const skillRequirements = Array.isArray(event.skill_requirements) 
+          ? event.skill_requirements 
+          : (event.skill_requirements 
+            ? JSON.parse(typeof event.skill_requirements === 'string' ? event.skill_requirements : JSON.stringify(event.skill_requirements)) 
+            : []);
+            
+        console.log(`Processed skill_requirements for event ${event.id}:`, skillRequirements);
         
         return {
           ...event,
@@ -521,18 +587,22 @@ const fetchEvents = async () => {
           endTime: event.end_time || event.endTime || '',
           totalVolunteers: parseInt(event.total_volunteers || event.totalVolunteers) || 0,
           currentVolunteers: parseInt(event.current_volunteers || event.currentVolunteers) || 0,
+          totalScholars: parseInt(event.total_scholars || event.totalScholars) || 0,
+          currentScholars: parseInt(event.current_scholars || event.currentScholars) || 0,
           requirements: event.requirements || '', // Ensure requirements is always a string
           contact: {
             phone: event.contact_phone || event.contact?.phone || '',
             email: event.contact_email || event.contact?.email || ''
-          }
+          },
+          // Use our processed skillRequirements
+          skillRequirements: skillRequirements
         };
       });
       
-      console.log('Transformed events:', transformedEvents.map(e => ({
+      console.log('Transformed events with skill requirements:', transformedEvents.map(e => ({
         id: e.id,
         title: e.title,
-        requirements: e.requirements
+        skillRequirements: e.skillRequirements
       })));
       
       setEvents(transformedEvents);
@@ -580,11 +650,81 @@ const fetchEvents = async () => {
   // Add this state
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Add state for managing skill allocation
+  const [totalSkillsAllocated, setTotalSkillsAllocated] = useState(0);
+  const [skillAllocationError, setSkillAllocationError] = useState('');
+
+  // Add useEffect to calculate total skills allocated and validate
+  useEffect(() => {
+    // Filter out any empty or invalid skill requirements first
+    const validSkillRequirements = formData.skillRequirements.filter(req => 
+      req.skill && skillOptions.some(opt => opt.value === req.skill)
+    );
+    
+    const total = validSkillRequirements.reduce((sum, req) => sum + req.count, 0);
+    setTotalSkillsAllocated(total);
+    
+    if (total > formData.totalVolunteers) {
+      setSkillAllocationError(`You've allocated ${total} skill positions but only have ${formData.totalVolunteers} total volunteers`);
+    } else {
+      setSkillAllocationError('');
+    }
+  }, [formData.skillRequirements, formData.totalVolunteers]);
+
+  // Add handler for adding a skill requirement
+const handleAddSkillRequirement = (selectedSkill: string) => {
+  if (!selectedSkill) return;
+  
+  // Check if skill is already added
+  if (formData.skillRequirements.some(req => req.skill === selectedSkill)) {
+    toast.warning(`${skillOptions.find(opt => opt.value === selectedSkill)?.label} is already added`);
+    return;
+  }
+  
+  // Create a new array with the new skill requirement instead of mutating the existing one
+  const updatedSkillRequirements = [
+    ...formData.skillRequirements,
+    { skill: selectedSkill, count: 1 }
+  ];
+  
+  // Log the updated skill requirements for debugging
+  console.log('Adding skill requirement:', selectedSkill);
+  console.log('Updated skill requirements:', updatedSkillRequirements);
+  
+  setFormData(prev => ({
+    ...prev,
+    skillRequirements: updatedSkillRequirements
+  }));
+};
+
+  // Add handler for removing a skill requirement
+  const handleRemoveSkillRequirement = (skillValue: string) => {
+    setFormData(prev => ({
+      ...prev,
+      skillRequirements: prev.skillRequirements.filter(req => req.skill !== skillValue)
+    }));
+  };
+
+  // Add handler for updating skill count
+  const handleSkillCountChange = (skillValue: string, count: number) => {
+    setFormData(prev => ({
+      ...prev,
+      skillRequirements: prev.skillRequirements.map(req => 
+        req.skill === skillValue ? { ...req, count } : req
+      )
+    }));
+  };
+
   // Update handleSubmit to properly send requirements
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   
-  if (!validateVolunteers(formData.totalVolunteers, formData.currentVolunteers)) {
+  if (!validateVolunteers(formData.totalVolunteers, formData.currentVolunteers, formData.totalScholars, formData.currentScholars)) {
+    return;
+  }
+
+  if (skillAllocationError) {
+    toast.error(skillAllocationError);
     return;
   }
 
@@ -594,24 +734,34 @@ const handleSubmit = async (e: React.FormEvent) => {
     return;
   }
 
+  // Filter out invalid skill requirements before submission
+  const validSkillRequirements = formData.skillRequirements.filter(req => 
+    req.skill && skillOptions.some(opt => opt.value === req.skill)
+  );
+  
+  // Create a cleaned form data object with valid skill requirements
+  const cleanedFormData = {
+    ...formData,
+    skillRequirements: validSkillRequirements
+  };
+
   setIsSubmitting(true);
   const formDataToSend = new FormData();
 
   // Log all form data for debugging
-  console.log('Form data before submission:', formData);
-  console.log('Requirements value:', formData.requirements);
+  console.log('Form data before submission:', cleanedFormData);
+  console.log('Requirements value:', cleanedFormData.requirements);
 
   // Explicitly add coordinates with proper type conversion
   formDataToSend.append('latitude', formData.latitude.toString());
   formDataToSend.append('longitude', formData.longitude.toString());
   
   // Make sure to explicitly include requirements
-  // Add more visible debug logging for requirements
-  console.log('Adding requirements to form data:', formData.requirements);
-  formDataToSend.append('requirements', formData.requirements || '');
+  console.log('Adding requirements to form data:', cleanedFormData.requirements);
+  formDataToSend.append('requirements', cleanedFormData.requirements || '');
 
   // Process the rest of the form data
-  Object.entries(formData).forEach(([key, value]) => {
+  Object.entries(cleanedFormData).forEach(([key, value]) => {
     if (key === 'contact') {
       formDataToSend.append('contactPhone', (value as { phone: string }).phone);
       formDataToSend.append('contactEmail', (value as { email: string }).email);
@@ -624,11 +774,14 @@ const handleSubmit = async (e: React.FormEvent) => {
         console.log('Using existing image path:', value);
         formDataToSend.append('existingImage', value);
       }
-    } else if (key !== 'latitude' && key !== 'longitude' && key !== 'requirements') {
-      // Skip requirements here since we've already added it explicitly
+    } else if (key !== 'latitude' && key !== 'longitude' && key !== 'requirements' && key !== 'skillRequirements') {
+      // Skip already handled fields
       formDataToSend.append(key, String(value === null ? '' : value));
     }
   });
+
+  // Add skill requirements as JSON string, using the cleaned version
+  formDataToSend.append('skillRequirements', JSON.stringify(cleanedFormData.skillRequirements));
 
   // Log all form data entries for debugging
   for (let pair of formDataToSend.entries()) {
@@ -679,6 +832,7 @@ const handleDelete = async (id: number) => {
   }
 };
 
+// Update the fetchParticipants function to include skill assignments
 const fetchParticipants = async (eventId: number) => {
   // Capture scroll position before opening modal
   const scrollY = window.scrollY;
@@ -687,17 +841,34 @@ const fetchParticipants = async (eventId: number) => {
   try {
     setLoadingParticipants(true);
     
-    // Update API call to request skills and disability information
+    // Update API call to request additional user information including role and skills
     const response = await axios.get(`/api/events/${eventId}/participants`, {
-      params: { includeDetails: true } // Add parameter to request additional fields
+      params: { 
+        includeDetails: true, 
+        includeRole: true,
+        includeSkills: true 
+      }
     });
     
     console.log('Fetched participants with details:', response.data);
     setSelectedEventParticipants(response.data);
+    
+    // Initialize skill assignments based on assigned_skill from API
+    const skillAssignments: {[userId: number]: string | null} = {};
+    response.data.forEach((participant: Participant & { assigned_skill?: string }) => {
+      if (participant.assigned_skill) {
+        skillAssignments[participant.id] = participant.assigned_skill;
+      }
+    });
+    
+    // Set the skill assignments state
+    setParticipantSkillAssignments(skillAssignments);
+    
     setSelectedEvent(events.find(event => event.id === eventId) || null);
     setShowParticipantsModal(true);
   } catch (error) {
     console.error('Failed to fetch participants:', error);
+    toast.error('Failed to load participants');
   } finally {
     setLoadingParticipants(false);
   }
@@ -1273,14 +1444,14 @@ const SkillBadges: React.FC<{ skills: string[] }> = ({ skills }) => {
   return (
     <div className="skill-badges">
       {skills.map((skill, index) => {
-        // Get the full label and examples from skillOptions
+        // Get the full label and description from skillOptions
         const skillInfo = skillOptions.find(s => s.value === skill);
         
         return (
           <span 
             key={index} 
             className="skill-badge" 
-            title={skillInfo ? `${skillInfo.label}: ${skillInfo.examples}` : skill}
+            title={skillInfo ? `${skillInfo.label}: ${skillInfo.description}` : skill}
             data-tooltip-id={`skill-tooltip-${index}`}
           >
             {skillInfo ? skillInfo.label : skill}
@@ -1327,234 +1498,554 @@ const DisabilityInfo: React.FC<{ disability: { types?: string[], details?: strin
   );
 };
 
+// Add a new groupParticipantsByRole function
+const groupParticipantsByRole = (participants: Participant[]) => {
+  return participants.reduce((acc, participant) => {
+    // Check user role from the participant object
+    // Since we don't have the role in the Participant interface currently, let's modify the query
+    const role = participant.role || 'volunteer'; // Default to volunteer if role is not specified
+    
+    if (!acc[role]) {
+      acc[role] = [];
+    }
+    acc[role].push(participant);
+    return acc;
+  }, {} as Record<string, Participant[]>);
+};
+
 // Fix the renderParticipantsModal function
-const renderParticipantsModal = () => (
-  <div className="modal-overlay" onClick={() => setShowParticipantsModal(false)}>
-    <div 
-      className={`modal-content-participants ${showSuggestions && searchResults.length > 0 ? 'with-suggestions' : ''}`}
-      onClick={e => e.stopPropagation()}
-    >
-      <div className="participants-header">
-        <h2>Event Participants</h2>
-        <div className="participants-actions">
-          {selectedEvent && selectedEventParticipants.some(p => p.status === 'PENDING') && (
-            <button
-              onClick={() => selectedEvent && approveAllPendingParticipants(selectedEvent.id)}
-              className="approve-all-btn"
-              title="Approve all pending participants"
-            >
-              <FaCheck /> Approve All Pending
-            </button>
-          )}
-          
-          {/* Add bulk actions */}
-          {selectedEventParticipants.length > 0 && (
-            <div className="bulk-actions">
-              {selectedParticipants.length > 0 ? (
-                <button 
-                  onClick={handleBulkRemoveParticipants}
-                  className="bulk-remove-btn"
-                  title="Remove selected participants"
+// Add new state for managing skill assignments
+const [participantSkillAssignments, setParticipantSkillAssignments] = useState<{
+  [userId: number]: string | null
+}>({});
+
+// Add new function to handle skill assignment change
+const handleSkillAssignmentChange = (userId: number, skillValue: string) => {
+  setParticipantSkillAssignments(prev => ({
+    ...prev,
+    [userId]: skillValue === '' ? null : skillValue
+  }));
+};
+
+// Update the saveSkillAssignment function to use the API
+// Function to save skill assignment that calls the API
+const saveSkillAssignment = async (userId: number, skillValue: string | null) => {
+  if (!selectedEvent) return;
+  
+  // Declare saveButton variable outside try/catch so it's accessible in both blocks
+  let saveButton: HTMLButtonElement | null = null;
+  
+  try {
+    // Set the button to loading state
+    saveButton = document.querySelector(`button[data-save-skill="${userId}"]`) as HTMLButtonElement;
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    }
+    
+    // Call the API to assign the skill
+    const response = await axios.put(
+      `/api/events/${selectedEvent.id}/participants/${userId}/skill`,
+      { skill: skillValue },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      }
+    );
+    
+    console.log('Skill assignment saved:', response.data);
+    
+    // Show success toast
+    toast.success(`Skill ${skillValue ? 'assigned' : 'removed'} successfully`);
+    
+    // Reset the button after success
+    if (saveButton) {
+      saveButton.disabled = false;
+      saveButton.innerHTML = '<svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52"><circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/><path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/></svg>';
+      
+      // Reset button to normal after animation
+      setTimeout(() => {
+        if (saveButton) {
+          saveButton.innerHTML = '<svg class="svg-inline--fa fa-check" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="check" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"></path></svg>';
+        }
+      }, 2000);
+    }
+    
+  } catch (error) {
+    console.error('Error saving skill assignment:', error);
+    
+    // Show error toast with specific message if available
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      toast.error(error.response.data.error);
+    } else {
+      toast.error('Failed to save skill assignment');
+    }
+    
+    // Reset the button on error
+    if (saveButton) {
+      saveButton.disabled = false;
+      saveButton.innerHTML = '<svg class="svg-inline--fa fa-check" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="check" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="currentColor" d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"></path></svg>';
+    }
+  }
+};
+
+// Add a function to get available skills that match the event requirements
+const getAvailableSkillsForAssignment = (eventSkillRequirements: SkillRequirement[]) => {
+  // If no requirements are specified, return all skills
+  if (!eventSkillRequirements || eventSkillRequirements.length === 0) {
+    return skillOptions;
+  }
+  
+  // Only return skills that are needed for this event
+  return skillOptions.filter(skillOption => 
+    eventSkillRequirements.some(req => req.skill === skillOption.value)
+  );
+};
+
+// Add function to get the counts of currently assigned skills
+const getCurrentSkillAssignmentCounts = (participants: Participant[]) => {
+  const counts: {[skillValue: string]: number} = {};
+  
+  participants.forEach(participant => {
+    const assignedSkill = participantSkillAssignments[participant.id];
+    if (assignedSkill) {
+      counts[assignedSkill] = (counts[assignedSkill] || 0) + 1;
+    }
+  });
+  
+  return counts;
+};
+
+const renderParticipantsModal = () => {
+  // Group participants by role
+  const participantsByRole = groupParticipantsByRole(selectedEventParticipants);
+  
+  // Get volunteers and scholars separately
+  const volunteers = participantsByRole['volunteer'] || [];
+  const scholars = participantsByRole['scholar'] || [];
+  
+  // Get the available skills that match event requirements
+  const availableSkills = selectedEvent?.skillRequirements 
+    ? getAvailableSkillsForAssignment(selectedEvent.skillRequirements)
+    : skillOptions;
+  
+  // Get current counts of assigned skills
+  const currentAssignmentCounts = getCurrentSkillAssignmentCounts(volunteers);
+  
+  // Calculate remaining slots for each skill requirement
+  const remainingSlots: {[skillValue: string]: number} = {};
+  if (selectedEvent?.skillRequirements) {
+    selectedEvent.skillRequirements.forEach(req => {
+      const assigned = currentAssignmentCounts[req.skill] || 0;
+      remainingSlots[req.skill] = req.count - assigned;
+    });
+  }
+  
+  return (
+    <div className="modal-overlay" onClick={() => setShowParticipantsModal(false)}>
+      <div 
+        className={`modal-content-participants ${showSuggestions && searchResults.length > 0 ? 'with-suggestions' : ''}`}
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="participants-header">
+          <h2>Event Participants</h2>
+          <div className="participants-actions">
+            {selectedEvent && selectedEventParticipants.some(p => p.status === 'PENDING') && (
+              <button
+                onClick={() => selectedEvent && approveAllPendingParticipants(selectedEvent.id)}
+                className="approve-all-btn"
+                title="Approve all pending participants"
+              >
+                <FaCheck /> Approve All Pending
+              </button>
+            )}
+            
+            {/* Add bulk actions */}
+            {selectedEventParticipants.length > 0 && (
+              <div className="bulk-actions">
+                {selectedParticipants.length > 0 ? (
+                  <button 
+                    onClick={handleBulkRemoveParticipants}
+                    className="bulk-remove-btn"
+                    title="Remove selected participants"
+                  >
+                    <FaTrash /> Remove Selected ({selectedParticipants.length})
+                  </button>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Add this skill requirements summary section */}
+{selectedEvent?.skillRequirements && selectedEvent.skillRequirements.length > 0 && (
+  <div className="skill-requirements-summary">
+    <h4>Skill Requirements</h4>
+    <div className="skill-assignment-badges">
+      {selectedEvent.skillRequirements.map(req => {
+        const skillInfo = skillOptions.find(opt => opt.value === req.skill);
+        const assigned = currentAssignmentCounts[req.skill] || 0;
+        const remaining = req.count - assigned;
+        
+        return (
+          <div key={req.skill} className={`skill-assignment-badge ${remaining > 0 ? 'needs-more' : 'filled'}`}>
+            <span className="skill-name">{skillInfo?.label || req.skill}</span>
+            <span className="skill-count">
+              {assigned}/{req.count} assigned
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
+        
+        {/* Rest of volunteer search container */}
+        <div className="volunteer-search-container">
+          <div className="search-input-wrapper">
+            <FaSearch className="search-icon" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Add volunteers by name or email..."
+              value={searchTerm}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSearchTerm(value);
+                // Filter volunteers excluding current participants
+                const availableVolunteers = filterOutExistingParticipants(volunteers, selectedEventParticipants);
+                const filtered = availableVolunteers.filter(v => 
+                  v.name.toLowerCase().includes(value.toLowerCase()) ||
+                  v.email.toLowerCase().includes(value.toLowerCase())
+                );
+                setSearchResults(filtered);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              className="quick-add-input"
+            />
+            {searchTerm && (
+              <FaTimes 
+                className="clear-search" 
+                onClick={() => {
+                  setSearchTerm('');
+                  setSearchResults([]);
+                  setShowSuggestions(false);
+                }}
+              />
+            )}
+          </div>
+
+          {showSuggestions && searchTerm && searchResults.length > 0 && (
+            <div className="quick-suggestions">
+              {searchResults.map(volunteer => (
+                <div 
+                  key={volunteer.id} 
+                  className="suggestion-item"
+                  onClick={() => {
+                    handleAddVolunteer(volunteer);
+                    setSearchTerm('');
+                    setShowSuggestions(false);
+                  }}
                 >
-                  <FaTrash /> Remove Selected ({selectedParticipants.length})
-                </button>
-              ) : null}
+                  <img 
+                    src={volunteer.profile_photo || '/images/default-avatar.jpg'} 
+                    alt={volunteer.name}
+                    className="suggestion-avatar"
+                  />
+                  <div className="suggestion-info">
+                    <div className="suggestion-name">{volunteer.name}</div>
+                    <div className="suggestion-email">{volunteer.email}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-      </div>
-      
-      {/* Rest of volunteer search container */}
-      <div className="volunteer-search-container">
-        <div className="search-input-wrapper">
-          <FaSearch className="search-icon" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Add volunteers by name or email..."
-            value={searchTerm}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSearchTerm(value);
-              // Filter volunteers excluding current participants
-              const availableVolunteers = filterOutExistingParticipants(volunteers, selectedEventParticipants);
-              const filtered = availableVolunteers.filter(v => 
-                v.name.toLowerCase().includes(value.toLowerCase()) ||
-                v.email.toLowerCase().includes(value.toLowerCase())
-              );
-              setSearchResults(filtered);
-              setShowSuggestions(true);
-            }}
-            onFocus={() => setShowSuggestions(true)}
-            className="quick-add-input"
-          />
-          {searchTerm && (
-            <FaTimes 
-              className="clear-search" 
-              onClick={() => {
-                setSearchTerm('');
-                setSearchResults([]);
-                setShowSuggestions(false);
-              }}
-            />
+
+        <div className="participants-list">
+          {/* Volunteers Section */}
+          <h3 className="participant-section-title">Volunteers ({volunteers.length})</h3>
+          {volunteers.length > 0 ? (
+            <table className="participants-table">
+              <thead>
+                <tr>
+                  <th>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedParticipants.length === volunteers.length && volunteers.length > 0}
+                      onChange={() => {
+                        // Modify this to only select/deselect volunteers
+                        if (selectedParticipants.length === volunteers.length && volunteers.length > 0) {
+                          setSelectedParticipants(prev => 
+                            prev.filter(id => !volunteers.some(v => v.id === id))
+                          );
+                        } else {
+                          setSelectedParticipants(prev => [
+                            ...prev.filter(id => !volunteers.some(v => v.id === id)),
+                            ...volunteers.map(v => v.id)
+                          ]);
+                        }
+                      }}
+                      className="select-all-checkbox"
+                    />
+                  </th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Joined Date</th>
+                  <th>Status</th>
+                  <th>Skills</th>
+                  <th>Disability</th>
+                  <th>Assigned Skill</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {volunteers.map((participant) => (
+                  <tr key={participant.id}>
+                    <td>
+                      <input 
+                        type="checkbox"
+                        checked={selectedParticipants.includes(participant.id)}
+                        onChange={() => handleParticipantSelection(participant.id)}
+                        className="participant-checkbox"
+                      />
+                    </td>
+                    <td>
+                      <div className="participant-info">
+                        <img 
+                          src={participant.profile_photo || '/images/default-avatar.jpg'} 
+                          alt={participant.name}
+                          className="participant-avatar"
+                        />
+                        <span>{participant.name}</span>
+                      </div>
+                    </td>
+                    <td>{participant.email}</td>
+                    <td>{participant.phone || 'N/A'}</td>
+                    <td>{new Date(participant.joined_at).toLocaleString()}</td>
+                    <td>
+                      <span className={`status-badge ${participant.status.toLowerCase()}`}>
+                        {participant.status}
+                      </span>
+                    </td>
+                    <td>
+                      <SkillBadges skills={participant.skills || []} />
+                    </td>
+                    <td>
+                      <DisabilityInfo disability={participant.disability || null} />
+                    </td>
+                    <td className="skill-assignment-cell">
+  <div className="skill-assignment-wrapper">
+    <select
+      value={participantSkillAssignments[participant.id] || ''}
+      onChange={(e) => handleSkillAssignmentChange(participant.id, e.target.value)}
+      className="skill-assignment-select"
+      disabled={participant.status !== 'ACTIVE'}
+    >
+                    <option value="">None</option>
+      {availableSkills.map(skill => {
+        const isAvailable = !selectedEvent?.skillRequirements || 
+          (remainingSlots[skill.value] > 0 || 
+           participantSkillAssignments[participant.id] === skill.value);
+        
+        return (
+          <option
+            key={skill.value}
+            value={skill.value}
+            disabled={!isAvailable || participant.status !== 'ACTIVE'}
+          >
+            {skill.label} {remainingSlots[skill.value] <= 0 && participantSkillAssignments[participant.id] !== skill.value ? '(Full)' : ''}
+          </option>
+        );
+      })}
+    </select>
+
+  </div>
+</td>
+                    <td>
+                      <div className="participant-actions">
+                        {/* Existing participant action buttons */}
+                        {participant.status === 'PENDING' ? (
+                          <>
+                            <button
+                              onClick={() => selectedEvent && handleApproveParticipant(selectedEvent.id, participant.id)}
+                              className="approve-participant-btn"
+                              title="Approve participant"
+                              data-user-id={participant.id}
+                              disabled={!selectedEvent}
+                            >
+                              <FaCheck size={16} />
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                setRejectingParticipant({
+                                  userId: participant.id,
+                                  name: participant.name
+                                });
+                                setShowRejectionModal(true);
+                              }}
+                              className="reject-participant-btn"
+                              title="Reject participant"
+                              disabled={!selectedEvent}
+                            >
+                              <FaTimes size={15} />
+                            </button>
+                          </>
+                        ) : null}
+                        <button
+                          onClick={() => selectedEvent && handleRemoveParticipant(selectedEvent.id, participant.id)}
+                          className="remove-participant-btn"
+                          title="Remove participant"
+                          disabled={!selectedEvent}
+                        >
+                          <FaTrashAlt size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No volunteer participants yet</p>
+          )}
+          
+          {/* Scholars Section - New */}
+          <h3 className="participant-section-title scholar-section-title">Scholars ({scholars.length})</h3>
+          {scholars.length > 0 ? (
+            <table className="participants-table scholars-table">
+              <thead>
+                <tr>
+                  <th>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedParticipants.length === scholars.length && scholars.length > 0}
+                      onChange={() => {
+                        // Select/deselect only scholars
+                        if (selectedParticipants.length === scholars.length && scholars.length > 0) {
+                          setSelectedParticipants(prev => 
+                            prev.filter(id => !scholars.some(s => s.id === id))
+                          );
+                        } else {
+                          setSelectedParticipants(prev => [
+                            ...prev.filter(id => !scholars.some(s => s.id === id)),
+                            ...scholars.map(s => s.id)
+                          ]);
+                        }
+                      }}
+                      className="select-all-checkbox"
+                    />
+                  </th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Joined Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {scholars.map((participant) => (
+                  <tr key={participant.id}>
+                    <td>
+                      <input 
+                        type="checkbox"
+                        checked={selectedParticipants.includes(participant.id)}
+                        onChange={() => handleParticipantSelection(participant.id)}
+                        className="participant-checkbox"
+                      />
+                    </td>
+                    <td>
+                      <div className="participant-info">
+                        <img 
+                          src={participant.profile_photo || '/images/default-avatar.jpg'} 
+                          alt={participant.name}
+                          className="participant-avatar scholar-avatar"
+                        />
+                        <span>{participant.name}</span>
+                      </div>
+                    </td>
+                    <td>{participant.email}</td>
+                    <td>{participant.phone || 'N/A'}</td>
+                    <td>{new Date(participant.joined_at).toLocaleString()}</td>
+                    <td>
+                      <span className={`status-badge ${participant.status.toLowerCase()}`}>
+                        {participant.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="participant-actions">
+                        {participant.status === 'PENDING' ? (
+                          <>
+                            <button
+                              onClick={() => selectedEvent && handleApproveParticipant(selectedEvent.id, participant.id)}
+                              className="approve-participant-btn"
+                              title="Approve participant"
+                              data-user-id={participant.id}
+                              disabled={!selectedEvent}
+                            >
+                              <FaCheck size={16} />
+                            </button>
+                            
+                            <button
+                              onClick={() => {
+                                setRejectingParticipant({
+                                  userId: participant.id,
+                                  name: participant.name
+                                });
+                                setShowRejectionModal(true);
+                              }}
+                              className="reject-participant-btn"
+                              title="Reject participant"
+                              disabled={!selectedEvent}
+                            >
+                              <FaTimes size={15} />
+                            </button>
+                          </>
+                        ) : null}
+                        <button
+                          onClick={() => selectedEvent && handleRemoveParticipant(selectedEvent.id, participant.id)}
+                          className="remove-participant-btn"
+                          title="Remove participant"
+                          disabled={!selectedEvent}
+                        >
+                          <FaTrashAlt size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No scholar participants yet</p>
           )}
         </div>
-
-        {showSuggestions && searchTerm && searchResults.length > 0 && (
-          <div className="quick-suggestions">
-            {searchResults.map(volunteer => (
-              <div 
-                key={volunteer.id} 
-                className="suggestion-item"
-                onClick={() => {
-                  handleAddVolunteer(volunteer);
-                  setSearchTerm('');
-                  setShowSuggestions(false);
-                }}
-              >
-                <img 
-                  src={volunteer.profile_photo || '/images/default-avatar.jpg'} 
-                  alt={volunteer.name}
-                  className="suggestion-avatar"
-                />
-                <div className="suggestion-info">
-                  <div className="suggestion-name">{volunteer.name}</div>
-                  <div className="suggestion-email">{volunteer.email}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        
+        <div className="automated-reminders-info">
+          <p>
+            <FaBell className="reminder-icon" /> 
+            Automated reminder emails and notifications are sent 
+            <span className="reminder-timing">  7 days before </span> and 
+            <span className="reminder-timing">  1 day before </span> 
+            the event to all approved participants
+          </p>
+        </div>
+        
+        <button 
+          onClick={() => setShowParticipantsModal(false)} 
+          className="participant-modal-close-btn"
+        >
+          Close
+        </button>
       </div>
-
-      <div className="participants-list">
-        {selectedEventParticipants.length > 0 ? (
-          <table className="participants-table">
-            <thead>
-              <tr>
-                <th>
-                  <input 
-                    type="checkbox" 
-                    checked={selectedParticipants.length === selectedEventParticipants.length && selectedEventParticipants.length > 0}
-                    onChange={handleSelectAllParticipants}
-                    className="select-all-checkbox"
-                  />
-                </th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Joined Date</th>
-                <th>Status</th>
-                <th>Skills</th>
-                <th>Disability</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {selectedEventParticipants.map((participant) => (
-                <tr key={participant.id}>
-                  <td>
-                    <input 
-                      type="checkbox"
-                      checked={selectedParticipants.includes(participant.id)}
-                      onChange={() => handleParticipantSelection(participant.id)}
-                      className="participant-checkbox"
-                    />
-                  </td>
-                  <td>
-                    <div className="participant-info">
-                      <img 
-                        src={participant.profile_photo || '/images/default-avatar.jpg'} 
-                        alt={participant.name}
-                        className="participant-avatar"
-                      />
-                      <span>{participant.name}</span>
-                    </div>
-                  </td>
-                  <td>{participant.email}</td>
-                  <td>{participant.phone || 'N/A'}</td>
-                  <td>{new Date(participant.joined_at).toLocaleString()}</td>
-                  <td>
-                    <span className={`status-badge ${participant.status.toLowerCase()}`}>
-                      {participant.status}
-                    </span>
-                  </td>
-                  <td>
-                    <SkillBadges skills={participant.skills || []} />
-                  </td>
-                  <td>
-                    <DisabilityInfo disability={participant.disability || null} />
-                  </td>
-                  <td>
-                    <div className="participant-actions">
-                      {participant.status === 'PENDING' ? (
-                        <>
-                          <button
-                            onClick={() => selectedEvent && handleApproveParticipant(selectedEvent.id, participant.id)}
-                            className="approve-participant-btn"
-                            title="Approve participant"
-                            data-user-id={participant.id}
-                            disabled={!selectedEvent}
-                          >
-                            <FaCheck size={16} />
-                          </button>
-                          
-                          {/* Fix the reject button to ensure the click handler works */}
-                          <button
-                            onClick={() => {
-                              console.log('Rejecting participant:', participant.name);
-                              setRejectingParticipant({
-                                userId: participant.id,
-                                name: participant.name
-                              });
-                              setShowRejectionModal(true);
-                            }}
-                            className="reject-participant-btn"
-                            title="Reject participant"
-                            disabled={!selectedEvent}
-                          >
-                            <FaTimes size={15} />
-                          </button>
-                        </>
-                      ) : null}
-                      <button
-                        onClick={() => selectedEvent && handleRemoveParticipant(selectedEvent.id, participant.id)}
-                        className="remove-participant-btn"
-                        title="Remove participant"
-                        disabled={!selectedEvent}
-                      >
-                        <FaTrashAlt size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>No participants yet</p>
-        )}
-      </div>
-      
-      <div className="automated-reminders-info">
-        <p>
-          <FaBell className="reminder-icon" /> 
-          Automated reminder emails and notifications are sent 
-          <span className="reminder-timing">  7 days before </span> and 
-          <span className="reminder-timing">  1 day before </span> 
-          the event to all approved participants
-        </p>
-      </div>
-      
-      <button 
-        onClick={() => setShowParticipantsModal(false)} 
-        className="participant-modal-close-btn"
-      >
-        Close
-      </button>
     </div>
-  </div>
-);
+  );
+};
 
   const getDisplayTime = (startTime: string | null | undefined, endTime: string | null | undefined) => {
     // Handle null/undefined cases
@@ -1784,6 +2275,121 @@ useEffect(() => {
     </div>
   );
 
+  // Add a component to render the skill requirements section
+const renderSkillRequirements = () => {
+  // Get skills that haven't been added yet
+  const availableSkills = skillOptions.filter(
+    opt => !formData.skillRequirements.some(req => req.skill === opt.value)
+  );
+  
+  // Filter out any empty or invalid skill requirements
+  const validSkillRequirements = formData.skillRequirements.filter(req => 
+    req.skill && skillOptions.some(opt => opt.value === req.skill)
+  );
+  
+  return (
+    <div className="form-group skill-requirements-section">
+      <label className="form-label">
+        Volunteer Skill Requirements
+        <span className="field-help">(Optional - Specify roles needed for this event)</span>
+      </label>
+      
+      <div className="skill-allocation-info">
+        <span className={skillAllocationError ? 'text-danger' : ''}>
+          {totalSkillsAllocated} of {formData.totalVolunteers} volunteers allocated to specific skills
+        </span>
+        {skillAllocationError && (
+          <div className="allocation-error">{skillAllocationError}</div>
+        )}
+      </div>
+      
+      <div className="skill-requirements-list">
+        {validSkillRequirements.map((req) => {
+          const skillInfo = skillOptions.find(opt => opt.value === req.skill);
+          if (!skillInfo) return null; // Skip rendering if no matching skill info is found
+          
+          return (
+            <div key={req.skill} className="skill-requirement-item">
+              <div className="skill-info">
+                <strong>{skillInfo.label}</strong>
+                <small>{skillInfo.description}</small>
+              </div>
+              <div className="skill-controls">
+                <input
+                  type="number"
+                  value={req.count}
+                  onChange={(e) => handleSkillCountChange(req.skill, parseInt(e.target.value) || 0)}
+                  min="1"
+                  max={formData.totalVolunteers}
+                  className="skill-count-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSkillRequirement(req.skill)}
+                  className="remove-skill-btn"
+                >
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      {availableSkills.length > 0 && (
+        <div className="add-skill-container">
+          <div className="skill-dropdown-container">
+            <select 
+              className="skill-dropdown"
+              onChange={(e) => {
+                if (e.target.value) {
+                  handleAddSkillRequirement(e.target.value);
+                  e.target.value = ''; // Reset dropdown after selection
+                }
+              }}
+              value=""
+            >
+              <option value="" disabled>Select a skill to add...</option>
+              {availableSkills.map(skill => (
+                <option key={skill.value} value={skill.value}>
+                  {skill.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {validSkillRequirements.length === 0 && (
+        <div className="no-skills-message">
+          No skills added yet. Use the dropdown above to add specific skills needed for this event.
+        </div>
+      )}
+    </div>
+  );
+};
+
+  // Add a component to display skill requirements on the event card
+  const renderSkillRequirementsBadges = (requirements: SkillRequirement[]) => {
+    if (!requirements || requirements.length === 0) return null;
+    
+    return (
+      <div className="skill-requirements-badges">
+        <h6>Skills Needed:</h6>
+        <div className="badges-container">
+          {requirements.map(req => {
+            const skillInfo = skillOptions.find(opt => opt.value === req.skill);
+            return (
+              <span key={req.skill} className="skill-requirement-badge" title={skillInfo?.description}>
+                {skillInfo?.label}: {req.count}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="admin-events-container">
       <div className="admin-event-header">
@@ -1805,7 +2411,9 @@ useEffect(() => {
           <div className="events-grid">
             {sortEvents(events).currentEvents.map((event) => {
               const volunteersNeeded = event.totalVolunteers - event.currentVolunteers;
-              const progress = (event.currentVolunteers / event.totalVolunteers) * 100;
+              const scholarsNeeded = event.totalScholars - event.currentScholars;
+              const volunteerProgress = (event.currentVolunteers / event.totalVolunteers) * 100;
+              const scholarProgress = (event.currentScholars / event.totalScholars) * 100;
 
               return (
                 <div key={event.id} id={`event-${event.id}`} className="event-card admin">
@@ -1835,26 +2443,52 @@ useEffect(() => {
                   <p><FaMapMarkerAlt size={14} className="icon" /> {event.location}</p>
                   <p><FaCalendarAlt size={14} className="icon" /> {formatDateForDisplay(event.date)}</p>
                   <p><FaClock size={14} className="icon" /> {getDisplayTime(event?.startTime, event?.endTime)}</p>
-                  <div className="progress-bar-container">
-                    <div
-                      className="progress-bar"
-                     
-                    >
-                      <span className="progress-percentage">
-                        {progress < 5 ? '' : `${Math.round(progress)}%`}
-                      </span>
+                  
+                  {/* Volunteer progress section */}
+                  <div className="progress-section">
+                    <h5>Volunteer Progress</h5>
+                    <div className="progress-bar-container">
+                      <div
+                        className="progress-bar volunteer-progress"
+                        style={{ width: `${volunteerProgress}%` }}
+                      >
+                        <span className="progress-percentage">
+                          {volunteerProgress < 5 ? '' : `${Math.round(volunteerProgress)}%`}
+                        </span>
+                      </div>
                     </div>
-                    {progress < 5 && (
-                      <span className="progress-percentage">
-                        {Math.round(progress)}%
-                      </span>
-                    )}
+                    <p className="volunteers-needed">
+                      {volunteersNeeded > 0
+                        ? `${volunteersNeeded} more volunteers needed`
+                        : "No more volunteers needed"}
+                    </p>
                   </div>
-                  <p className="volunteers-needed">
-                    {volunteersNeeded > 0
-                      ? `${volunteersNeeded} more volunteers needed`
-                      : "No more volunteers needed"}
-                  </p>
+                  
+                  {/* Scholar progress section */}
+                  <div className="progress-section">
+                    <h5>Scholar Progress</h5>
+                    <div className="progress-bar-container">
+                      <div
+                        className="progress-bar scholar-progress"
+                        style={{ width: `${scholarProgress}%` }}
+                      >
+                        <span className="progress-percentage">
+                          {scholarProgress < 5 ? '' : `${Math.round(scholarProgress)}%`}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="scholars-needed">
+                      {scholarsNeeded > 0
+                        ? `${scholarsNeeded} more scholars needed`
+                        : "No more scholars needed"}
+                    </p>
+                  </div>
+                  
+                  {/* Add skill requirements badges before status */}
+                  {event.skillRequirements && event.skillRequirements.length > 0 && 
+                    renderSkillRequirementsBadges(event.skillRequirements)
+                  }
+                  
                   <p className="event-status">Status: {event.status}</p>
                 </div>
               );
@@ -2123,7 +2757,7 @@ useEffect(() => {
               onChange={(e) => {
                 const value = parseInt(e.target.value);
                 setFormData({ ...formData, totalVolunteers: value });
-                validateVolunteers(value, formData.currentVolunteers);
+                validateVolunteers(value, formData.currentVolunteers, formData.totalScholars, formData.currentScholars);
               }}
               min="1"
               required
@@ -2135,6 +2769,9 @@ useEffect(() => {
             )}
           </div>
 
+          {/* Add the skill requirements section after total volunteers */}
+          {renderSkillRequirements()}
+
           <div className="form-group">
             <label className="form-label">Current Volunteers</label>
             <input
@@ -2144,7 +2781,7 @@ useEffect(() => {
               onChange={(e) => {
                 const value = parseInt(e.target.value);
                 setFormData({ ...formData, currentVolunteers: value });
-                validateVolunteers(formData.totalVolunteers, value);
+                validateVolunteers(formData.totalVolunteers, value, formData.totalScholars, formData.currentScholars);
               }}
               min="0"
               max={formData.totalVolunteers}
@@ -2153,6 +2790,49 @@ useEffect(() => {
             {validationErrors.currentVolunteers && (
               <div className="invalid-feedback">
                 {validationErrors.currentVolunteers}
+              </div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Total Scholars</label>
+            <input
+              type="number"
+              className={`form-control ${validationErrors.totalScholars ? 'is-invalid' : ''}`}
+              value={formData.totalScholars}
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                setFormData({ ...formData, totalScholars: value });
+                validateVolunteers(formData.totalVolunteers, formData.currentVolunteers, value, formData.currentScholars);
+              }}
+              min="0"
+              required
+            />
+            {validationErrors.totalScholars && (
+              <div className="invalid-feedback">
+                {validationErrors.totalScholars}
+              </div>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Current Scholars</label>
+            <input
+              type="number"
+              className={`form-control ${validationErrors.currentScholars ? 'is-invalid' : ''}`}
+              value={formData.currentScholars}
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                setFormData({ ...formData, currentScholars: value });
+                validateVolunteers(formData.totalVolunteers, formData.currentVolunteers, formData.totalScholars, value);
+              }}
+              min="0"
+              max={formData.totalScholars}
+              required
+            />
+            {validationErrors.currentScholars && (
+              <div className="invalid-feedback">
+                {validationErrors.currentScholars}
               </div>
             )}
           </div>

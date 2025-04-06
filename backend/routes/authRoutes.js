@@ -510,7 +510,7 @@ router.post('/register', documentUpload, async (req, res) => {
       skills,
       disability,
       documentPaths, // Pass document paths to be stored in the database
-      salaryRange    // Pass salaryRange to createUser
+      salaryRange,    // Pass salaryRange to createUser
     );
 
     // Send verification email
