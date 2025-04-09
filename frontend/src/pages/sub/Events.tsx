@@ -10,6 +10,7 @@ import "../../styles/Layout.css";
 import { motion } from "framer-motion";
 import { useAuth } from '../../contexts/AuthContext';
 import { User } from '../../types/auth';
+import "../../styles/feedback.css"; // Add import for feedback styles
 
 // Update the BackendEvent interface to include both camelCase and snake_case properties
 interface BackendEvent {
@@ -44,6 +45,7 @@ interface BackendEvent {
   feedback?: {
     id: number;
     user_name: string;
+    user_role?: string; // Added to track user role if available
     rating: number;
     comment: string;
     created_at: string;
@@ -78,6 +80,7 @@ interface Event {
   feedback?: {
     id: number;
     userName: string;
+    userRole?: string; // Added to track user role if available
     rating: number;
     comment: string;
     createdAt: string;
@@ -96,6 +99,7 @@ interface PastEvent extends Event {
   feedback?: {
     id: number;
     userName: string;
+    userRole?: string; // Added to track user role if available
     rating: number;
     comment: string;
     createdAt: string;
@@ -163,118 +167,153 @@ const EventPage: React.FC = () => {
     return `${baseUrl}/uploads/events/${imageUrl}`;
   }
 
-  const fetchEvents = async () => {
-    try {
-      setIsLoading(true);
-      // Use the public endpoint without auth requirements - notice no /api prefix
-      const response = await api.get<BackendEvent[]>('/events');
-      console.log('Raw event data:', response.data);
+  // Modified fetchEvents function to handle first-name-only feedback
+const fetchEvents = async () => {
+  try {
+    setIsLoading(true);
+    // Use the public endpoint without auth requirements - notice no /api prefix
+    const response = await api.get<BackendEvent[]>('/events');
+    console.log('Raw event data:', response.data);
 
-      const currentDate = new Date();
+    const currentDate = new Date();
+    
+    // Process all events
+    const processedEvents = response.data.map(event => {
+      // Add extensive debug logging for skill requirements
+      console.log(`Processing event ${event.id}, title: ${event.title}`);
       
-      // Process all events
-      const processedEvents = response.data.map(event => {
-        // Add extensive debug logging for skill requirements
-        console.log(`Processing event ${event.id}, title: ${event.title}`);
-        
-        // Debug log for skill requirements
-        console.log(`Event ${event.id} skill requirements:`, 
-          event.skillRequirements || event.skill_requirements || 'None');
-        
-        // Make sure we properly extract the skill requirements
-        let processedSkillRequirements = null;
-        
-        // Try to get skill requirements from either property name
-        if (event.skillRequirements) {
-          processedSkillRequirements = event.skillRequirements;
-        } else if (event.skill_requirements) {
-          processedSkillRequirements = event.skill_requirements;
+      // Debug log for skill requirements
+      console.log(`Event ${event.id} skill requirements:`, 
+        event.skillRequirements || event.skill_requirements || 'None');
+      
+      // Make sure we properly extract the skill requirements
+      let processedSkillRequirements = null;
+      
+      // Try to get skill requirements from either property name
+      if (event.skillRequirements) {
+        processedSkillRequirements = event.skillRequirements;
+      } else if (event.skill_requirements) {
+        processedSkillRequirements = event.skill_requirements;
+      }
+      
+      // If skill requirements is a string, try to parse it
+      if (typeof processedSkillRequirements === 'string') {
+        try {
+          processedSkillRequirements = JSON.parse(processedSkillRequirements);
+          console.log('Parsed skill requirements from string:', processedSkillRequirements);
+        } catch (e) {
+          console.error('Failed to parse skill requirements:', e);
+          processedSkillRequirements = [];
         }
+      }
+      
+      // Check if the event is in the past
+      const eventDate = new Date(event.date);
+      const isPast = eventDate < currentDate;
+      
+      // Generate or calculate success metrics for past events
+      let successMetrics;
+      if (isPast) {
+        // For past events, simulate or calculate success metrics
+        // In a real app, this would come from the backend
+        const volunteersParticipated = parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0));
         
-        // If skill requirements is a string, try to parse it
-        if (typeof processedSkillRequirements === 'string') {
-          try {
-            processedSkillRequirements = JSON.parse(processedSkillRequirements);
-            console.log('Parsed skill requirements from string:', processedSkillRequirements);
-          } catch (e) {
-            console.error('Failed to parse skill requirements:', e);
-            processedSkillRequirements = [];
-          }
-        }
+        // Use the actual scholar count from the event data if available
+        const scholarsHelped = parseInt(String(event.current_scholars ?? 0));
         
-        // Check if the event is in the past
-        const eventDate = new Date(event.date);
-        const isPast = eventDate < currentDate;
-        
-        // Generate or calculate success metrics for past events
-        let successMetrics;
-        if (isPast) {
-          // For past events, simulate or calculate success metrics
-          // In a real app, this would come from the backend
-          const volunteersParticipated = parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0));
-          
-          // Use the actual scholar count from the event data if available
-          const scholarsHelped = parseInt(String(event.current_scholars ?? 0));
-          
-          successMetrics = {
-            volunteersParticipated,
-            scholarsHelped
-          };
-        }
+        successMetrics = {
+          volunteersParticipated,
+          scholarsHelped
+        };
+      }
 
-        // Process feedback data if it exists
-        let processedFeedback;
-        if (event.feedback && Array.isArray(event.feedback)) {
-          processedFeedback = event.feedback.map(item => ({
+      // Debug feedback data more extensively
+      if (isPast) {
+        console.log(`Past event ${event.id} (${event.title}) feedback details:`, event.feedback);
+      }
+      
+      // Process feedback data if it exists - only keep volunteer feedback with comments
+      let processedFeedback;
+      if (event.feedback && Array.isArray(event.feedback)) {
+        processedFeedback = event.feedback
+          .filter(item => 
+            // Only keep feedback with comments
+            item.comment && item.comment.trim() !== '' &&
+            // Only keep volunteer feedback
+            item.user_role === 'volunteer'
+          )
+          .map(item => ({
             id: item.id,
+            // User name will already be just the first name from the API
             userName: item.user_name,
+            userRole: item.user_role || 'volunteer',
             rating: item.rating,
             comment: item.comment,
             createdAt: item.created_at
           }));
-        }
+        console.log(`Event ${event.id}: Processed ${processedFeedback.length} filtered feedback items`);
+      } else {
+        console.log(`Event ${event.id}: No feedback data available, will fetch separately`);
+      }
+      
+      return {
+        ...event,
+        // Use the updated function to handle image URLs properly
+        image: getImageUrl(event.image),
+        // Handle both camelCase and snake_case properties
+        totalVolunteers: parseInt(String(event.total_volunteers ?? event.totalVolunteers ?? 0)),
+        currentVolunteers: parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0)),
+        startTime: event.start_time ?? event.startTime ?? '',
+        endTime: event.end_time ?? event.endTime ?? '',
+        // Ensure we're setting skillRequirements correctly
+        skillRequirements: processedSkillRequirements,
+        // Add the scholar counts to the processed event
+        totalScholars: parseInt(String(event.total_scholars ?? 0)),
+        currentScholars: parseInt(String(event.current_scholars ?? 0)),
+        // Add past event flag and success metrics
+        isPast,
+        ...(successMetrics && { successMetrics }),
+        feedback: processedFeedback
+      };
+    });
 
-        // Add mock feedback data for testing purposes if there's no feedback
-        // This is temporary and should be removed in production
-        if (isPast && (!processedFeedback || processedFeedback.length === 0)) {
-          processedFeedback = [
-            {
-              id: 100000 + parseInt(String(event.id)),
-              userName: "John Volunteer",
-              rating: 5,
-              comment: "This was an amazing experience! I learned so much while helping others.",
-              createdAt: "2023-11-15T14:30:00Z"
-            },
-            {
-              id: 200000 + parseInt(String(event.id)),
-              userName: "Maria Helper",
-              rating: 4,
-              comment: "Very well organized event. The scholars were incredibly grateful for our help.",
-              createdAt: "2023-11-14T10:15:00Z"
+    // Fetch additional feedback for past events that don't have feedback
+    await Promise.all(
+      processedEvents
+        .filter(event => event.isPast && (!event.feedback || event.feedback.length === 0))
+        .map(async (event) => {
+          try {
+            console.log(`Fetching additional feedback for event ${event.id}`);
+            const feedbackResponse = await api.get(`/public/feedback/${event.id}`);
+            if (feedbackResponse.data && feedbackResponse.data.feedback) {
+              console.log(`Retrieved ${feedbackResponse.data.feedback.length} feedback items for event ${event.id}`);
+              
+              // Process the feedback
+              event.feedback = feedbackResponse.data.feedback.map((item: {
+                id: number;
+                user_name: string;
+                user_role?: string;
+                rating: number;
+                comment: string;
+                created_at: string;
+              }) => ({
+                id: item.id,
+                userName: item.user_name, // API now returns just first name
+                userRole: item.user_role || 'volunteer',
+                rating: item.rating,
+                comment: item.comment,
+                createdAt: item.created_at
+              }));
             }
-          ];
-        }
-        
-        return {
-          ...event,
-          // Use the updated function to handle image URLs properly
-          image: getImageUrl(event.image),
-          // Handle both camelCase and snake_case properties
-          totalVolunteers: parseInt(String(event.total_volunteers ?? event.totalVolunteers ?? 0)),
-          currentVolunteers: parseInt(String(event.current_volunteers ?? event.currentVolunteers ?? 0)),
-          startTime: event.start_time ?? event.startTime ?? '',
-          endTime: event.end_time ?? event.endTime ?? '',
-          // Ensure we're setting skillRequirements correctly
-          skillRequirements: processedSkillRequirements,
-          // Add the scholar counts to the processed event
-          totalScholars: parseInt(String(event.total_scholars ?? 0)),
-          currentScholars: parseInt(String(event.current_scholars ?? 0)),
-          // Add past event flag and success metrics
-          isPast,
-          ...(successMetrics && { successMetrics }),
-          feedback: processedFeedback
-        };
-      });
+          } catch (feedbackError) {
+            console.error(`Error fetching feedback for event ${event.id}:`, feedbackError);
+          }
+        })
+    );
+
+    console.log('Past events after feedback fetch:', processedEvents.map(e => 
+      `${e.id}: ${e.title} - ${e.feedback?.length || 0} feedback items`
+    ));
 
       // Now separate future and past events
       const futureEvents = processedEvents.filter(event => !event.isPast);
@@ -287,6 +326,11 @@ const EventPage: React.FC = () => {
       futureEvents.forEach(event => {
         console.log(`Event ${event.id} (${event.title}) final skill requirements:`, 
           JSON.stringify(event.skillRequirements));
+      });
+      
+      // Debug past events specifically for feedback
+      pastEventsList.forEach(event => {
+        console.log(`Past event ${event.id} (${event.title}): has ${event.feedback?.length || 0} feedback items`);
       });
       
       setEvents(futureEvents);
@@ -687,9 +731,11 @@ const EventPage: React.FC = () => {
                           This event was successfully completed with {event.successMetrics?.volunteersParticipated || event.currentVolunteers} volunteers 
                           who made a positive impact by helping {event.currentScholars || event.successMetrics?.scholarsHelped || 0} scholar members.
                         </p>
+                  
+                    
                         
-                        {/* Add volunteer feedback section */}
-                        {event.feedback && event.feedback.length > 0 ? (
+                        {/* Improved volunteer feedback section with fallback checks */}
+                        {event.feedback && Array.isArray(event.feedback) && event.feedback.length > 0 ? (
                           <div className="past-event-feedback">
                             <h4>Volunteer Feedback</h4>
                             <div className="feedback-items">
@@ -697,12 +743,21 @@ const EventPage: React.FC = () => {
                               {event.feedback.slice(0, 2).map((item) => (
                                 <div key={item.id} className="feedback-item">
                                   <div className="feedback-header">
-                                    <span className="feedback-author">{item.userName}</span>
+                                    <span className="feedback-author">
+                                      {item.userName} 
+                                      {item.userRole && <small> ({item.userRole})</small>}
+                                    </span>
                                     {renderStars(item.rating)}
                                   </div>
                                   <p className="feedback-comment">"{item.comment}"</p>
                                 </div>
                               ))}
+                              {/* Add "View more" link if there are more than 2 feedback items */}
+                              {event.feedback.length > 2 && (
+                                <div className="view-more-feedback" onClick={() => handleCardClick(event.id)}>
+                                  <span>View more feedback ({event.feedback.length - 2} more)</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ) : (
