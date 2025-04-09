@@ -17,6 +17,13 @@ const storage = multer.diskStorage({
   }
 });
 
+// REMOVE THIS PROBLEMATIC CODE BLOCK - IT WAS OUTSIDE ANY FUNCTION
+// const isPastEvent = new Date(event.date) < new Date();
+// if (isPastEvent) {
+//     const feedbackResult = await db.query(`...`);
+//     event.feedback = feedbackResult.rows;
+// }
+
 const upload = multer({ 
   storage: storage,
   limits: {
@@ -90,20 +97,28 @@ router.get('/', async (req, res) => {
             // If this is a past event, fetch feedback
             const isPastEvent = new Date(event.date) < new Date();
             if (isPastEvent) {
-                const feedbackResult = await db.query(`
+                console.log(`Fetching feedback for past event ${event.id} (${event.title})`);
+                const feedbackQuery = `
                     SELECT 
                         ef.id,
                         u.name as user_name,
+                        u.role as user_role,
                         ef.rating,
                         ef.comment,
                         ef.created_at
                     FROM event_feedback ef
                     JOIN users u ON ef.user_id = u.id
-                    WHERE ef.event_id = $1 AND ef.comment IS NOT NULL AND ef.comment <> ''
+                    WHERE ef.event_id = $1 
                     ORDER BY ef.created_at DESC
-                    LIMIT 2
-                `, [event.id]);
+                    LIMIT 5
+                `;
+                console.log('Executing feedback query:', feedbackQuery.replace(/\s+/g, ' '));
+                const feedbackResult = await db.query(feedbackQuery, [event.id]);
                 
+                console.log(`Found ${feedbackResult.rows.length} feedback entries for event ${event.id}`);
+                if (feedbackResult.rows.length > 0) {
+                    console.log('Sample feedback:', feedbackResult.rows[0]);
+                }
                 event.feedback = feedbackResult.rows;
             }
             
@@ -1035,24 +1050,34 @@ router.get('/:id', async (req, res, next) => {
             event.skill_requirements = [];
         }
         
-        // Get event feedback
-        const feedbackResult = await db.query(`
+        // Get event feedback with more detailed logging
+        const feedbackQuery = `
             SELECT 
                 ef.id,
                 u.name as user_name,
+                u.role as user_role,
                 ef.rating,
                 ef.comment,
                 ef.created_at
             FROM event_feedback ef
             JOIN users u ON ef.user_id = u.id
-            WHERE ef.event_id = $1 AND ef.comment IS NOT NULL AND ef.comment <> ''
+            WHERE ef.event_id = $1
             ORDER BY ef.created_at DESC
-            LIMIT 5
-        `, [id]);
+        `;
+        console.log('Executing single event feedback query:', feedbackQuery.replace(/\s+/g, ' '));
+        const feedbackResult = await db.query(feedbackQuery, [id]);
         
+        console.log(`Found ${feedbackResult.rows.length} feedback entries for single event ${id}`);
+        if (feedbackResult.rows.length > 0) {
+            console.log('First feedback entry:', feedbackResult.rows[0]);
+        }
         event.feedback = feedbackResult.rows;
         
-        console.log(`Sending event details for ID ${id} with feedback:`, event.feedback?.length || 0);
+        console.log(`Sending event details for ID ${id} with feedback:`, {
+            feedback_count: event.feedback?.length || 0,
+            has_feedback: event.feedback?.length > 0
+        });
+        
         res.json(event);
     } catch (error) {
         console.error('Error fetching event details:', error);
@@ -1349,6 +1374,70 @@ router.post('/:id/scholar-feedback', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Error submitting scholar feedback:', error);
     res.status(500).json({ error: 'Failed to submit feedback' });
+  }
+});
+
+// NEW: Add dedicated public endpoint for event feedback
+router.get('/public/feedback/:eventId', async (req, res) => {
+  try {
+    const eventId = req.params.eventId;
+    
+    // Get event data first to check if it exists and is in the past
+    const eventResult = await db.query(`
+      SELECT id, title, date FROM events WHERE id = $1
+    `, [eventId]);
+    
+    if (eventResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found' });
+    }
+    
+    const event = eventResult.rows[0];
+    const isPastEvent = new Date(event.date) < new Date();
+    
+    if (!isPastEvent) {
+      return res.json({ 
+        message: 'No feedback available for future events',
+        feedback: []
+      });
+    }
+    
+    console.log(`Fetching feedback for event ${eventId} (${event.title})`);
+    
+    // Updated query to:
+    // 1. Only get feedback with non-empty comments
+    // 2. Only get feedback from volunteers 
+    // 3. Extract first name
+    const feedbackResult = await db.query(`
+      SELECT 
+        ef.id,
+        ef.event_id,
+        SPLIT_PART(u.name, ' ', 1) as user_name,
+        u.role as user_role,
+        ef.rating,
+        ef.comment,
+        ef.created_at
+      FROM event_feedback ef
+      JOIN users u ON ef.user_id = u.id
+      WHERE ef.event_id = $1
+        AND ef.comment IS NOT NULL 
+        AND ef.comment <> ''
+        AND (ef.user_type = 'volunteer' OR u.role = 'volunteer')
+      ORDER BY ef.rating DESC, ef.created_at DESC
+    `, [eventId]);
+    
+    console.log(`Found ${feedbackResult.rows.length} filtered volunteer feedback entries`);
+    feedbackResult.rows.forEach((row, index) => {
+      console.log(`Feedback ${index+1}: from ${row.user_name} (${row.user_role}), rating: ${row.rating}`);
+    });
+    
+    res.json({
+      event_id: eventId,
+      event_title: event.title,
+      feedback: feedbackResult.rows
+    });
+  } catch (error) {
+    console.error('Error fetching event feedback:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

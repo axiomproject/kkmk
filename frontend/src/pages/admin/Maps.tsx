@@ -187,6 +187,7 @@ const PAYATAS_SECTORS: Record<string, Sector> = {
       [14.7091909, 121.0854647],
       [14.7048325, 121.0889409],
       [14.7032966, 121.0891554],
+      [14.7027985, 121.0891554],
       [14.7027985, 121.0937045],
       [14.7023003, 121.1022017],
       [14.7027985, 121.1059353],
@@ -294,12 +295,7 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
         const label = L.divIcon({
           className: 'sector-percentage-label',
           html: `
-            <div class="percentage-label-content">
-              <div class="scholar-count">${scholarCount} Scholars (${scholarPercentage.toFixed(1)}%)</div>
-              <div class="event-count">${eventCount} Events (${eventPercentage.toFixed(1)}%)</div>
-              <div class="distribution-count">${stats.distributions} Items (${stats.distributionPercentage.toFixed(1)}%)</div>
-              <div class="total-count">Total: ${scholarCount + eventCount}</div>
-            </div>
+           
           `,
           iconSize: [140, 100]
         });
@@ -343,6 +339,16 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
                 <span>Events</span>
                 <span class="stat-percentage">${eventPercentage}%</span>
               </div>
+                 <div class="sector-stat-row">
+                 <div class="sector-events-list">
+                <h6>Events in this Area</h4>
+                <ul>
+                  ${stats.events.map(eventMarker => `
+                    <li>${eventMarker.name}</li>
+                  `).join('')}
+                </ul>
+              </div>
+              </div>
               <div class="sector-stat-row">
                 <span>Items Distributed</span>
                 <span class="stat-percentage">${distributionPercentage}%</span>
@@ -352,6 +358,10 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
                 <span class="stat-percentage">${totalPercentage}%</span>
               </div>
             </div>
+            
+            ${stats.events.length > 0 ? `
+             
+            ` : ''}
           `;
         
           const bounds = sectorPolygon.getBounds();
