@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../../styles/modals/VolunteerViewModal.css';
+import api from '../../config/axios'; // Import api config
+import { API_URL } from '../../config/constants'; // Import API_URL constant
 
 interface Event {
   id: string;
@@ -63,6 +65,9 @@ const skillLabels: Record<string, string> = {
 };
 
 const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) => {
+  // Add state for evidence popup
+  const [showEvidencePopup, setShowEvidencePopup] = useState(false);
+
   // Add debugging logs
   console.log('Volunteer data received:', {
     id: volunteer.id,
@@ -123,6 +128,34 @@ const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) =>
   const hasSkillEvidence = volunteer.skill_evidence && volunteer.skill_evidence.length > 0;
   console.log('Has skill evidence:', hasSkillEvidence, volunteer.skill_evidence);
 
+  // Function to determine if the evidence is an image or PDF
+  const isPDF = (url?: string) => url?.toLowerCase().endsWith('.pdf');
+  const isImage = (url?: string) => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+    return url && imageExtensions.some(ext => url.toLowerCase().endsWith(ext));
+  };
+  
+  // Function to resolve URLs properly by adding API base URL if needed
+  const resolveUrl = (url?: string) => {
+    if (!url) return '';
+    
+    // If it's already an absolute URL, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    
+    // If it starts with a slash, append to API base URL
+    if (url.startsWith('/')) {
+      // Use API_URL from constants, or fallback to axios baseURL, or default localhost
+      const baseUrl = API_URL || api.defaults.baseURL || 'http://localhost:5175';
+      return `${baseUrl}${url}`;
+    }
+    
+    // Otherwise, assume it's relative to the API uploads path
+    const baseUrl = API_URL || api.defaults.baseURL || 'http://localhost:5175';
+    return `${baseUrl}/api${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
   return (
     <div className="volunteer-view-modal-overlay" onClick={onClose}>
       <div className="volunteer-view-modal-content" onClick={e => e.stopPropagation()}>
@@ -174,21 +207,19 @@ const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) =>
                 {renderSkillBadges(parsedSkills)}
               </div>
               
-              {/* Add skill evidence section if available */}
+              {/* Updated evidence section to use a button instead of a link */}
               {hasSkillEvidence && (
                 <div className="skill-evidence">
                   <p><strong>Skill Evidence:</strong></p>
-                  <a 
-                    href={volunteer.skill_evidence} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
+                  <button 
+                    onClick={() => setShowEvidencePopup(true)} 
                     className="evidence-link"
                   >
                     <div className="evidence-badge">
                       <i className="material-icons">description</i>
                       <span>View Certificate/Evidence</span>
                     </div>
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
@@ -257,6 +288,55 @@ const VolunteerViewModal: React.FC<VolunteerProps> = ({ volunteer, onClose }) =>
           </div>
         </div>
       </div>
+
+      {/* Evidence Popup Modal - UPDATE URLS */}
+      {showEvidencePopup && (
+        <div className="cert-evidence-overlay" onClick={() => setShowEvidencePopup(false)}>
+          <div className="cert-evidence-container" onClick={e => e.stopPropagation()}>
+            <div className="cert-evidence-header">
+              <h3>Certificate/Evidence</h3>
+              <button 
+                className="cert-evidence-close-btn" 
+                onClick={() => setShowEvidencePopup(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="cert-evidence-display-area">
+              {isPDF(volunteer.skill_evidence) ? (
+                // Embed PDF viewer with resolved URL
+                <iframe 
+                  src={`${resolveUrl(volunteer.skill_evidence)}#toolbar=0&navpanes=0`} 
+                  width="100%" 
+                  height="500px" 
+                  title="Certificate PDF"
+                  className="cert-evidence-pdf"
+                />
+              ) : isImage(volunteer.skill_evidence) ? (
+                // Display image with resolved URL
+                <img 
+                  src={resolveUrl(volunteer.skill_evidence)} 
+                  alt="Certificate" 
+                  className="cert-evidence-image"
+                />
+              ) : (
+                // Fallback for other file types with resolved URL
+                <div className="cert-evidence-fallback">
+                  <p>Evidence file available but cannot be previewed.</p>
+                  <a 
+                    href={resolveUrl(volunteer.skill_evidence)} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="cert-evidence-download-btn"
+                  >
+                    Download File
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
