@@ -1,6 +1,6 @@
 # Kapatid Kita, Mahal Kita (KKMK) Data-Driven Management with Geo-Tagging and Cloud Analytics Platform
 <p align="center">
-<img src="./frontend/public/kmfi-logo.png" alt="KMFI Logo" width="200">
+<img src="./frontend/public/images/kmfi-logo.png" alt="KMFI Logo" width="200">
 </p>
 
 A full-stack web application for social impact, fundraising, and community engagement in Payatas, Quezon City.
