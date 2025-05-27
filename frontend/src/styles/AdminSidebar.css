@@ -1209,6 +1209,7 @@ body.sidebar-open {
 
 .hamburger-menu .material-icons {
   font-size: 24px;
+  margin-left: 15px;
 }
 
 /* Mobile Overlay Enhancement */
