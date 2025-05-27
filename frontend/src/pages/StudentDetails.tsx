@@ -739,30 +739,9 @@ const StudentDetails: React.FC = () => {
                 <div className="no-story-message">
                   <p>We're still writing {student.first_name}'s story. This young dreamer has great potential and needs your support to achieve their educational goals.</p>
                   <div className="student-donate-dropdown-container">
-                    <button className="student-support-cta dropdown-toggle" onClick={toggleDropdown}>
-                      Support {student.first_name} Now <FaChevronDown />
-                    </button>
+                 
                     
-                    {isDropdownOpen && (
-                      <div className="donate-dropdown-menu">
-                        {renderDropdownItem(
-                          "Sponsor Now", 
-                          () => {
-                            handleDonateClick();
-                            handleCloseDropdown();
-                          },
-                          "Full scholarship support for this student"
-                        )}
-                        {renderDropdownItem(
-                          "Donate Now", 
-                          () => {
-                            handleDonateRedirect();
-                            handleCloseDropdown();
-                          },
-                          "One-time donation to the general fund"
-                        )}
-                      </div>
-                    )}
+                   
                   </div>
                 </div>
               )}

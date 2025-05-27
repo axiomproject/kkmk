@@ -194,9 +194,9 @@ const PAYATAS_SECTORS: Record<string, Sector> = {
       [14.7052475, 121.1108706],
       [14.7067419, 121.1139176],
       [14.7087343, 121.1146901],
-      [14.7141304, 121.0919879]  // Close the polygon
+      [14.7141304, 121.0919879] 
     ] as [number, number][],
-    color: '#FFD700', // Professional gold
+    color: '#FFD700', 
     name: 'Payatas A'
   }
 };
@@ -228,7 +228,6 @@ interface SectorStatistics {
   SOUTH: SectorStats;
 }
 
-// Update the HeatmapLayer component to prevent duplicate legends
 const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, number][], sectorData: Record<string, SectorData> }> = ({ polygon, sectorData }) => {
   const map = useMap();
   const layersRef = useRef<any[]>([]);
@@ -239,7 +238,7 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
     if (!map) return;
 
     try {
-      // Clear existing layers
+
       if (layersRef.current) {
         layersRef.current.forEach(layer => {
           if (layer) map.removeLayer(layer);
@@ -247,7 +246,7 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
         layersRef.current = [];
       }
       
-      // Remove existing legends
+     
       if (legendRef.current) {
         legendRef.current.remove();
         legendRef.current = null;
@@ -258,7 +257,7 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
         statsLegendRef.current = null;
       }
 
-      // Remove any existing legends with the same class names that might be left over
+
       const existingLegends = document.querySelectorAll('.sector-progress-container, .stats-legend');
       existingLegends.forEach(element => {
         element.parentNode?.removeChild(element);
