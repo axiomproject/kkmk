@@ -1,7 +1,6 @@
 [build]
-  command = "rm -rf node_modules && npm install --force && npm run build"
+  command = "yarn cache clean && yarn install --force && yarn build"
   publish = "dist"
-  NODE_VERSION = "18.20.0"
 
 [[redirects]]
   from = "/*"
@@ -9,4 +8,7 @@
   status = 200
 
 [build.environment]
-  NPM_FLAGS = "--force"
+  NODE_VERSION = "18.20.0"
+  YARN_VERSION = "1.22.19"
+  NODE_OPTIONS = "--max_old_space_size=4096"
+
