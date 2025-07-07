@@ -1,5 +1,5 @@
 [build]
-  command = "npm cache clean --force && npm install --legacy-peer-deps && npm run build"
+  command = "rm -rf node_modules && npm install --force && npm run build"
   publish = "dist"
   NODE_VERSION = "18.20.0"
 
@@ -7,3 +7,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[build.environment]
+  NPM_FLAGS = "--force"
