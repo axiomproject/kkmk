@@ -45,5 +45,11 @@
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
+  },
+  "resolutions": {
+    "@mui/material": "^5.13.0",
+    "@mui/icons-material": "^5.11.16",
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0"
   }
 }
