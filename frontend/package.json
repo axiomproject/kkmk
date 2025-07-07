@@ -8,17 +8,18 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "build-only": "vite build"
+    "build-only": "vite build",
+    "netlify-build": "npm ci && npm run build"
   },
   "dependencies": {
-    "@emotion/react": "11.11.4",
+    "@emotion/react": "11.11.1",
     "@emotion/styled": "11.11.0",
     "@fortawesome/fontawesome-svg-core": "^6.5.1",
     "@fortawesome/free-regular-svg-icons": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
     "@fortawesome/react-fontawesome": "^0.2.0",
-    "@mui/icons-material": "5.15.14",
-    "@mui/material": "5.15.14",
+    "@mui/icons-material": "5.11.16",
+    "@mui/material": "5.11.16",
     "@tanstack/react-router": "^1.95.3",
     "@types/react-bootstrap": "^0.32.37",
     "@types/react-transition-group": "^4.4.12",
@@ -44,11 +45,5 @@
     "@vitejs/plugin-react": "^4.2.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
-  },
-  "resolutions": {
-    "@emotion/react": "11.11.4",
-    "@emotion/styled": "11.11.0",
-    "@mui/material": "5.15.14",
-    "@mui/icons-material": "5.15.14"
   }
 }
