@@ -46,10 +46,10 @@
     "vite": "^5.0.8"
   },
   "resolutions": {
-    "@emotion/react": "11.10.6",
-    "@emotion/styled": "11.10.6",
     "@mui/material": "5.11.16",
     "@mui/icons-material": "5.11.16",
-    "@mui/base": "5.0.0-alpha.87"
+    "@mui/base": "5.0.0-alpha.87",
+    "@emotion/react": "11.10.6",
+    "@emotion/styled": "11.10.6"
   }
 }
