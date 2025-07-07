@@ -11,14 +11,14 @@
     "build-only": "vite build"
   },
   "dependencies": {
-    "@emotion/react": "11.11.0",
-    "@emotion/styled": "11.11.0",
+    "@emotion/react": "11.10.6",
+    "@emotion/styled": "11.10.6",
     "@fortawesome/fontawesome-svg-core": "^6.5.1",
     "@fortawesome/free-regular-svg-icons": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@mui/icons-material": "5.11.16",
-    "@mui/material": "5.13.0",
+    "@mui/material": "5.11.16",
     "@tanstack/react-router": "^1.95.3",
     "@types/react-bootstrap": "^0.32.37",
     "@types/react-transition-group": "^4.4.12",
@@ -46,9 +46,10 @@
     "vite": "^5.0.8"
   },
   "resolutions": {
-    "@emotion/react": "11.11.0",
-    "@emotion/styled": "11.11.0",
-    "@mui/material": "5.13.0",
-    "@mui/icons-material": "5.11.16"
+    "@emotion/react": "11.10.6",
+    "@emotion/styled": "11.10.6",
+    "@mui/material": "5.11.16",
+    "@mui/icons-material": "5.11.16",
+    "@mui/base": "5.0.0-alpha.87"
   }
 }
