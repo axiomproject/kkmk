@@ -9,12 +9,21 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: undefined,
-      },
-    },
+        format: 'es',
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name].js',
+        assetFileNames: 'assets/[name].[ext]'
+      }
+    }
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    headers: {
+      'Content-Type': 'text/javascript'
+    }
+  }
 })
