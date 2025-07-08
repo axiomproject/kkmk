@@ -15,7 +15,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-   "types": ["vite/client", "node", "@types/leaflet"],
+    "types": ["vite/client", "node"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "paths": {
       "*": ["./src/*"]
