@@ -1,4 +1,3 @@
-
 /*
   Content-Type: text/javascript
 /*.js
@@ -7,3 +6,10 @@
   Content-Type: text/javascript
 /assets/*
   Content-Type: text/javascript
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Content-Type: text/html; charset=UTF-8
+  Referrer-Policy: strict-origin-when-cross-origin
+  Access-Control-Allow-Origin: *
