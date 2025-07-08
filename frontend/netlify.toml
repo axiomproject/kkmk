@@ -15,9 +15,15 @@
   status = 200
 
 [[headers]]
+  for = "/*"
+  [headers.values]
+    "X-Frame-Options" = "DENY"
+    "X-XSS-Protection" = "1; mode=block"
+
+[[headers]]
   for = "/*.js"
   [headers.values]
-    Content-Type = "application/javascript"
+    "Content-Type" = "text/javascript"
 
 [[headers]]
   for = "/*.css"
@@ -27,5 +33,15 @@
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    Content-Type = "application/javascript"
+    "Content-Type" = "text/javascript"
+
+[[headers]]
+  for = "/*.mjs"
+  [headers.values]
+    "Content-Type" = "text/javascript"
+
+[[headers]]
+  for = "/dist/*.js"
+  [headers.values]
+    "Content-Type" = "text/javascript"
 
