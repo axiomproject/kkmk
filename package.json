@@ -20,8 +20,6 @@
     "@fortawesome/free-solid-svg-icons": "^6.7.2",
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@material-design-icons/font": "^0.14.14",
-    "@mui/icons-material": "^6.4.1",
-    "@mui/material": "^5.13.0",
     "@tanstack/react-router": "^1.95.3",
     "@types/arcgis-js-api": "^4.27.2",
     "@types/axios": "^0.9.36",
