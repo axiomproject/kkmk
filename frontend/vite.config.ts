@@ -7,6 +7,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
       output: {
         manualChunks: undefined,
         format: 'es',
@@ -22,8 +25,7 @@ export default defineConfig({
     },
   },
   server: {
-    headers: {
-      'Content-Type': 'text/javascript'
-    }
+    port: 5173,
+    open: true
   }
 })
