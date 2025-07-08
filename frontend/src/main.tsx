@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App';
-import axios from 'axios'; // Add axios import
+import axios from 'axios';
 import "./index.css";
 import "./styles/Layout.css";
 
@@ -23,14 +23,20 @@ axios.interceptors.request.use(config => {
   return config;
 });
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </QueryClientProvider>
-  </React.StrictMode>,
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+root.render(
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  </QueryClientProvider>
 );
