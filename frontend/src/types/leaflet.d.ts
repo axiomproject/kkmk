@@ -40,3 +40,20 @@ declare module 'leaflet' {
   export type LatLngTuple = [number, number];
   export type LatLngExpression = LatLngTuple | { lat: number; lng: number };
 }
+
+declare module 'leaflet.heat' {
+  import * as L from 'leaflet';
+  
+  interface HeatLayer extends L.Layer {
+    setLatLngs(latlngs: L.LatLngExpression[]): this;
+    addLatLng(latlng: L.LatLngExpression): this;
+    setOptions(options: any): this;
+  }
+
+  interface HeatLayerFactory {
+    (latlngs: L.LatLngExpression[], options?: any): HeatLayer;
+  }
+
+  const heat: HeatLayerFactory;
+  export default heat;
+}

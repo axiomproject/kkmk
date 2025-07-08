@@ -13,7 +13,8 @@ import api from '../../config/axios'; // Replace axios import
 import L from 'leaflet';
 import { Icon, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.heat';
+// Remove or comment out this line
+// import 'leaflet.heat';
 import '../../styles/AdminMap.css';
 import { useNavigate } from 'react-router-dom';
 
