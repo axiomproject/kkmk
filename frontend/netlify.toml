@@ -1,12 +1,12 @@
 [build]
   base = "frontend"
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "18"
   NODE_ENV = "production"
-  NPM_FLAGS = "--legacy-peer-deps --no-audit"
+  NPM_FLAGS = "--no-audit --no-optional"
   CI = "true"
   NODE_OPTIONS = "--max_old_space_size=4096"
 
