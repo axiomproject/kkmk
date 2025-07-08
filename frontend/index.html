@@ -26,12 +26,15 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
     <script>
-      window.global = window;
-      window.process = {
-        env: { NODE_ENV: 'production' }
+      // Polyfill for older browsers
+      if (!window.global) {
+        window.global = window;
+      }
+      if (!window.process) {
+        window.process = { env: { NODE_ENV: 'production' } };
       }
     </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
