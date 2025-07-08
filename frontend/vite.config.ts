@@ -12,9 +12,9 @@ export default defineConfig({
       },
       output: {
         format: 'es',
-        entryFileNames: 'assets/[name]-[hash].mjs',
-        chunkFileNames: 'assets/[name]-[hash].mjs',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
+        entryFileNames: '[name].[hash].js',
+        chunkFileNames: '[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash][ext]'
       }
     }
   },
