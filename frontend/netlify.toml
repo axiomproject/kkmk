@@ -33,12 +33,12 @@
 [[headers]]
   for = "/assets/*"
   [headers.values]
-    "Content-Type" = "text/javascript"
+    "Content-Type" = "text/javascript;charset=utf-8"
 
 [[headers]]
   for = "/*.mjs"
   [headers.values]
-    "Content-Type" = "text/javascript"
+    "Content-Type" = "text/javascript;charset=utf-8"
 
 [[headers]]
   for = "/dist/*.js"
