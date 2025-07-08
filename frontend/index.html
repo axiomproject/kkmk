@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/x-icon" href="kmlogo.ico" />
+    <link rel="icon" type="image/x-icon" href="/kmlogo.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>KMFI</title>
@@ -26,15 +26,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      // Polyfill for older browsers
-      if (!window.global) {
-        window.global = window;
-      }
-      if (!window.process) {
-        window.process = { env: { NODE_ENV: 'production' } };
-      }
-    </script>
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
