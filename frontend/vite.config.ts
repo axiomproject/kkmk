@@ -3,33 +3,36 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
-  base: '/',
+  base: './',
   plugins: [react()],
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
         assetFileNames: (assetInfo) => {
           const info = assetInfo.name.split('.')
-          const extType = info[info.length - 1]
-          if (/\.(css)$/.test(assetInfo.name)) {
-            return `assets/css/[name].[hash][extname]`
+          const ext = info[info.length - 1]
+          if (/\.(css)$/i.test(assetInfo.name)) {
+            return `assets/css/[name]-[hash][extname]`
           }
-          if (/\.(png|jpe?g|gif|svg|ico|webp)$/.test(assetInfo.name)) {
-            return `assets/img/[name].[hash][extname]`
-          }
-          return `assets/[name].[hash][extname]`
+          return `assets/[name]-[hash][extname]`
         },
-        chunkFileNames: 'assets/js/[name].[hash].js',
-        entryFileNames: 'assets/js/[name].[hash].js',
-      }
-    }
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+      },
+    },
+    sourcemap: false,
+    minify: 'terser',
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     }
-  }
+  },
+  server: {
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+  },
 })
