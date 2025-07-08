@@ -11,7 +11,7 @@ import {
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import api from '../../config/axios'; // Replace axios import
 import L from 'leaflet';
-import { Icon, DivIcon, Popup as LeafletPopup } from 'leaflet';
+import { Icon, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import '../../styles/AdminMap.css';
@@ -99,10 +99,9 @@ interface Scholar {
 // Add this new component before AdminMap
 const PersistentPopup: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const map = useMapEvents({
-    popupclose: (e: { popup: LeafletPopup; }) => {
-      const popup = (e as { popup: Popup }).popup;
-      if (popup) {
-        popup.openOn(map);
+    popupclose: (e: L.PopupEvent) => {
+      if (e.popup && 'openOn' in e.popup) {
+        e.popup.openOn(map);
       }
     }
   });
