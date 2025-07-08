@@ -5,7 +5,7 @@ import '../../styles/Events.css';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import { LatLng, Icon } from 'leaflet';
+import { LatLng, L, Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerIconShadow from 'leaflet/dist/images/marker-shadow.png';
@@ -182,7 +182,7 @@ const LocationMapPicker: React.FC<{
 
   const MapClickHandler = () => {
     useMapEvents({
-      click: (e) => {
+      click: (e: { latlng: { lat: number; lng: number } }) => {
         setPosition(e.latlng);
       },
     });
