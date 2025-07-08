@@ -9,7 +9,7 @@ const multer = require('multer');
 const path = require('path');
 const authMiddleware = require('../middleware/authMiddleware'); // Add this line
 const db = require('../config/db'); // Add this line
-const bcrypt = require('bcrypt'); // Add this line
+const bcrypt = require('bcryptjs'); // Add this line
 const fs = require('fs'); // Add this line
 
 // Add this constant for sponsor routes
