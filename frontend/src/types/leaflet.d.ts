@@ -40,7 +40,7 @@ declare module 'leaflet' {
   export type LatLngTuple = [number, number];
   export type LatLngExpression = LatLngTuple | { lat: number; lng: number };
 }
-
+// commenting this out
 declare module 'leaflet.heat' {
   import * as L from 'leaflet';
   
