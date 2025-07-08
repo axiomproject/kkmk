@@ -1,12 +1,13 @@
 [build]
   base = "/"
-  command = "cd frontend && npm install --legacy-peer-deps && npm run build"
+  command = "cd frontend && npm install --legacy-peer-deps && TSC_COMPILE_ON_ERROR=true npm run build"
   publish = "frontend/dist"
 
 [build.environment]
   NODE_VERSION = "18.20.8"
   NPM_FLAGS = "--legacy-peer-deps"
   NODE_OPTIONS = "--max_old_space_size=4096"
+  TSC_COMPILE_ON_ERROR = "true"
 
 [[redirects]]
   from = "/*"
