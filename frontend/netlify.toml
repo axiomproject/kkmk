@@ -1,6 +1,6 @@
 [build]
   base = "frontend"
-  command = "npm ci && npm run build"
+  command = "npm ci --include=dev && npm run build"
   publish = "dist"
 
 [build.environment]
@@ -8,6 +8,7 @@
   NODE_ENV = "production"
   NPM_FLAGS = "--legacy-peer-deps --no-audit"
   CI = "true"
+  NODE_OPTIONS = "--max_old_space_size=4096"
 
 [[redirects]]
   from = "/*"
