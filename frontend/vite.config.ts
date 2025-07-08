@@ -3,12 +3,12 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
-  base: '/',
+  base: './',
   plugins: [react()],
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: false,
+    sourcemap: true,
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       input: {
@@ -16,11 +16,9 @@ export default defineConfig({
       },
       output: {
         format: 'es',
-        entryFileNames: 'assets/[name].[hash].js',
-        chunkFileNames: 'assets/[name].[hash].js',
-        assetFileNames: 'assets/[name].[hash][ext]',
-        inlineDynamicImports: false,
-        manualChunks: undefined
+        entryFileNames: '[name].[hash].js',
+        chunkFileNames: 'chunks/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash][ext]'
       }
     }
   },
