@@ -25,6 +25,15 @@ declare module 'react-leaflet' {
 }
 
 declare module 'leaflet' {
+  export interface Event {
+    type: string;
+    target: any;
+  }
+
+  export interface PopupEvent extends Event {
+    popup: L.Popup;
+  }
+
   export interface Layer {
     _map?: L.Map;
   }
