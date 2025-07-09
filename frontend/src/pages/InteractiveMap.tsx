@@ -1295,9 +1295,9 @@ const InteractiveMap: React.FC = () => {
 
   // Initialize map when component mounts
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !mapRef.current || map) return;
 
-    // Initialize Leaflet icon
+    // Initialize Leaflet default icon
     const DefaultIcon = L.icon({
       iconUrl: icon,
       iconRetinaUrl: iconRetina,
@@ -1310,49 +1310,43 @@ const InteractiveMap: React.FC = () => {
     });
     L.Marker.prototype.options.icon = DefaultIcon;
 
-    if (mapRef.current && !map) {
-      const mapInstance = L.map(mapRef.current).setView(PAYATAS_COORDINATES, 15);
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      }).addTo(mapInstance);
+    const mapInstance = L.map(mapRef.current).setView(PAYATAS_COORDINATES, 15);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(mapInstance);
 
-      // Add markers and other map elements here
-      getVisibleMarkers().forEach(marker => {
-        L.marker([marker.lat, marker.lng], { icon: getMarkerIcon(marker) })
-          .addTo(mapInstance)
-          .bindPopup(renderPopupContent(marker));
-      });
-
-      setMap(mapInstance);
-      setMapReady(true);
-    }
+    setMap(mapInstance);
+    setMapReady(true);
 
     return () => {
-      if (map) {
-        map.remove();
+      if (mapInstance) {
+        mapInstance.remove();
       }
     };
-  }, [mapRef.current]);
+  }, []);
 
-  // Update markers when they change
+  // Separate effect for handling markers
   useEffect(() => {
-    if (map && mapReady) {
-      // Clear existing markers
-      map.eachLayer((layer: any) => {
-        if (layer instanceof L.Marker) {
-          map.removeLayer(layer);
-        }
-      });
+    if (!map || !mapReady) return;
 
-      // Add new markers
-      getVisibleMarkers().forEach(marker => {
-        L.marker([marker.lat, marker.lng], { icon: getMarkerIcon(marker) })
-          .addTo(map)
-          .bindPopup(renderPopupContent(marker));
-      });
-    }
-  }, [markers, activeFilter, mapReady]);
+    // Clear existing markers
+    map.eachLayer((layer: any) => {
+      if (layer instanceof L.Marker) {
+        map.removeLayer(layer);
+      }
+    });
+
+    // Add markers only when map is ready
+    getVisibleMarkers().forEach(marker => {
+      const markerInstance = L.marker([marker.lat, marker.lng], { 
+        icon: getMarkerIcon(marker) 
+      }).addTo(map);
+
+      // Add popup after marker is added to map
+      markerInstance.bindPopup(renderPopupContent(marker));
+    });
+  }, [map, mapReady, markers, activeFilter]);
 
   return (
     <div className="interactive-map-container">
@@ -1360,14 +1354,9 @@ const InteractiveMap: React.FC = () => {
         <h1>Interactive Map</h1>
         {renderMapControls()}
       </div>
-
-      {loading ? (
-        <div className="loading">Loading map...</div>
-      ) : (
-        <div ref={mapRef} className="interactive-map" style={{ height: '600px', width: '100%' }}></div>
-      )}
+      <div ref={mapRef} className="interactive-map"></div>
     </div>
   );
-}
+};
 
 export default InteractiveMap;

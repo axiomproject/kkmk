@@ -1,10 +1,15 @@
+.leaflet-container {
+  width: 100%;
+  height: 600px;
+}
+
 .interactive-map-container {
+  height: 100%;
+  width: 100%;
+  position: relative;
   padding: 20px;
-  height: calc(100vh - 100px);
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100%;
 }
 
 .interactive-map-container h1 {
@@ -13,12 +18,12 @@
 }
 
 .interactive-map {
-  height: 100%;
+  height: calc(100vh - 100px) !important;
+  width: 100%;
+  z-index: 1;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   flex: 1;
-  width: 100%;
-  z-index: 0;
 }
 
 .interactive-map.heatmap-mode {
@@ -67,19 +72,20 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
+  height: 100%;
   font-size: 1.2rem;
   color: #666;
 }
 
 .map-header {
+  padding: 1rem;
+  background: white;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding: 10px 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  z-index: 1000;
 }
 
 .map-filters {
