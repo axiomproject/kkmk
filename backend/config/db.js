@@ -1,10 +1,10 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const isProduction = process.env.NODE_ENV === 'development';
-const connectionString = isProduction
-    ? 'postgresql://neondb_owner:npg_gqPp1Y4ioKLu@ep-solitary-term-a1rjtcwe-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
-    : process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_gqPp1Y4ioKLu@ep-solitary-term-a1rjtcwe-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+const isProduction = process.env.NODE_ENV === 'production';
+const connectionString = isProduction 
+  ? process.env.PROD_DATABASE_URL 
+  : process.env.DATABASE_URL;
 
 // Debug log
 console.log('Database Config:', {
