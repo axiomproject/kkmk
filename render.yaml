@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: kkmk
+    name: 
     env: node
     buildCommand: |
       npm run install-all
