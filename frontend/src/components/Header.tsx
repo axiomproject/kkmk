@@ -67,7 +67,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
     try {
       await Promise.all(
         unreadNotifications.map(notification =>
-          fetch(`${API_URL}/api/notifications/${notification.id}/read`, {
+          fetch(`${API_URL}/notifications/${notification.id}/read`, {
             method: 'POST'
           })
         )
@@ -92,7 +92,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
       const user = userData ? JSON.parse(userData) : null;
       if (!user) return;
 
-      await fetch(`${API_URL}/api/notifications/user/${user.id}/read-all`, {
+      await fetch(`${API_URL}/notifications/user/${user.id}/read-all`, {
         method: 'POST'
       });
       
@@ -217,7 +217,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
       if (!user) return;
 
       try {
-        const response = await fetch(`${API_URL}/api/notifications/user/${user.id}`);  // Updated URL
+        const response = await fetch(`${API_URL}/notifications/user/${user.id}`);  // Updated URL
         if (response.ok) {
           const data = await response.json();
           setNotifications(data);
@@ -249,7 +249,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const handleNotificationClick = async (notification: Notification) => {
     try {
       // Mark as read
-      await fetch(`${API_URL}/api/notifications/${notification.id}/read`, {
+      await fetch(`${API_URL}/notifications/${notification.id}/read`, {
         method: 'POST'
       });
   
@@ -296,7 +296,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         confirmed
       });
   
-      const response = await axios.post(`${API_URL}/api/notifications/event-response`, {
+      const response = await axios.post(`${API_URL}/notifications/event-response`, {
         notificationId: notification.id,
         userId: user?.id,
         eventId: eventId.toString(), // Convert to string for API request
