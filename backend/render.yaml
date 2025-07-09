@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: kkmk-backend
+    name: KMFI
     runtime: node
     buildCommand: npm install && npm run build
     startCommand: npm start
