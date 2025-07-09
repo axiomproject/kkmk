@@ -56,9 +56,10 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('Blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -160,6 +161,41 @@ app.use('/api/donations', donationRoutes);
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Add API prefix to all routes
+app.use('/api/*', (req, res, next) => {
+  console.log('API request:', req.method, req.originalUrl);
+  next();
+});
+
+// Move API routes before the catch-all route
+app.use('/api/content', contentRoutes);
+app.use('/api/scholars', scholarRoutes);
+// Ensure routes are properly ordered
+
+// Add the geocode routes
+app.use('/api/geocode', geocodeRoutes); // Add this line before other routes
+
+// Important: Move staff routes before admin routes for proper matching
+app.use('/api/staff/auth', staffAuthRoutes);
+app.use('/api/staff', staffRoutes);
+
+// Admin routes after staff routes
+app.use('/api/admin/events', require('./routes/adminRoutes')); 
+app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/admin', adminRoutes);
+
+// Other routes
+app.use('/api/content', contentRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/inventory', inventoryRoutes); 
+app.use('/api/forum', forumRoutes);
+app.use('/api/contacts', contactRoutes);
+app.use('/api/scholars', scholarRoutes); // Move scholar routes before auth routes
+app.use('/api/scholardonations', scholarDonationRoutes); // Ensure this line is present and correct
+app.use('/api/events', eventRoutes);  // Add this line to register event routes
+app.use('/api', userRoutes);  // Add this line before authRoutes
+app.use('/api', authRoutes);
+
 // Handle SPA routing - serve index.html for all non-API routes
 app.get('*', (req, res, next) => {
   if (req.url.startsWith('/api')) return next();
@@ -188,32 +224,6 @@ app.use((req, res, next) => {
   });
   next();
 });
-
-// Ensure routes are properly ordered
-
-// Add the geocode routes
-app.use('/api/geocode', geocodeRoutes); // Add this line before other routes
-
-// Important: Move staff routes before admin routes for proper matching
-app.use('/api/staff/auth', staffAuthRoutes);
-app.use('/api/staff', staffRoutes);
-
-// Admin routes after staff routes
-app.use('/api/admin/events', require('./routes/adminRoutes')); 
-app.use('/api/admin/auth', adminAuthRoutes);
-app.use('/api/admin', adminRoutes);
-
-// Other routes
-app.use('/api/content', contentRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/inventory', inventoryRoutes); 
-app.use('/api/forum', forumRoutes);
-app.use('/api/contacts', contactRoutes);
-app.use('/api/scholars', scholarRoutes); // Move scholar routes before auth routes
-app.use('/api/scholardonations', scholarDonationRoutes); // Ensure this line is present and correct
-app.use('/api/events', eventRoutes);  // Add this line to register event routes
-app.use('/api', userRoutes);  // Add this line before authRoutes
-app.use('/api', authRoutes);
 
 // Add specific debug logging for image requests
 app.use('/uploads/events', (req, res, next) => {
