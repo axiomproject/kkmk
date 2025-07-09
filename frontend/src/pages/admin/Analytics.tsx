@@ -154,43 +154,43 @@ const Analytics: React.FC = () => {
         };
 
         // Fetch scholar count
-        const scholarData = await fetchEndpoint('/api/admin/scholar-count');
+        const scholarData = await fetchEndpoint('/admin/scholar-count');
         setScholarCount(scholarData.count);
 
         // Fetch items distributed
-        const itemsData = await fetchEndpoint('/api/admin/items-distributed');
+        const itemsData = await fetchEndpoint('/admin/items-distributed');
         setItemsDistributed(itemsData.count);
 
         // Fetch new sponsors count
-        const sponsorsData = await fetchEndpoint('/api/admin/new-sponsors-count');
+        const sponsorsData = await fetchEndpoint('/admin/new-sponsors-count');
         setNewSponsorsCount(sponsorsData.count);
 
         // Fetch new volunteers count
-        const volunteersData = await fetchEndpoint('/api/admin/new-volunteers-count');
+        const volunteersData = await fetchEndpoint('/admin/new-volunteers-count');
         setNewVolunteersCount(volunteersData.count);
 
         // Fetch events count
-        const eventsData = await fetchEndpoint('/api/admin/events-count');
+        const eventsData = await fetchEndpoint('/admin/events-count');
         setEventsCount(eventsData.count);
 
         // Fetch generous donors
-        const donorsData = await fetchEndpoint('/api/admin/generous-donors');
+        const donorsData = await fetchEndpoint('/admin/generous-donors');
         setGenerousDonors(donorsData);
 
         // Fetch donations summary
-        const donationsData = await fetchEndpoint('/api/admin/donations-summary');
+        const donationsData = await fetchEndpoint('/admin/donations-summary');
         setDonationSummary(donationsData);
 
         // Fetch donation time statistics
-        const timeData = await fetchEndpoint('/api/admin/donation-time-stats');
+        const timeData = await fetchEndpoint('/admin/donation-time-stats');
         setTimeStats(timeData);
 
         // Fetch donation trends
-        const trendsData = await fetchEndpoint('/api/admin/donation-trends');
+        const trendsData = await fetchEndpoint('/admin/donation-trends');
         setTrendStats(trendsData);
 
         // Fetch daily traffic
-        const trafficData = await fetchEndpoint('/api/admin/daily-traffic');
+        const trafficData = await fetchEndpoint('/admin/daily-traffic');
         setDailyTraffic(trafficData);
       } catch (error) {
         console.error('Error fetching analytics data:', error);
