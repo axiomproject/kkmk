@@ -28,26 +28,40 @@ const schedulerService = require('./services/schedulerService'); // Import sched
 const app = express();
 const port = 5175; // Changed port to avoid conflicts
 
-const forumUploadsDir = path.join(__dirname, 'uploads', 'forum');
-if (!fs.existsSync(forumUploadsDir)) {
-  fs.mkdirSync(forumUploadsDir, { recursive: true });
-}
-
-// Fix the connection handling code
-db.connect()
-  .then(client => {
+// Move database connection to the top and make it a global promise
+let dbClient = null;
+const initDatabase = async () => {
+  try {
+    dbClient = await db.connect();
     console.log('Connected to PostgreSQL');
-    client.release(); // Use release() instead of done()
-  })
-  .catch(error => {
-    console.error('Error connecting to PostgreSQL:', error);
-  });
+    return true;
+  } catch (error) {
+    console.error('Database connection error:', error);
+    return false;
+  }
+};
 
-// Update CORS configuration
+// Add request logging middleware first
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  next();
+});
+
+// Update CORS configuration to handle both development and production
+const allowedOrigins = [
+  'https://kmfi.netlify.app',
+  'https://kmfi.onrender.com',
+  'http://localhost:5173'
+];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'development' 
-    ? ['https://kmfi.netlify.app', 'https://kmfi.onrender.com', 'http://localhost:5173']
-    : 'http://localhost:5173',
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
@@ -57,6 +71,11 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 app.use(express.json());
+
+const forumUploadsDir = path.join(__dirname, 'uploads', 'forum');
+if (!fs.existsSync(forumUploadsDir)) {
+  fs.mkdirSync(forumUploadsDir, { recursive: true });
+}
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads', 'donations');
@@ -251,10 +270,24 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Add error handling middleware after routes
+// Add error handling middleware before routes
 app.use((err, req, res, next) => {
-  console.error('Global error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('Error:', {
+    path: req.path,
+    method: req.method,
+    error: err.message,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
+
+  if (err.name === 'UnauthorizedError') {
+    return res.status(401).json({ error: 'Unauthorized access' });
+  }
+
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    path: req.path,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Add detailed error logging
@@ -272,23 +305,45 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize server
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-  
-  // Make sure we're using the correct function name
-  try {
-    // Initialize scheduled tasks with error handling
-    console.log('Initializing scheduled tasks...');
-    schedulerService.initScheduledTasks();
-    console.log('Scheduled tasks initialization completed');
-  } catch (error) {
-    console.error('Failed to initialize scheduled tasks:', error);
+// Add database check middleware before routes
+app.use(async (req, res, next) => {
+  if (!dbClient) {
+    try {
+      const connected = await initDatabase();
+      if (!connected) {
+        return res.status(503).json({ 
+          error: 'Database connection not available',
+          message: 'Service temporarily unavailable'
+        });
+      }
+    } catch (error) {
+      return res.status(503).json({ 
+        error: 'Database connection failed',
+        message: 'Service temporarily unavailable'
+      });
+    }
   }
-}).on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${port} is already in use`);
-  } else {
-    console.error('Error starting server:', err);
-  }
+  next();
 });
+
+// Initialize server with database connection
+const startServer = async () => {
+  try {
+    await initDatabase();
+    
+    app.listen(port, () => {
+      console.log(`Server running on http://localhost:${port}`);
+      try {
+        schedulerService.initScheduledTasks();
+        console.log('Scheduled tasks initialized');
+      } catch (error) {
+        console.error('Failed to initialize scheduled tasks:', error);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();

@@ -13,18 +13,15 @@ console.log('Database Config:', {
   connectionStringStart: connectionString ? connectionString.substring(0, 20) + '...' : 'none'
 });
 
-const connectionConfig = {
+const pool = new Pool({
   connectionString,
-  ssl: {
-    require: true,
+  ssl: isProduction ? {
     rejectUnauthorized: false
-  },
+  } : false,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-};
-
-const pool = new Pool(connectionConfig);
+  connectionTimeoutMillis: 5000,
+});
 
 pool.on('connect', () => {
   console.log('Database connection established');
@@ -34,35 +31,26 @@ console.log('Database connection pool created');
 
 // Enhanced error handling
 pool.on('error', (err) => {
-  console.error('Postgres Pool Error:', err);
-  if (err.code === 'ENOTFOUND') {
-    console.error('DNS lookup failed. Check your database host configuration.');
-  }
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
 });
 
+// Test the connection
+const testConnection = async () => {
+  try {
+    const client = await pool.connect();
+    console.log('Database connection test successful');
+    client.release();
+    return true;
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    return false;
+  }
+};
+
 module.exports = {
-  connect: async () => {
-    try {
-      const client = await pool.connect();
-      console.log('Successfully connected to database');
-      return client;
-    } catch (err) {
-      console.error('Database Connection Error Details:', {
-        error: err.message,
-        code: err.code,
-        stack: err.stack,
-        connectionString: connectionString ? 'exists' : 'missing'
-      });
-      throw err;
-    }
-  },
-  query: async (text, params) => {
-    try {
-      return await pool.query(text, params);
-    } catch (err) {
-      console.error('Query Error:', err);
-      throw err;
-    }
-  },
+  connect: () => pool.connect(),
+  query: (text, params) => pool.query(text, params),
+  testConnection,
   pool
 };
