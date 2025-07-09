@@ -135,7 +135,7 @@ const AdminHeader = () => {
       if (!user?.id) return;
       
       try {
-        const response = await fetch(`${API_URL}/api/notifications/admin/${user.id}`);
+        const response = await fetch(`${API_URL}/notifications/admin/${user.id}`);
         if (response.ok) {
           const data = await response.json();
           setNotifications(data);
@@ -161,7 +161,7 @@ const AdminHeader = () => {
     try {
       await Promise.all(
         unreadNotifications.map(notification =>
-          fetch(`${API_URL}/api/notifications/${notification.id}/read`, {
+          fetch(`${API_URL}/notifications/${notification.id}/read`, {
             method: 'POST'
           })
         )
@@ -182,7 +182,7 @@ const AdminHeader = () => {
     if (unreadNotifications.length === 0) return;
 
     try {
-      await fetch(`${API_URL}/api/notifications/admin/${user.id}/read-all`, {
+      await fetch(`${API_URL}/notifications/admin/${user.id}/read-all`, {
         method: 'POST'
       });
       
@@ -199,7 +199,7 @@ const AdminHeader = () => {
   const handleNotificationClick = async (notification: Notification) => {
     try {
       // Mark as read
-      await fetch(`${API_URL}/api/notifications/${notification.id}/read`, {
+      await fetch(`${API_URL}/notifications/${notification.id}/read`, {
         method: 'POST'
       });
   

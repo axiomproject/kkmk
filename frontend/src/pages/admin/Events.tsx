@@ -256,7 +256,7 @@ const resolveImageUrl = (imagePath: string | null): string => {
 const approveParticipant = async (eventId: number, userId: number) => {
   try {
     await axios.put(
-      `/api/events/${eventId}/participants/${userId}/approve`,
+      `/events/${eventId}/participants/${userId}/approve`,
       {},
       {
         headers: {
@@ -276,7 +276,7 @@ const approveParticipant = async (eventId: number, userId: number) => {
 const rejectParticipant = async (eventId: number, userId: number, reason: string = '') => {
   try {
     await axios.put(
-      `/api/events/${eventId}/participants/${userId}/reject`,
+      `/events/${eventId}/participants/${userId}/reject`,
       { reason },
       {
         headers: {
@@ -560,9 +560,9 @@ const fetchEvents = async () => {
   try {
     setIsLoading(true);
     setError(null);
-    console.log('Fetching events from:', `${axios.defaults.baseURL}/api/admin/events`);
+    console.log('Fetching events from:', `${axios.defaults.baseURL}/admin/events`);
     
-    const response = await axios.get('/api/admin/events');
+    const response = await axios.get('/admin/events');
     console.log('Raw response data:', JSON.stringify(response.data, null, 2));
     
     if (Array.isArray(response.data)) {
@@ -790,8 +790,8 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   try {
     const url = selectedEvent 
-      ? `/api/admin/events/${selectedEvent.id}`
-      : '/api/admin/events';
+      ? `/admin/events/${selectedEvent.id}`
+      : '/admin/events';
     
     console.log(`Submitting form to ${url}`);
     
@@ -818,7 +818,7 @@ const handleDelete = async (id: number) => {
   if (window.confirm('Are you sure you want to delete this event?')) {
     try {
       // Add authorization header to the delete request
-      await axios.delete(`/api/events/${id}`, {
+      await axios.delete(`/events/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -842,7 +842,7 @@ const fetchParticipants = async (eventId: number) => {
     setLoadingParticipants(true);
     
     // Update API call to request additional user information including role and skills
-    const response = await axios.get(`/api/events/${eventId}/participants`, {
+    const response = await axios.get(`/events/${eventId}/participants`, {
       params: { 
         includeDetails: true, 
         includeRole: true,
@@ -894,7 +894,7 @@ const fetchParticipants = async (eventId: number) => {
     if (reason === null) return;
 
     try {
-      await axios.delete(`/api/events/${eventId}/participants/${userId}`, {
+      await axios.delete(`/events/${eventId}/participants/${userId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         },
@@ -918,7 +918,7 @@ const fetchParticipants = async (eventId: number) => {
   const fetchVolunteers = async () => {
     try {
       console.log('Fetching volunteers...');
-      const response = await axios.get('/api/admin/volunteers', {
+      const response = await axios.get('/admin/volunteers', {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
@@ -944,7 +944,7 @@ const fetchParticipants = async (eventId: number) => {
 
     try {
       const response = await axios.post(
-        `/api/events/${selectedEvent.id}/add-volunteer`,
+        `/events/${selectedEvent.id}/add-volunteer`,
         { volunteerId: volunteer.id },
         {
           headers: {
@@ -1047,7 +1047,7 @@ const sendNotification = async (userId: number, eventId: number) => {
     const event = events.find(e => e.id === eventId);
     if (!event) return;
 
-    await axios.post('/api/notifications/send', {
+    await axios.post('/notifications/send', {
       userId,
       type: 'event_reminder',
       content: `"${event.title}" is coming up soon!`,
@@ -1362,7 +1362,7 @@ const confirmBulkRemove = async () => {
   setIsBulkRemoving(true);
   
   try {
-    await axios.delete(`/api/events/${selectedEvent.id}/participants`, {
+    await axios.delete(`/events/${selectedEvent.id}/participants`, {
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token')}`
       },
@@ -1545,7 +1545,7 @@ const saveSkillAssignment = async (userId: number, skillValue: string | null) =>
     
     // Call the API to assign the skill
     const response = await axios.put(
-      `/api/events/${selectedEvent.id}/participants/${userId}/skill`,
+      `/events/${selectedEvent.id}/participants/${userId}/skill`,
       { skill: skillValue },
       {
         headers: {

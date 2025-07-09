@@ -129,16 +129,16 @@ if (!fs.existsSync(eventsUploadsDir)) {
 }
 
 // Update static file serving - add this before routes
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('api/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Update static file serving for admin uploads
-app.use('/uploads/admin', express.static(path.join(__dirname, 'uploads', 'admin')));
+app.use('api/uploads/admin', express.static(path.join(__dirname, 'uploads', 'admin')));
 
 // Update the static file serving for events
-app.use('/uploads/events', express.static(path.join(__dirname, 'uploads', 'events')));
+app.use('api/uploads/events', express.static(path.join(__dirname, 'uploads', 'events')));
 
 // Add specific static route for scholar images
-app.use('/uploads/scholars', express.static(path.join(__dirname, 'uploads', 'scholars')));
+app.use('api/uploads/scholars', express.static(path.join(__dirname, 'uploads', 'scholars')));
 
 // Add this before your routes
 app.use((req, res, next) => {
@@ -149,13 +149,13 @@ app.use((req, res, next) => {
 });
 
 // Log static file requests
-app.use('/uploads', (req, res, next) => {
+app.use('api/uploads', (req, res, next) => {
   console.log('Static file request:', req.url);
   next();
 });
 
 // Make sure this comes before your routes
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/donations', donationRoutes);
 
 // Serve static files from public directory
@@ -180,7 +180,7 @@ app.use('/api/staff/auth', staffAuthRoutes);
 app.use('/api/staff', staffRoutes);
 
 // Admin routes after staff routes
-app.use('/api/admin/events', require('./routes/adminRoutes')); 
+app.use('/admin/events', require('./routes/adminRoutes')); 
 app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/admin', adminRoutes);
 
@@ -226,7 +226,7 @@ app.use((req, res, next) => {
 });
 
 // Add specific debug logging for image requests
-app.use('/uploads/events', (req, res, next) => {
+app.use('api/uploads/events', (req, res, next) => {
   console.log('Event image request:', req.url);
   // Check if file exists
   const filePath = path.join(__dirname, 'uploads', 'events', req.url);
@@ -241,7 +241,7 @@ app.use('/uploads/events', (req, res, next) => {
 });
 
 // Add specific debug logging for event image requests
-app.use('/uploads/events', (req, res, next) => {
+app.use('api/uploads/events', (req, res, next) => {
   const fullPath = req.path;
   console.log('Event image request:', fullPath);
   
