@@ -7,14 +7,16 @@ import axios from 'axios';
 import "./index.css";
 import "./styles/Layout.css";
 
-// Configure axios with base URL
+// Configure axios with base URL and default headers
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
 axios.defaults.baseURL = API_URL;
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.withCredentials = true;
 
 // Log the configured API URL
 console.log('API Base URL:', axios.defaults.baseURL);
 
-// Add request interceptor for authentication
+// Add request interceptor to handle authentication and errors
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -22,6 +24,15 @@ axios.interceptors.request.use(config => {
   }
   return config;
 });
+
+// Add response interceptor to handle errors
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
