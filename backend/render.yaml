@@ -7,7 +7,3 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PROD_DATABASE_URL
-        value: postgresql://neondb_owner:npg_gqPp1Y4ioKLu@ep-solitary-term-a1rjtcwe-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
-      - key: PORT
-        value: 5175
