@@ -1,6 +1,6 @@
-const path = require('path');
-const fs = require('fs');
 const ContentModel = require('../models/contentModel');
+const { uploads } = require('../config/cloudinaryConfig');
+const uploadContentImage = uploads.admin.single('image');
 
 const ContentController = {
   async getContent(req, res) {
@@ -126,36 +126,27 @@ const ContentController = {
 
   async uploadImage(req, res) {
     try {
-      if (!req.file) {
-        throw new Error('No file uploaded');
-      }
-
-      const uploadDir = path.join(__dirname, '..', 'uploads', 'content');
-      
-      // Ensure upload directory exists
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-
-      // Ensure clean path without /api prefix
-      const imagePath = `/uploads/content/${req.file.filename}`;
-      
-      // Verify file exists after upload
-      const fullPath = path.join(uploadDir, req.file.filename);
-      if (!fs.existsSync(fullPath)) {
-        throw new Error('File failed to save');
-      }
-
-      // Return full URL path
-      res.json({ 
-        imagePath,
-        success: true,
-        fileInfo: {
-          filename: req.file.filename,
-          path: imagePath,
-          size: req.file.size,
-          mimetype: req.file.mimetype
+      uploadContentImage(req, res, async (err) => {
+        if (err) {
+          return res.status(400).json({ error: err.message });
         }
+
+        if (!req.file) {
+          return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        // Return the Cloudinary URL
+        res.json({ 
+          imagePath: req.file.path,
+          success: true,
+          fileInfo: {
+            filename: req.file.originalname,
+            path: req.file.path,
+            size: req.file.size,
+            mimetype: req.file.mimetype,
+            url: req.file.path
+          }
+        });
       });
     } catch (error) {
       console.error('Upload error:', error);

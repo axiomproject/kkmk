@@ -32,6 +32,7 @@ import "../styles/FundraiserSection.css"
 import "../styles/PageCon.css"
 import "../styles/MainButton.css"
 import { useAuth } from '../contexts/AuthContext'; // Add this import
+import { getImageUrl } from '../utils/imageUtils'; // Add this import
 
 
 interface Fundraiser {
@@ -220,7 +221,7 @@ const FundraiserSection: React.FC = () => {
           {/* Main (large) card */}
           <div className="fundraiser-main-card" onClick={() => handleCardClick(mainCard.id)}>
             <img
-              src={`${import.meta.env.VITE_API_URL}${mainCard.image_url}`}
+              src={getImageUrl(mainCard.image_url)}
               alt={`${mainCard.first_name} ${mainCard.last_name}`}
               className="fundraiser-main-image"
             />
@@ -244,7 +245,7 @@ const FundraiserSection: React.FC = () => {
                 onClick={() => handleCardClick(student.id)}
               >
                 <img
-                  src={`${import.meta.env.VITE_API_URL}${student.image_url}`}
+                  src={getImageUrl(student.image_url)}
                   alt={`${student.first_name} ${student.last_name}`}
                   className="fundraiser-side-image"
                 />
