@@ -47,7 +47,7 @@ db.connect()
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://kmfi.netlify.app', 'https://kmfi.onrender.com', 'http://localhost:5173']
-    : 'http://localhost:5173',
+    : 'https://kmfi.netlify.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
