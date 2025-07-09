@@ -27,7 +27,7 @@ interface Notification {
   created_at: string;
   actor_name: string;
   actor_avatar: string;
-  expanded?: boolean; // Add this property to track expanded state
+  expanded?: boolean; 
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
