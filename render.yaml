@@ -1,12 +1,15 @@
 services:
   - type: web
-    name: 
+    name: kkmk-backend
     env: node
     buildCommand: |
       npm run install-all
       cd frontend && cp tsconfig.prod.json tsconfig.json && cd ..
       npm run build
     startCommand: cd backend && node server.js
+    healthCheckPath: /health
+    healthCheckTimeout: 100
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -32,8 +35,14 @@ services:
           property: database
       - key: CORS_ORIGIN
         value: https://kkmkpayatas.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: kkmk
+          property: connectionString
 
 databases:
   - name: kkmk
     databaseName: kkmk
     user: kkmk_db
+    plan: free # Explicitly specify the free plan
+    ipAllowList: [] # Allow all IPs

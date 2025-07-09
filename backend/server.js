@@ -336,24 +336,74 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// Initialize server with database connection
-const startServer = async () => {
+// Add health check endpoint
+app.get('/health', async (req, res) => {
   try {
-    await initDatabase();
-    
-    app.listen(port, () => {
-      console.log(`Server running on http://localhost:${port}`);
-      try {
-        schedulerService.initScheduledTasks();
-        console.log('Scheduled tasks initialized');
-      } catch (error) {
-        console.error('Failed to initialize scheduled tasks:', error);
-      }
+    // Test database connection
+    const dbConnected = await db.testConnection(1, 1000); // Quick check with 1 retry
+    res.json({
+      status: 'healthy',
+      database: dbConnected ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Update the startServer function
+const startServer = async () => {
+  let retries = 5;
+  let connected = false;
+
+  while (retries > 0 && !connected) {
+    try {
+      connected = await db.testConnection();
+      if (connected) {
+        const server = app.listen(process.env.PORT || port, () => {
+          console.log(`Server is running on port ${process.env.PORT || port}`);
+        });
+
+        // Handle server shutdown gracefully
+        const shutdown = async () => {
+          console.log('Shutting down server...');
+          server.close(async () => {
+            console.log('Server closed');
+            try {
+              await db.pool.end();
+              console.log('Database pool closed');
+              process.exit(0);
+            } catch (err) {
+              console.error('Error closing database pool:', err);
+              process.exit(1);
+            }
+          });
+        };
+
+        process.on('SIGTERM', shutdown);
+        process.on('SIGINT', shutdown);
+      }
+    } catch (error) {
+      console.error(`Failed to start server (${retries} retries left):`, error);
+      retries--;
+      if (retries > 0) {
+        console.log('Retrying in 5 seconds...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
+  }
+
+  if (!connected) {
+    console.error('Failed to start server after multiple retries');
     process.exit(1);
   }
 };
 
-startServer();
+startServer().catch(err => {
+  console.error('Unhandled error during server startup:', err);
+  process.exit(1);
+});
