@@ -1,3 +1,0 @@
-ALTER TABLE users
-ADD COLUMN location_verified BOOLEAN DEFAULT FALSE,
-ADD COLUMN location_updated_at TIMESTAMP DEFAULT NULL;
