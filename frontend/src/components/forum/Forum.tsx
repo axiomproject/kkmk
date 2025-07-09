@@ -140,7 +140,7 @@ const Forum: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_URL}/api/forum/posts`);
+      const response = await fetch(`${API_URL}/forum/posts`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -159,7 +159,7 @@ const Forum: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch(`${API_URL}/api/forum/event-posts/${eventId}`);
+      const response = await fetch(`${API_URL}/forum/event-posts/${eventId}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -186,7 +186,7 @@ const Forum: React.FC = () => {
   // Add this function
   const fetchEvents = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/events`);
+      const response = await fetch(`${API_URL}/events`);
       if (response.ok) {
         const data = await response.json();
         console.log('Fetched events:', data); // Debug log
@@ -205,7 +205,7 @@ const Forum: React.FC = () => {
         title: postData.get('title')
       });
 
-      const response = await fetch(`${API_URL}/api/forum/posts`, {
+      const response = await fetch(`${API_URL}/forum/posts`, {
         method: 'POST',
         body: postData,
       });
@@ -266,7 +266,7 @@ const Forum: React.FC = () => {
       setError(null);
       console.log('Fetching event posts for event:', { id: eventId, title: eventTitle });
       
-      const response = await fetch(`${API_URL}/api/forum/event-posts/${eventId}`);
+      const response = await fetch(`${API_URL}/forum/event-posts/${eventId}`);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         throw new Error(errorData.error || `Server returned ${response.status}`);
@@ -347,7 +347,7 @@ const Forum: React.FC = () => {
     
     // Fetch the updated posts to get the correct like count
     try {
-      const response = await fetch(`${API_URL}/api/forum/posts`);
+      const response = await fetch(`${API_URL}/forum/posts`);
       if (response.ok) {
         const updatedPosts = await response.json();
         setPosts(updatedPosts);
@@ -437,7 +437,7 @@ const Forum: React.FC = () => {
         return;
       }
       
-      const response = await fetch(`${API_URL}/api/forum/posts/${postId}/approve`, {
+      const response = await fetch(`${API_URL}/forum/posts/${postId}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -482,7 +482,7 @@ const Forum: React.FC = () => {
         return;
       }
       
-      const response = await fetch(`${API_URL}/api/forum/posts/${postId}/reject`, {
+      const response = await fetch(`${API_URL}/forum/posts/${postId}/reject`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -534,7 +534,7 @@ const Forum: React.FC = () => {
         return;
       }
       
-      const response = await fetch(`${API_URL}/api/forum/posts/status/pending?userId=${user.id}`);
+      const response = await fetch(`${API_URL}/forum/posts/status/pending?userId=${user.id}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -563,7 +563,7 @@ const Forum: React.FC = () => {
         return 0;
       }
       
-      const response = await fetch(`${API_URL}/api/forum/pending-posts-count?userId=${user.id}`);
+      const response = await fetch(`${API_URL}/forum/pending-posts-count?userId=${user.id}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

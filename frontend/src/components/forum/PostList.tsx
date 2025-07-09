@@ -167,14 +167,14 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
 
       try {
         // Fetch liked posts
-        const postsResponse = await fetch(`${API_URL}/api/forum/user-liked-posts/${user.id}`);
+        const postsResponse = await fetch(`${API_URL}/forum/user-liked-posts/${user.id}`);
         if (postsResponse.ok) {
           const likedPostIds = await postsResponse.json();
           setLikedPosts(likedPostIds);
         }
 
         // Fetch liked comments (existing code)
-        const commentsResponse = await fetch(`${API_URL}/api/forum/user-likes/${user.id}`);
+        const commentsResponse = await fetch(`${API_URL}/forum/user-likes/${user.id}`);
         if (commentsResponse.ok) {
           const likedCommentIds = await commentsResponse.json();
           setLikedComments(likedCommentIds);
@@ -195,7 +195,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
       if (!user) return;
 
       try {
-        const response = await fetch(`${API_URL}/api/forum/user-voted-polls/${user.id}`);
+        const response = await fetch(`${API_URL}/forum/user-voted-polls/${user.id}`);
         if (response.ok) {
           const votedPollIds = await response.json();
           setVotedPolls(votedPollIds);
@@ -247,7 +247,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
     const increment = !likedPosts.includes(postId);
     try {
       const response = await fetch(
-        `${API_URL}/api/forum/posts/${postId}/like`,
+        `${API_URL}/forum/posts/${postId}/like`,
         {
           method: 'POST',
           headers: {
@@ -319,7 +319,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
     };
 
     try {
-      const response = await fetch(`${API_URL}/api/forum/posts/${postId}/comments`, {
+      const response = await fetch(`${API_URL}/forum/posts/${postId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -360,7 +360,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
     }
 
     try {
-      const response = await fetch(`${API_URL}/api/forum/posts/${postId}/vote/${optionId}`, {
+      const response = await fetch(`${API_URL}/forum/posts/${postId}/vote/${optionId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -402,7 +402,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
     const increment = !likedComments.includes(commentId);
     try {
       const response = await fetch(
-        `${API_URL}/api/forum/posts/${postId}/comments/${commentId}/like`,
+        `${API_URL}/forum/posts/${postId}/comments/${commentId}/like`,
         {
           method: 'POST',
           headers: {
@@ -472,7 +472,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
         commentAuthorRole
       });
 
-      const response = await fetch(`${API_URL}/api/forum/posts/${postId}/comments/${commentId}`, {
+      const response = await fetch(`${API_URL}/forum/posts/${postId}/comments/${commentId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
@@ -686,7 +686,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
         userRole
       });
 
-      const response = await fetch(`${API_URL}/api/forum/posts/${postId}`, {
+      const response = await fetch(`${API_URL}/forum/posts/${postId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
@@ -735,7 +735,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
         })
       };
 
-      const response = await fetch(`${API_URL}/api/forum/posts/${selectedPost}`, {
+      const response = await fetch(`${API_URL}/forum/posts/${selectedPost}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -759,7 +759,7 @@ const PostList: React.FC<PostListProps> = ({ view, category, posts = [], onAddCo
       resetEditData();
       setSelectedPost(null);
       
-      const refreshResponse = await fetch(`${API_URL}/api/forum/posts`);
+      const refreshResponse = await fetch(`${API_URL}/forum/posts`);
       if (refreshResponse.ok) {
         const refreshedPosts = await refreshResponse.json();
         setPosts(refreshedPosts);
