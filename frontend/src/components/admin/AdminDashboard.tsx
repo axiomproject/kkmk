@@ -159,37 +159,37 @@ const Analytics: React.FC = () => {
         };
 
         // Fetch all data using our helper function
-        const scholarData = await fetchEndpoint('/api/admin/scholar-count');
+        const scholarData = await fetchEndpoint('/admin/scholar-count');
         setScholarCount(scholarData.count);
 
-        const itemsData = await fetchEndpoint('/api/admin/items-distributed');
+        const itemsData = await fetchEndpoint('/admin/items-distributed');
         setItemsDistributed(itemsData.count);
 
-        const newUsersData = await fetchEndpoint('/api/admin/new-users-count');
+        const newUsersData = await fetchEndpoint('/admin/new-users-count');
         setNewUsersCount(newUsersData.count);
 
-        const eventsData = await fetchEndpoint('/api/admin/events-count');
+        const eventsData = await fetchEndpoint('/admin/events-count');
         setEventsCount(eventsData.count);
 
-        const donorsData = await fetchEndpoint('/api/admin/generous-donors');
+        const donorsData = await fetchEndpoint('/admin/generous-donors');
         setGenerousDonors(donorsData);
 
-        const donationsData = await fetchEndpoint('/api/admin/donations-summary');
+        const donationsData = await fetchEndpoint('/admin/donations-summary');
         setDonationSummary(donationsData);
 
-        const timeData = await fetchEndpoint('/api/admin/donation-time-stats');
+        const timeData = await fetchEndpoint('/admin/donation-time-stats');
         setTimeStats(timeData);
 
-        const trendsData = await fetchEndpoint('/api/admin/donation-trends');
+        const trendsData = await fetchEndpoint('/admin/donation-trends');
         setTrendStats(trendsData);
 
-        const trafficData = await fetchEndpoint('/api/admin/daily-traffic');
+        const trafficData = await fetchEndpoint('/admin/daily-traffic');
         setDailyTraffic(trafficData);
 
-        const scholarReportsData = await fetchEndpoint('/api/admin/scholar-reports');
+        const scholarReportsData = await fetchEndpoint('/admin/scholar-reports');
         setScholarReportStatus(scholarReportsData);
 
-        const itemsStatsData = await fetchEndpoint('/api/admin/items-distributed-stats');
+        const itemsStatsData = await fetchEndpoint('/admin/items-distributed-stats');
         setItemsStats(itemsStatsData);
 
       } catch (error) {
