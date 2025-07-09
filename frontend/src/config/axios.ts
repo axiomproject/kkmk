@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-// Define the API URL based on environment with proper fallbacks
+// Define the API URL based on environment with proper API path
 const baseURL = import.meta.env.PROD 
-  ? 'https://kmfi.onrender.com'
-  : import.meta.env.VITE_API_URL || 'http://localhost:5175/api';
+  ? 'https://kmfi.onrender.com/api'  // Add /api to production URL
+  : 'http://localhost:5175/api';
 
 // Create and export the axios instance with improved config
 const api = axios.create({
