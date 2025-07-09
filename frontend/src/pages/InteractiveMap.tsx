@@ -802,35 +802,44 @@ const InteractiveMap: React.FC = () => {
     return defaultEventIcon;
   };
 
-  const renderPopupContent = (marker: LocationMarker) => (
-    <div className="marker-popup">
-      {marker.details.image && (
-        <div className="marker-image-container">
-          <img 
-            src={marker.details.image}
-            alt={marker.name}
-            className="marker-event-image"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = '/images/default-event.jpg';
-            }}
+  // Update createPopupContent to return a string instead of HTMLDivElement
+  const createPopupContent = (marker: LocationMarker): string => {
+    let content = '<div class="marker-popup">';
+    
+    if (marker.details.image) {
+      content += `
+        <div class="marker-image-container">
+          <img
+            src="${marker.details.image}"
+            alt="${marker.name}"
+            class="marker-event-image"
+            onerror="this.src='/images/default-event.jpg'"
           />
         </div>
-      )}
-      <h3>{marker.name}</h3>
-      <p><strong>Date:</strong> {marker.details.date || 'Not specified'}</p>
-      <p><strong>Location:</strong> {marker.details.address || 'Not specified'}</p>
-      <p><strong>Description:</strong> {marker.details.description || 'No description available'}</p>
-      {marker.id > 0 && (
-        <button 
-          className="view-details-btn"
-          onClick={() => navigate(`/event/${marker.id}`)}
+      `;
+    }
+
+    content += `
+      <h3>${marker.name}</h3>
+      <p><strong>Date:</strong> ${marker.details.date || 'Not specified'}</p>
+      <p><strong>Location:</strong> ${marker.details.address || 'Not specified'}</p>
+      <p><strong>Description:</strong> ${marker.details.description || 'No description available'}</p>
+    `;
+
+    if (marker.id > 0) {
+      content += `
+        <button
+          class="view-details-btn"
+          onclick="window.location.href='/event/${marker.id}'"
         >
           View Event Details
         </button>
-      )}
-    </div>
-  );
+      `;
+    }
+
+    content += '</div>';
+    return content;
+  };
 
   // Add Heatmap Legend component
   const HeatmapLegend = () => (
@@ -1260,7 +1269,7 @@ const InteractiveMap: React.FC = () => {
               position={[marker.lat, marker.lng]}
               icon={getMarkerIcon(marker)}
             >
-              <Popup>{renderPopupContent(marker)}</Popup>
+              <Popup>{createPopupContent(marker)}</Popup>
             </Marker>
           ))}
         </>
@@ -1341,10 +1350,10 @@ const InteractiveMap: React.FC = () => {
     getVisibleMarkers().forEach(marker => {
       const markerInstance = L.marker([marker.lat, marker.lng], { 
         icon: getMarkerIcon(marker) 
-      }).addTo(map);
+      });
 
-      // Add popup after marker is added to map
-      markerInstance.bindPopup(renderPopupContent(marker));
+      markerInstance.bindPopup(createPopupContent(marker));
+      markerInstance.addTo(map);
     });
   }, [map, mapReady, markers, activeFilter]);
 
