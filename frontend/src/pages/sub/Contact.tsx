@@ -1,26 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import React from 'react'
 import "../../styles/Contact.css";
 import api from '../../config/axios';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
-
-// Fix Leaflet default marker icon issue
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  iconRetinaUrl: iconRetina,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  tooltipAnchor: [16, -28],
-  shadowSize: [41, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
 
 interface ContactContent {
   mainHeading: string;
@@ -40,6 +26,9 @@ interface ContactContent {
 const Contact: React.FC = () => {
     const [message, setMessage] = useState("");
     const [charCount, setCharCount] = useState(0);
+    const [mapReady, setMapReady] = useState(false);
+    const mapRef = useRef<HTMLDivElement>(null);
+    const [map, setMap] = useState<any>(null);
   
     const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const value = e.target.value;
@@ -120,7 +109,43 @@ const Contact: React.FC = () => {
     loadContent();
   }, []);
 
-  const mapPosition = [14.639824708507915, 121.07880856560423] as [number, number];
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Initialize Leaflet icon
+    const DefaultIcon = L.icon({
+        iconUrl: icon,
+        iconRetinaUrl: iconRetina,
+        shadowUrl: iconShadow,
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        tooltipAnchor: [16, -28],
+        shadowSize: [41, 41]
+    });
+    L.Marker.prototype.options.icon = DefaultIcon;
+
+    if (mapRef.current && !map) {
+        const mapInstance = L.map(mapRef.current).setView([14.639824708507915, 121.07880856560423], 16);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: ''
+        }).addTo(mapInstance);
+
+        const marker = L.marker([14.639824708507915, 121.07880856560423])
+            .addTo(mapInstance)
+            .bindPopup('Kapatid kita mahal kita Foundation<br>Lonergan Center, Ateneo de Manila University');
+
+        setMap(mapInstance);
+        setMapReady(true);
+    }
+
+    return () => {
+        if (map) {
+            map.remove();
+        }
+    };
+}, [mapRef.current]);
 
   return (
 <div className="contact-container">
@@ -182,23 +207,7 @@ const Contact: React.FC = () => {
     <div className="secondSection">
         <div className='locations'>
             <div className="map-container">
-                <MapContainer 
-                    center={mapPosition} 
-                    zoom={16} 
-                    style={{ height: '400px', width: '400px' }}
-                    attributionControl={false}
-                >
-                    <TileLayer
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        attribution=""
-                    />
-                    <Marker position={mapPosition}>
-                        <Popup>
-                            Kapatid kita mahal kita Foundation<br />
-                            Lonergan Center, Ateneo de Manila University
-                        </Popup>
-                    </Marker>
-                </MapContainer>
+                <div ref={mapRef} style={{ height: '400px', width: '400px' }}></div>
             </div>
             <div className='locationtext'>
                 <h6>{content.locationHeading}</h6>

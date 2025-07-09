@@ -6,6 +6,10 @@ import api from '../config/axios'; // Replace axios import
 import { useNavigate } from 'react-router-dom';
 import '../styles/InteractiveMap.css';
 import Control from 'react-leaflet-custom-control';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
+import 'leaflet/dist/leaflet.css';
 
 interface LocationMarker {
   id: number;
@@ -441,6 +445,23 @@ interface ScholarDistributionData {
   longitude: number;
 }
 
+// Remove the MapContent component and create a MapController component instead
+
+// Add new map resize component
+const MapResizer: React.FC = () => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (map) {
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 100);
+    }
+  }, [map]);
+  
+  return null;
+};
+
 const InteractiveMap: React.FC = () => {
   const [markers, setMarkers] = useState<LocationMarker[]>([OFFICE_MARKER]);
   const [loading, setLoading] = useState(true);
@@ -460,6 +481,9 @@ const InteractiveMap: React.FC = () => {
   const [scholarDistributions, setScholarDistributions] = useState<ScholarDistributionData[]>([]);
   const navigate = useNavigate();
   const PAYATAS_COORDINATES: [number, number] = [14.7164, 121.1194];
+  const [map, setMap] = useState<any>(null);  // Change to use any like Contact.tsx
+  const [mapReady, setMapReady] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   const getImageUrl = (path: string) => {
     if (!path) return '';
@@ -1206,28 +1230,16 @@ const InteractiveMap: React.FC = () => {
     fetchDistributionData();
   }, [showHeatmap]);
 
-  return (
-    <div className="interactive-map-container">
-      <div className="map-header">
-        <h1>Interactive Map</h1>
-        {renderMapControls()}
-      </div>
-
-      {loading ? (
-        <div className="loading">Loading map...</div>
-      ) : (
-        <MapContainer
-          key={mapKey}
-          center={PAYATAS_COORDINATES}
-          zoom={15}
-          scrollWheelZoom={true}
-          className="interactive-map"
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          />
-          
+  // Update the renderMapContent function
+  const renderMapContent = () => (
+    <>
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      />
+      
+      {!showHeatmap ? (
+        <>
           <Polygon
             positions={PAYATAS_POLYGON}
             pathOptions={{
@@ -1241,44 +1253,118 @@ const InteractiveMap: React.FC = () => {
               <h4>Payatas Boundary</h4>
             </Popup>
           </Polygon>
+          
+          {getVisibleMarkers().map(marker => (
+            <Marker
+              key={`${marker.type}-${marker.id}`}
+              position={[marker.lat, marker.lng]}
+              icon={getMarkerIcon(marker)}
+            >
+              <Popup>{renderPopupContent(marker)}</Popup>
+            </Marker>
+          ))}
+        </>
+      ) : (
+        <>
+          {renderHeatmap()}
+          <Control position="topright">
+            {sectorCategories.map((stat: SectorCategory) => (
+              <SectorStatsCard 
+                key={stat.type} 
+                stats={{
+                  type: stat.type,
+                  name: stat.name,
+                  totalPopulation: stat.totalPopulation,
+                  totalDistributions: stat.totalDistributions,
+                  percentageComplete: stat.percentageComplete,
+                  sectors: stat.sectors
+                }} 
+              />
+            ))}
+          </Control>
+          <Control position="bottomright">
+            <HeatmapLegend />
+          </Control>
+          <Control position="bottomleft">
+            <DistributionProgress sectors={sectorData} />
+          </Control>
+        </>
+      )}
+    </>
+  );
 
-          {!showHeatmap ? (
-            getVisibleMarkers().map(marker => (
-              <Marker
-                key={`${marker.type}-${marker.id}`}
-                position={[marker.lat, marker.lng]}
-                icon={getMarkerIcon(marker)}
-              >
-                <Popup>{renderPopupContent(marker)}</Popup>
-              </Marker>
-            ))
-          ) : (
-            <>
-              {renderHeatmap()}
-              <Control position="topright">
-                {sectorCategories.map((stat: SectorCategory) => (
-                  <SectorStatsCard 
-                    key={stat.type} 
-                    stats={{
-                      type: stat.type,
-                      name: stat.name,
-                      totalPopulation: stat.totalPopulation,
-                      totalDistributions: stat.totalDistributions,
-                      percentageComplete: stat.percentageComplete,
-                      sectors: stat.sectors
-                    }} 
-                  />
-                ))}
-              </Control>
-              <Control position="bottomright">
-                <HeatmapLegend />
-              </Control>
-              <Control position="bottomleft">
-                <DistributionProgress sectors={sectorData} />
-              </Control>
-            </>
-          )}
-        </MapContainer>
+  // Initialize map when component mounts
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Initialize Leaflet icon
+    const DefaultIcon = L.icon({
+      iconUrl: icon,
+      iconRetinaUrl: iconRetina,
+      shadowUrl: iconShadow,
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      tooltipAnchor: [16, -28],
+      shadowSize: [41, 41]
+    });
+    L.Marker.prototype.options.icon = DefaultIcon;
+
+    if (mapRef.current && !map) {
+      const mapInstance = L.map(mapRef.current).setView(PAYATAS_COORDINATES, 15);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(mapInstance);
+
+      // Add markers and other map elements here
+      getVisibleMarkers().forEach(marker => {
+        L.marker([marker.lat, marker.lng], { icon: getMarkerIcon(marker) })
+          .addTo(mapInstance)
+          .bindPopup(renderPopupContent(marker));
+      });
+
+      setMap(mapInstance);
+      setMapReady(true);
+    }
+
+    return () => {
+      if (map) {
+        map.remove();
+      }
+    };
+  }, [mapRef.current]);
+
+  // Update markers when they change
+  useEffect(() => {
+    if (map && mapReady) {
+      // Clear existing markers
+      map.eachLayer((layer: any) => {
+        if (layer instanceof L.Marker) {
+          map.removeLayer(layer);
+        }
+      });
+
+      // Add new markers
+      getVisibleMarkers().forEach(marker => {
+        L.marker([marker.lat, marker.lng], { icon: getMarkerIcon(marker) })
+          .addTo(map)
+          .bindPopup(renderPopupContent(marker));
+      });
+    }
+  }, [markers, activeFilter, mapReady]);
+
+  return (
+    <div className="interactive-map-container">
+      <div className="map-header">
+        <h1>Interactive Map</h1>
+        {renderMapControls()}
+      </div>
+
+      {loading ? (
+        <div className="loading">Loading map...</div>
+      ) : (
+        <div ref={mapRef} className="interactive-map" style={{ height: '600px', width: '100%' }}></div>
       )}
     </div>
   );
