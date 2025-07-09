@@ -5,7 +5,7 @@
 
 [build.environment]
   NODE_VERSION = "18"
-  NODE_ENV = "production"
+  NODE_ENV = "development"
   NPM_FLAGS = "--no-audit --no-optional"
   CI = "true"
   NODE_OPTIONS = "--max_old_space_size=4096"
