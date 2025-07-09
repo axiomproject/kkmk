@@ -27,7 +27,8 @@ const uploads = {
   donations: multer({ storage: createStorage('donations') }),
   forum: multer({ storage: createStorage('forum') }),
   admin: multer({ storage: createStorage('admin') }),
-  staff: multer({ storage: createStorage('staff') })
+  staff: multer({ storage: createStorage('staff') }),
+  content: multer({ storage: createStorage('content') }) // Add content uploads
 };
 
 // Test Cloudinary configuration
