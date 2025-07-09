@@ -1,39 +1,6 @@
 const EventModel = require('../models/eventModel');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs').promises;
-
-// Configure multer for image upload
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/events');
-    try {
-      await fs.mkdir(uploadDir, { recursive: true });
-      cb(null, uploadDir);
-    } catch (error) {
-      cb(error, null);
-    }
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `event-${uniqueSuffix}${path.extname(file.originalname)}`);
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
-    }
-  }
-});
+const { uploads } = require('../config/cloudinaryConfig');
+const uploadEventImage = uploads.events.single('image');
 
 const eventController = {
   async getEvents(req, res) {
@@ -66,15 +33,13 @@ const eventController = {
 
   async createEvent(req, res) {
     try {
-      upload.single('image')(req, res, async (err) => {
+      uploadEventImage(req, res, async (err) => {
         if (err) {
           return res.status(400).json({ error: err.message });
         }
 
-        // Update the image path to include the full URL
-        const imagePath = req.file 
-          ? `/uploads/events/${req.file.filename}` 
-          : null;
+        // Get the Cloudinary URL from the uploaded file
+        const imagePath = req.file ? req.file.path : null;
 
         const eventData = {
           ...req.body,
@@ -83,7 +48,6 @@ const eventController = {
 
         const event = await EventModel.createEvent(eventData);
         
-        // Return the full image URL in the response
         res.status(201).json({
           ...event,
           image: imagePath
@@ -97,33 +61,24 @@ const eventController = {
 
   async updateEvent(req, res) {
     try {
-      upload.single('image')(req, res, async (err) => {
+      uploadEventImage(req, res, async (err) => {
         if (err) {
           return res.status(400).json({ error: err.message });
         }
 
-        const eventId = parseInt(req.params.id); // Ensure ID is a number
+        const eventId = parseInt(req.params.id);
         if (isNaN(eventId)) {
           return res.status(400).json({ error: 'Invalid event ID' });
         }
 
-        const imagePath = req.file ? `/uploads/events/${req.file.filename}` : null;
+        const imagePath = req.file ? req.file.path : undefined;
         const eventData = {
-          ...req.body,
-          imagePath
+          ...req.body
         };
 
-        // If updating with new image, delete old image
+        // Only update image if a new one was uploaded
         if (imagePath) {
-          const oldEvent = await EventModel.getEventById(eventId);
-          if (oldEvent && oldEvent.image) {
-            const oldImagePath = path.join(__dirname, '..', oldEvent.image);
-            try {
-              await fs.unlink(oldImagePath);
-            } catch (error) {
-              console.error('Failed to delete old image:', error);
-            }
-          }
+          eventData.imagePath = imagePath;
         }
 
         const event = await EventModel.updateEvent(eventId, eventData);
@@ -242,7 +197,7 @@ const eventController = {
   async addVolunteer(req, res) {
     try {
       const { eventId } = req.params;
-      const { volunteerId } = req.body; // Change to expect volunteerId instead of name, email, phone
+      const { volunteerId } = req.body;
 
       // Check if requester is admin or staff
       if (req.user.role !== 'admin' && req.user.role !== 'staff') {
@@ -250,7 +205,6 @@ const eventController = {
       }
 
       const updatedEvent = await EventModel.addVolunteer(eventId, volunteerId);
-      
       res.json({
         message: 'Successfully added volunteer',
         event: updatedEvent
@@ -263,15 +217,10 @@ const eventController = {
 
   async getVolunteers(req, res) {
     try {
-      // Check if requester is admin or staff
-      if (req.user.role !== 'admin' && req.user.role !== 'staff') {
-        return res.status(403).json({ error: 'Not authorized to view volunteers list' });
-      }
-
-      const volunteers = await EventModel.getVolunteers();
+      const { eventId } = req.params;
+      const volunteers = await EventModel.getEventVolunteers(eventId);
       res.json(volunteers);
     } catch (error) {
-      console.error('Get volunteers error:', error);
       res.status(500).json({ error: 'Failed to fetch volunteers' });
     }
   }

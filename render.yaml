@@ -39,6 +39,12 @@ services:
         fromDatabase:
           name: kkmk
           property: connectionString
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dvzbgapue
+      - key: CLOUDINARY_API_KEY
+        value: 539274975653933
+      - key: CLOUDINARY_API_SECRET
+        value: Lstsyvr-PR9eR9tp1v5pqjysoLI
 
 databases:
   - name: kkmk
