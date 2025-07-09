@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Define the API URL based on environment
 const baseURL = import.meta.env.PROD 
-  ? 'https://kmfi.netlify.app'
+  ? 'https://kmfi.onrender.com'
   : 'http://localhost:5175/api';
 
 // Create and export the axios instance
