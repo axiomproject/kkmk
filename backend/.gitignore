@@ -1,2 +1,9 @@
-public
-uploads
+/public
+/uploads
+
+/backend/uploads
+/backend/uploads/admin
+/backend/uploads/content
+/backend/uploads/donations
+/backend/uploads/events
+/backend/public
