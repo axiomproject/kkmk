@@ -239,7 +239,7 @@ const ScholarProfile: React.FC = () => {
         }
       });
 
-      const response = await fetch(`${API_URL}/api/scholars/create`, {
+      const response = await fetch(`${API_URL}/scholars/create`, {
         method: 'POST',
         body: formDataToSend,
         credentials: 'include',
@@ -254,7 +254,7 @@ const ScholarProfile: React.FC = () => {
       console.log('Scholar created:', result);
       
       // Refresh the scholars list
-      const updatedScholars = await fetch(`${API_URL}/api/scholars`, {
+      const updatedScholars = await fetch(`${API_URL}/scholars`, {
         credentials: 'include'
       }).then(res => res.json());
       setScholars(updatedScholars);
@@ -437,7 +437,7 @@ const handleUpdate = async (e: React.FormEvent) => {
       }
     });
 
-    const response = await fetch(`${API_URL}/api/scholars/${selectedScholar.id}`, {
+    const response = await fetch(`${API_URL}/scholars/${selectedScholar.id}`, {
       method: 'PUT',
       body: formDataToSend,
       credentials: 'include'
@@ -446,7 +446,7 @@ const handleUpdate = async (e: React.FormEvent) => {
     if (!response.ok) throw new Error('Failed to update scholar');
 
     // Refresh scholar list
-    const updatedScholars = await fetch(`${API_URL}/api/scholars`, {
+    const updatedScholars = await fetch(`${API_URL}/scholars`, {
       credentials: 'include'
     }).then(res => res.json());
     
@@ -529,7 +529,7 @@ const handleUpdate = async (e: React.FormEvent) => {
 
   const fetchScholarUsers = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/users/role/scholar`);
+      const response = await fetch(`${API_URL}/users/role/scholar`);
       const data = await response.json();
       setScholarUsers(data);
     } catch (error) {
@@ -552,7 +552,7 @@ const handleUpdate = async (e: React.FormEvent) => {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/scholars/${selectedScholar?.id}/assign-user`, {
+      const response = await fetch(`${API_URL}/scholars/${selectedScholar?.id}/assign-user`, {
         method: 'POST',
         body: JSON.stringify({ userId }),
         headers: {
@@ -603,7 +603,7 @@ const handleUpdate = async (e: React.FormEvent) => {
     
     if (window.confirm('Are you sure you want to remove this user assignment?')) {
       try {
-        const response = await fetch(`${API_URL}/api/scholars/${selectedScholar.id}/unassign-user`, {
+        const response = await fetch(`${API_URL}/scholars/${selectedScholar.id}/unassign-user`, {
           method: 'DELETE',
           credentials: 'include'
         });
@@ -630,7 +630,7 @@ const handleUpdate = async (e: React.FormEvent) => {
   const handleDeleteScholar = async (scholarId: number) => {
     if (window.confirm('Are you sure you want to delete this scholar? This action cannot be undone.')) {
       try {
-        const response = await fetch(`${API_URL}/api/scholars/${scholarId}`, {
+        const response = await fetch(`${API_URL}/scholars/${scholarId}`, {
           method: 'DELETE',
           credentials: 'include'
         });
