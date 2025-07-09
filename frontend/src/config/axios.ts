@@ -7,29 +7,36 @@ const baseURL = import.meta.env.PROD
 
 // Create and export the axios instance with improved config
 const api = axios.create({
-  baseURL,
-  withCredentials: true,
-  timeout: 15000, // 15 second timeout
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5175/api',
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Content-Type': 'application/json'
   }
+});
+
+// Updated request interceptor
+api.interceptors.request.use((config) => {
+  // Remove /api prefix for upload URLs
+  if (config.url?.includes('/uploads/')) {
+    config.baseURL = (import.meta.env.VITE_API_URL || 'http://localhost:5175').replace('/api', '');
+    // Strip any duplicate /api prefixes from URL
+    config.url = config.url.replace('/api/', '/');
+  }
+  return config;
 });
 
 // Add request interceptor with error handling
 api.interceptors.request.use(
-  (config) => {
+  (config: any) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Log outgoing requests in development
     if (import.meta.env.DEV) {
       console.log('Request:', config.method?.toUpperCase(), config.url);
     }
-    return config;
+    return Promise.resolve(config);
   },
-  (error) => {
+  (error: Error) => {
     console.error('Request error:', error);
     return Promise.reject(error);
   }

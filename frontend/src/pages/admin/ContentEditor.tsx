@@ -415,15 +415,25 @@ export default function ContentEditor() {
   const getImageUrl = (path: string) => {
     if (!path) return '';
     if (path.startsWith('data:') || path.startsWith('http')) return path;
-    if (path.startsWith('/uploads')) {
-      return `${path}`;
-    }
-    return path;
+    
+    // Remove any duplicate /api prefix
+    const cleanPath = path.replace('/api/', '/');
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
+    return `${backendUrl}${cleanPath}`;
   };
-
+  
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.error('Image failed to load:', e.currentTarget.src);
+    // Set a default image or hide the element
     e.currentTarget.style.display = 'none';
+    // Optionally show an error message or placeholder
+    const parent = e.currentTarget.parentElement;
+    if (parent) {
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'image-error';
+      errorMsg.textContent = 'Image failed to load';
+      parent.appendChild(errorMsg);
+    }
   };
 
   const handleSave = async () => {
