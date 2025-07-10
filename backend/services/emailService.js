@@ -1643,6 +1643,35 @@ const generateInventoryCertificatePDF = async (donorName, donationDetails, donat
   }
 };
 
+const sendDonationConfirmation = async (email, donorName, amount, paymentMethod) => {
+  const formattedAmount = parseFloat(amount).toLocaleString('en-PH', {
+    style: 'currency',
+    currency: 'PHP'
+  });
+
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h1 style="color: #333;">Thank You for Your Donation, ${donorName}!</h1>
+      <p>We have received your donation submission of <strong>${formattedAmount}</strong> via <strong>${paymentMethod}</strong>.</p>
+      
+      <div style="background-color: #f5f5f5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #333;">Your donation is currently being processed and will be verified by our team.</p>
+      </div>
+      
+      <p>You will receive another email once your donation has been verified.</p>
+      
+      <p>If you have any questions about your donation, please don't hesitate to contact us.</p>
+      
+      <p>With gratitude,<br>KKMK Team</p>
+      
+      <hr style="border: 1px solid #eee; margin: 20px 0;">
+      <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
+    </div>
+  `;
+
+  return sendMail(email, 'Thank You for Your Donation', htmlContent);
+};
+
 module.exports = {
   sendVerificationEmail,
   sendPasswordResetEmail,
@@ -1664,5 +1693,6 @@ module.exports = {
   sendDistributionDetailedVerificationEmail, // Add the new detailed verification export
   sendDonationCertificateEmail, // Add the new function to exports
   sendInventoryCertificateEmail, // Add the new function to exports
+  sendDonationConfirmation,
   sendMail
 };

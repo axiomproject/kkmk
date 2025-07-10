@@ -121,7 +121,6 @@ header .title a {
     display: flex;
     justify-content: flex-end;
     gap: 20px;
-    margin-right: 20px; /* Add margin to separate from hamburger */
   }
   
   .signup-button {
@@ -634,8 +633,7 @@ header .title a {
   }
 
   .actions-container {
-    order: 2; /* Keep actions in the middle */
-    margin-right: 20px;
+    order: 2; 
   }
 
   .logo-container {
@@ -679,7 +677,6 @@ header .title a {
     flex: 0 1 auto;
     order: 2;
     margin-left: auto;
-    margin-right: 20px;
   }
 
   .hamburger {
@@ -768,10 +765,6 @@ header .title a {
 
   .header-container {
     padding: 10px;
-  }
-
-  .actions-container {
-    margin-right: 15px;
   }
 
   .hamburger {

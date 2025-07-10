@@ -13,8 +13,6 @@ axios.defaults.baseURL = API_URL;
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 axios.defaults.withCredentials = true;
 
-// Log the configured API URL
-console.log('API Base URL:', axios.defaults.baseURL);
 
 // Add request interceptor to handle authentication and errors
 axios.interceptors.request.use(config => {

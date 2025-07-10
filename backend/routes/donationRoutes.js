@@ -1,25 +1,24 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
 const router = express.Router();
 const db = require('../config/db');
-const emailService = require('../services/emailService'); // Import email service
-const notificationUtils = require('../utils/notificationUtils'); // Add this import
+const { sendDonationConfirmation, sendDonationVerificationEmail, sendDonationRejectionEmail, sendDonationCertificateEmail } = require('../services/emailService');
+const notificationUtils = require('../utils/notificationUtils');
+const { uploadToCloudinary, uploads } = require('../config/cloudinaryConfig');
 
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, 'uploads/donations');
-  },
-  filename: function(req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
+// File upload endpoint
+router.post('/upload-signature', uploads.donations.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
 
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    // Upload to Cloudinary using the existing configuration
+    const result = await uploadToCloudinary(req.file, 'donations');
+    
+    res.json({ url: result.url });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -27,28 +26,13 @@ const upload = multer({
 router.get('/', async (req, res) => {
   try {
     console.log('Fetching monetary donations...');
-    // Replace db.any with db.query
     const result = await db.query(`
       SELECT * FROM monetary_donations 
       ORDER BY created_at DESC
     `);
     
     const donations = result.rows;
-
-    // Add full URLs to proof_of_payment paths - make sure they start with /
-    const donationsWithUrls = donations.map(donation => ({
-      ...donation,
-      proof_of_payment: donation.proof_of_payment 
-        ? `/uploads/donations/${donation.proof_of_payment}`
-        : null
-    }));
-
-    console.log('Sample proof_of_payment path:', 
-      donations.length > 0 && donations[0].proof_of_payment 
-        ? donationsWithUrls[0].proof_of_payment 
-        : 'No donations found');
-    
-    res.json(donationsWithUrls);
+    res.json(donations);
   } catch (error) {
     console.error('Error fetching donations:', error);
     res.status(500).json({ error: error.message });
@@ -56,14 +40,13 @@ router.get('/', async (req, res) => {
 });
 
 // Submit new donation
-router.post('/', upload.single('proofOfPayment'), async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     console.log('Received donation submission:', {
-      body: req.body,
-      file: req.file
+      body: req.body
     });
 
-    const { fullName, email, contactNumber, amount, message, date, paymentMethod } = req.body;
+    const { fullName, email, contactNumber, amount, message, date, paymentMethod, proofOfPayment } = req.body;
     
     // Map payment methods to allowed values in the database
     let mappedPaymentMethod = paymentMethod;
@@ -76,7 +59,6 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
       throw new Error('Missing required fields');
     }
 
-    const proofOfPayment = req.file ? req.file.filename : null;
     const amountValue = parseFloat(amount);
     
     // Validate amount
@@ -84,11 +66,12 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
       throw new Error('Invalid amount. Amount must be between 0 and 999,999,999.99');
     }
 
-    console.log('Processing donation with data:', {
-      fullName, email, contactNumber, amountValue, message, date, proofOfPayment, paymentMethod
-    });
+    // If there's a proof of payment URL from Cloudinary
+    let proofOfPaymentUrl = proofOfPayment || null;
 
-    console.log('Proof of payment file:', proofOfPayment);
+    console.log('Processing donation with data:', {
+      fullName, email, contactNumber, amountValue, message, date, proofOfPaymentUrl, paymentMethod
+    });
 
     // Replace db.one with db.query
     const result = await db.query(
@@ -103,7 +86,7 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
         contactNumber, 
         amountValue,
         message || null, // Handle null message properly
-        proofOfPayment, 
+        proofOfPaymentUrl, 
         mappedPaymentMethod, // Use the mapped value
         date,
         'pending'
@@ -118,6 +101,20 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
       style: 'currency',
       currency: 'PHP'
     }).format(amountValue);
+
+    // Send confirmation email to donor
+    try {
+      await sendDonationConfirmation(
+        email,
+        fullName,
+        amountValue,
+        mappedPaymentMethod
+      );
+      console.log('Confirmation email sent to donor:', email);
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError);
+      // Don't fail the request if email sending fails
+    }
 
     // Send notification to admins about new donation
     try {
@@ -135,14 +132,8 @@ router.post('/', upload.single('proofOfPayment'), async (req, res) => {
       console.error('Failed to send admin notification:', notificationError);
       // Don't fail the request if notification sending fails
     }
-    
-    const responseData = {
-      ...newDonation,
-      proof_of_payment: proofOfPayment ? `/uploads/donations/${proofOfPayment}` : null
-    };
 
-    console.log('Response with proof:', responseData);
-    return res.status(201).json(responseData);
+    return res.status(201).json(newDonation);
 
   } catch (error) {
     console.error('Database error:', error);
@@ -185,7 +176,7 @@ router.put('/:id/verify', async (req, res) => {
     
     // Send verification email
     try {
-      await sendDonationVerifiedEmail(
+      await sendDonationVerificationEmail(
         donation.email, 
         donation.full_name, 
         donation.amount,
@@ -259,7 +250,7 @@ router.put('/:id/reject', async (req, res) => {
     
     // Send rejection email
     try {
-      await sendDonationRejectedEmail(
+      await sendDonationRejectionEmail(
         donation.email, 
         donation.full_name, 
         donation.amount,
@@ -314,7 +305,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Endpoint for monetary donations
-router.post('/monetary', upload.single('proofOfPayment'), async (req, res) => {
+router.post('/monetary', async (req, res) => {
   try {
     const {
       fullName,
@@ -322,7 +313,8 @@ router.post('/monetary', upload.single('proofOfPayment'), async (req, res) => {
       contactNumber,
       amount,
       message,
-      paymentMethod
+      paymentMethod,
+      proofOfPayment
     } = req.body;
 
     const result = await db.query(`
@@ -344,7 +336,7 @@ router.post('/monetary', upload.single('proofOfPayment'), async (req, res) => {
       contactNumber,
       amount,
       message,
-      req.file ? req.file.filename : null,
+      proofOfPayment, // Use the Cloudinary URL directly
       paymentMethod
     ]);
 
@@ -413,7 +405,7 @@ router.post('/:id/send-certificate', async (req, res) => {
     }
     
     // Send certificate email - pass true for isGeneralDonation to use the generic template
-    await emailService.sendDonationCertificateEmail(
+    await sendDonationCertificateEmail(
       donation.email,
       donation.full_name,
       'KKMK Scholar', // Still pass the scholar name but it won't be used in the template
@@ -483,78 +475,5 @@ router.post('/:id/send-certificate', async (req, res) => {
     });
   }
 });
-
-// Helper functions for sending emails
-async function sendDonationVerifiedEmail(email, name, amount, paymentMethod) {
-  const formattedAmount = parseFloat(amount).toLocaleString('en-PH', {
-    style: 'currency',
-    currency: 'PHP'
-  });
-
-  const mailOptions = {
-    from: {
-      name: 'KKMK Donations',
-      address: process.env.EMAIL_USER
-    },
-    to: email,
-    subject: 'Your Donation Has Been Verified',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #333;">Thank You, ${name}!</h1>
-        <p>Your donation of <strong>${formattedAmount}</strong> via <strong>${paymentMethod || 'bank transfer'}</strong> has been verified and received.</p>
-        
-        <div style="background-color: #f5f5f5; border-left: 4px solid #10B981; padding: 15px; margin: 20px 0;">
-          <p style="margin: 0; color: #333;">Your generous contribution will help support our scholars and programs.</p>
-        </div>
-        
-        <p>If you have any questions about your donation, please don't hesitate to contact us.</p>
-        
-        <p>With gratitude,<br>KKMK Team</p>
-        
-        <hr style="border: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
-      </div>
-    `
-  };
-
-  return emailService.sendMail(email, mailOptions.subject, mailOptions.html);
-}
-
-async function sendDonationRejectedEmail(email, name, amount, reason, paymentMethod) {
-  const formattedAmount = parseFloat(amount).toLocaleString('en-PH', {
-    style: 'currency',
-    currency: 'PHP'
-  });
-
-  const mailOptions = {
-    from: {
-      name: 'KKMK Donations',
-      address: process.env.EMAIL_USER
-    },
-    to: email,
-    subject: 'Important Information About Your Donation',
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #333;">Hello ${name},</h1>
-        <p>We wanted to inform you that your recent donation of <strong>${formattedAmount}</strong> via <strong>${paymentMethod || 'bank transfer'}</strong> requires some attention.</p>
-        
-        <div style="background-color: #fff3f3; border-left: 4px solid #EF4444; padding: 15px; margin: 20px 0;">
-          <p style="margin: 0; color: #333;"><strong>Reason:</strong> ${reason || 'The payment could not be verified at this time.'}</p>
-        </div>
-        
-        <p>You may need to provide additional information or try submitting your donation again. If you have any questions, please contact us directly for assistance.</p>
-        
-        <p>We appreciate your intention to support our cause and hope we can resolve this soon.</p>
-        
-        <p>Sincerely,<br>KKMK Team</p>
-        
-        <hr style="border: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #666; font-size: 12px;">This is an automated email. Please do not reply to this message.</p>
-      </div>
-    `
-  };
-
-  return emailService.sendMail(email, mailOptions.subject, mailOptions.html);
-}
 
 module.exports = router;
