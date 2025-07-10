@@ -54,10 +54,13 @@ const uploadToCloudinary = async (file, folder) => {
     const b64 = Buffer.from(file.buffer).toString('base64');
     const dataURI = `data:${file.mimetype};base64,${b64}`;
     
+    // Determine resource type - treat SVGs as images
+    const resourceType = file.mimetype === 'image/svg+xml' ? 'image' : 'auto';
+    
     // Upload to Cloudinary with optimizations
     const result = await cloudinary.uploader.upload(dataURI, {
       folder: folder,
-      resource_type: 'auto',
+      resource_type: resourceType,
       quality: 'auto:good', // Automatic quality optimization
       fetch_format: 'auto', // Automatic format optimization
       flags: 'attachment', // Treat as attachment

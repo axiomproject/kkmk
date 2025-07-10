@@ -8,22 +8,31 @@ export const getImageUrl = (url: string | null | undefined): string => {
     return '/images/default-event.png';
   }
 
-  // Check if it's already a complete URL (Cloudinary)
+  // Check if it's already a complete URL (Cloudinary or other)
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    // Validate Cloudinary URL format
-    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
-      return url;
-    }
-  }
-
-  // For local assets in the public folder
-  if (url.startsWith('/images/')) {
     return url;
   }
 
-  // If we get here, something is wrong - return default image
-  console.warn('Invalid image URL format:', url);
-  return '/images/default-event.png';
+  // For local assets in the public folder or src folder
+  if (url.startsWith('/images/') || url.startsWith('/src/')) {
+    return url;
+  }
+
+  // For uploaded files in the uploads directory
+  if (url.startsWith('/uploads/')) {
+    // Assuming your backend serves uploads from a base URL
+    const baseUrl = import.meta.env.VITE_API_URL || '';
+    return `${baseUrl}${url}`;
+  }
+
+  // If it's a relative path starting with src/
+  if (url.startsWith('src/')) {
+    return `/${url}`;
+  }
+
+  // If we get here, log a warning but still return the URL
+  console.warn('Unrecognized image URL format:', url);
+  return url;
 };
 
 /**
