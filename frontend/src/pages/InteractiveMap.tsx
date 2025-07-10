@@ -5,7 +5,6 @@ import { Icon } from 'leaflet';
 import api from '../config/axios'; // Replace axios import
 import { useNavigate } from 'react-router-dom';
 import '../styles/InteractiveMap.css';
-import Control from 'react-leaflet-custom-control';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
@@ -1241,65 +1240,88 @@ const InteractiveMap: React.FC = () => {
 
   // Update the renderMapContent function
   const renderMapContent = () => (
-    <>
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      />
-      
-      {!showHeatmap ? (
-        <>
-          <Polygon
-            positions={PAYATAS_POLYGON}
-            pathOptions={{
-              color: '#374151',
-              fillColor: 'transparent',
-              weight: 2,
-              dashArray: '5, 10'
-            }}
+    <div className="map-container">
+      <div className="map-controls">
+        <div className="filter-controls">
+          <select
+            value={activeFilter}
+            onChange={(e) => setActiveFilter(e.target.value as LocationFilterType)}
+            className="location-filter"
           >
-            <Popup>
-              <h4>Payatas Boundary</h4>
-            </Popup>
-          </Polygon>
-          
-          {getVisibleMarkers().map(marker => (
-            <Marker
-              key={`${marker.type}-${marker.id}`}
-              position={[marker.lat, marker.lng]}
-              icon={getMarkerIcon(marker)}
+            <option value={LOCATION_FILTERS.ALL}>All Locations</option>
+            <option value={LOCATION_FILTERS.EVENTS}>Events Only</option>
+            <option value={LOCATION_FILTERS.OFFICE}>Main Office</option>
+          </select>
+        </div>
+      </div>
+      <MapContainer
+        center={KKMK_OFFICE_COORDINATES}
+        zoom={15}
+        style={{ height: '100%', width: '100%' }}
+        className="interactive-map"
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        />
+        
+        {!showHeatmap ? (
+          <>
+            <Polygon
+              positions={PAYATAS_POLYGON}
+              pathOptions={{
+                color: '#374151',
+                fillColor: 'transparent',
+                weight: 2,
+                dashArray: '5, 10'
+              }}
             >
-              <Popup>{createPopupContent(marker)}</Popup>
-            </Marker>
-          ))}
-        </>
-      ) : (
-        <>
-          {renderHeatmap()}
-          <Control position="topright">
-            {sectorCategories.map((stat: SectorCategory) => (
-              <SectorStatsCard 
-                key={stat.type} 
-                stats={{
-                  type: stat.type,
-                  name: stat.name,
-                  totalPopulation: stat.totalPopulation,
-                  totalDistributions: stat.totalDistributions,
-                  percentageComplete: stat.percentageComplete,
-                  sectors: stat.sectors
-                }} 
-              />
+              <Popup>
+                <h4>Payatas Boundary</h4>
+              </Popup>
+            </Polygon>
+            
+            {getVisibleMarkers().map(marker => (
+              <Marker
+                key={`${marker.type}-${marker.id}`}
+                position={[marker.lat, marker.lng]}
+                icon={getMarkerIcon(marker)}
+              >
+                <Popup>
+                  <div dangerouslySetInnerHTML={{ __html: createPopupContent(marker) }} />
+                </Popup>
+              </Marker>
             ))}
-          </Control>
-          <Control position="bottomright">
-            <HeatmapLegend />
-          </Control>
-          <Control position="bottomleft">
-            <DistributionProgress sectors={sectorData} />
-          </Control>
-        </>
-      )}
-    </>
+            {renderSectorPolygons()}
+          </>
+        ) : (
+          <>
+            {renderHeatmap()}
+            <Control position="topright">
+              {sectorCategories.map((stat: SectorCategory) => (
+                <SectorStatsCard 
+                  key={stat.type} 
+                  stats={{
+                    type: stat.type,
+                    name: stat.name,
+                    totalPopulation: stat.totalPopulation,
+                    totalDistributions: stat.totalDistributions,
+                    percentageComplete: stat.percentageComplete,
+                    sectors: stat.sectors
+                  }} 
+                />
+              ))}
+            </Control>
+            <Control position="bottomright">
+              <HeatmapLegend />
+            </Control>
+            <Control position="bottomleft">
+              <DistributionProgress sectors={sectorData} />
+            </Control>
+          </>
+        )}
+      </MapContainer>
+    </div>
   );
 
   // Initialize map when component mounts
