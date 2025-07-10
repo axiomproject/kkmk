@@ -16,7 +16,10 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client", "node"],
-    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./src/types"
+    ],
     "paths": {
       "*": ["./src/*"]
     }
@@ -24,8 +27,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
-    "src/**/*.d.ts",
-    "src"
+    "src/**/*.d.ts"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

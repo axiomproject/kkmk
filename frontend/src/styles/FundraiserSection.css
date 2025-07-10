@@ -28,17 +28,22 @@
   .cards-container {
     display: flex;
     justify-content: center;
-    gap: 10rem;
-  }
+    gap: 6rem;
+    padding: 2rem 0;
+    align-items: flex-start;
+}
   
   .cards {
     background-color: transparent !important;
     border-radius: 15px;
     border: none !important;
-    padding: 1rem;
+    padding: 2rem;
     width: 300px;
     text-align: center;
-  }
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
   
   .cards .emoji {
     font-size: 3rem;
@@ -53,23 +58,27 @@
     font-weight: 500;
     font-family: "Poppins";
     font-style: bold;
-  }
+    width: 100%;
+}
   
   .cards p {
     margin-top: 1rem;
     font-size: 0.9rem;
     color: #5F241E;
     font-family: "Poppins";
-  }
+    width: 100%;
+}
   
   .cards .icon {
-    width: 15rem; 
-    height: 15rem;
-    object-fit: contain; 
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-  }
+    width: 220px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    object-fit: scale-down;
+    background: transparent;
+}
   
   .cards .socialicon {
     width: 15rem; 
