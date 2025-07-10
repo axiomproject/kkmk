@@ -37,15 +37,15 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     if (import.meta.env.DEV) {
-      console.log('Request:', config.method?.toUpperCase(), config.url);
+      // console.log('Request:', config.method?.toUpperCase(), config.url);
       if (config.data instanceof FormData) {
-        console.log('Sending FormData:', Array.from(config.data.entries()));
+        // console.log('Sending FormData:', Array.from(config.data.entries()));
       }
     }
     return Promise.resolve(config);
   },
   (error: Error) => {
-    console.error('Request error:', error);
+    // console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -55,13 +55,13 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Log the detailed error information
-    console.error('API Error:', {
-      url: error.config?.url,
-      method: error.config?.method,
-      status: error.response?.status,
-      message: error.message,
-      response: error.response?.data
-    });
+    // console.error('API Error:', {
+    //   url: error.config?.url,
+    //   method: error.config?.method,
+    //   status: error.response?.status,
+    //   message: error.message,
+    //   response: error.response?.data
+    // });
 
     // Handle specific error cases
     if (error.response?.status === 401) {

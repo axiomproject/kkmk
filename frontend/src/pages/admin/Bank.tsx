@@ -11,7 +11,7 @@ interface Transaction {
   donor: string;
   date: string;
   verificationStatus: 'pending' | 'verified' | 'rejected';
-  proofOfPayment?: string;
+  proofOfPayment?: string | null;  // Update type to allow null
   remarks?: string;
   verifiedAt?: string;
   verifiedBy?: string;
@@ -33,7 +33,7 @@ interface DonationResponse {
   full_name: string;
   date: string;
   verification_status: string;
-  proof_of_payment?: string;
+  proof_of_payment?: string | null;  // Update type to allow null
   message?: string;
   verified_at?: string;
   verified_by?: string;
@@ -69,10 +69,8 @@ const Bank: React.FC = () => {
           donor: donation.full_name,
           date: donation.date,
           verificationStatus: donation.verification_status,
-          // Fix the image URL by prepending the base URL
-          proofOfPayment: donation.proof_of_payment 
-            ? `${API_BASE_URL}${donation.proof_of_payment}` 
-            : null,
+          // Use Cloudinary URL directly
+          proofOfPayment: donation.proof_of_payment || null,
           remarks: donation.message,
           verifiedAt: donation.verified_at,
           verifiedBy: donation.verified_by,
@@ -83,7 +81,7 @@ const Bank: React.FC = () => {
           email: donation.email,
           contactNumber: donation.contact_number,
           message: donation.message,
-          paymentMethod: donation.payment_method // Include payment method
+          paymentMethod: donation.payment_method
         }));
 
         setTransactions(transformedDonations);
@@ -202,41 +200,53 @@ const Bank: React.FC = () => {
     setShowProofModal(true);
   };
 
+  const handleFileUpload = async (file: File): Promise<string> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload to backend first
+      const uploadResponse = await api.post('/donations/upload-signature', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+
+      if (!uploadResponse.data?.url) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      return uploadResponse.data.url;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  };
+
   const handleAddDonation = async (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const fileInput = form.querySelector('input[name="proofOfPayment"]') as HTMLInputElement;
     const file = fileInput?.files?.[0];
     
-    console.log('Selected file:', file); // Debug log
-    
-    const formData = new FormData();
-    formData.append('fullName', form.fullName.value);
-    formData.append('email', form.email.value);
-    formData.append('contactNumber', form.contactNumber.value);
-    formData.append('amount', form.amount.value);
-    formData.append('message', form.message?.value || '');
-    formData.append('paymentMethod', form.paymentMethod.value);
-    formData.append('date', new Date().toLocaleDateString('en-US'));
-    
-    if (file) {
-      formData.append('proofOfPayment', file);
-      console.log('File appended to form data:', file.name); // Debug log
-    } else {
-      console.log('No file selected'); // Debug log
-    }
-
     try {
-      // Use direct axios instead of the api instance for this specific request
-      // to ensure we have the right configuration for file uploads
-      const response: AxiosResponse<DonationResponse> = await api.post('/donations', 
-        formData, 
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
+      let proofOfPaymentUrl = null;
+      if (file) {
+        proofOfPaymentUrl = await handleFileUpload(file);
+      }
+
+      const donationData = {
+        fullName: form.fullName.value,
+        email: form.email.value,
+        contactNumber: form.contactNumber.value,
+        amount: form.amount.value,
+        message: form.message?.value || '',
+        paymentMethod: form.paymentMethod.value,
+        date: new Date().toLocaleDateString('en-US'),
+        proofOfPayment: proofOfPaymentUrl
+      };
+
+      const response: AxiosResponse<DonationResponse> = await api.post('/donations', donationData);
       const data = response.data;
 
       // Transform the new donation using the response data
@@ -246,24 +256,21 @@ const Bank: React.FC = () => {
         donor: data.full_name,
         date: data.date,
         verificationStatus: data.verification_status as 'pending' | 'verified' | 'rejected',
-        proofOfPayment: data.proof_of_payment 
-          ? `${API_BASE_URL}${data.proof_of_payment}` 
-          : undefined,
-        remarks: data.message,
+        proofOfPayment: data.proof_of_payment || null,
         fullName: data.full_name,
         email: data.email,
         contactNumber: data.contact_number,
         message: data.message,
-        paymentMethod: data.payment_method // Include payment method
+        paymentMethod: data.payment_method
       };
 
-      setTransactions(prev => [...prev, newDonation]);
-      alert('Donation added successfully!');
+      setTransactions(prev => [newDonation, ...prev]);
       setShowAddModal(false);
-      (e.target as HTMLFormElement).reset();
+      form.reset();
+      setActionMessage({ text: 'Donation added successfully!', type: 'success' });
     } catch (error) {
       console.error('Error adding donation:', error);
-      alert('Failed to add donation');
+      setActionMessage({ text: 'Failed to add donation. Please try again.', type: 'error' });
     }
   };
 

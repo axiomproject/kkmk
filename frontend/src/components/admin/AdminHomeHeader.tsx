@@ -1,19 +1,148 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import logo from '../../img/kmlogo.png';
 import { PATHS } from '../../routes/paths';
 import '../../styles/admin/AdminHomeHeader.css';
-import defaultAvatarImg from '../../../../public/images/default-avatar.jpg'; // Add this import
+import defaultAvatarImg from '../../../../public/images/default-avatar.jpg';
+
+const MobileMenu = ({ isOpen, onClose, onNavigate, isStaff, onLogout, user, getProfilePhotoUrl }: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onNavigate: (path: string) => void;
+  isStaff: boolean;
+  onLogout: () => void;
+  user: any;
+  getProfilePhotoUrl: () => string;
+}) => {
+  const handleNavigation = (path: string) => {
+    onNavigate(path);
+    onClose();
+  };
+
+  return (
+    <div className={`mobile-menu ${isOpen ? 'active' : ''}`}>
+      <button className="mobile-menu-close" onClick={onClose}>
+        <span className="material-icons">close</span>
+      </button>
+      <nav className="mobile-nav">
+        <ul className="mobile-nav-list">
+          {/* Profile section at the top */}
+          <li className="mobile-nav-item profile-section" style={{ '--item-index': 0 } as React.CSSProperties}>
+            <div className="mobile-profile-header">
+              <img 
+                src={getProfilePhotoUrl()}
+                alt={user?.name || 'User'}
+                className="mobile-profile-avatar"
+              />
+              <div className="mobile-profile-info">
+                <span className="mobile-profile-name">{user?.name}</span>
+                <span className="mobile-profile-role">{user?.role}</span>
+              </div>
+            </div>
+          </li>
+
+          {/* Admin specific items */}
+          <li className="mobile-nav-item" style={{ '--item-index': 1 } as React.CSSProperties}>
+            <button 
+              className="mobile-nav-button"
+              onClick={() => handleNavigation(isStaff ? PATHS.STAFF.DASHBOARD : PATHS.ADMIN.DASHBOARD)}
+            >
+              {isStaff ? 'Staff Dashboard' : 'Admin Dashboard'}
+            </button>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 2 } as React.CSSProperties}>
+            <button 
+              className="mobile-nav-button"
+              onClick={() => handleNavigation('Forum')}
+            >
+              Forum
+            </button>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 3 } as React.CSSProperties}>
+            <button 
+              className="mobile-nav-button"
+              onClick={() => handleNavigation(PATHS.ADMIN.SETTINGS)}
+            >
+              Settings
+            </button>
+          </li>
+
+          {/* Regular navigation items */}
+          <li className="mobile-nav-item" style={{ '--item-index': 4 } as React.CSSProperties}>
+            <button className="mobile-nav-button">
+              About Us
+            </button>
+            <div className="mobile-dropdown">
+              <button onClick={() => handleNavigation('Story')}>Our Story</button>
+              <button onClick={() => handleNavigation('Partner')}>Partners and Sponsors</button>
+              <button onClick={() => handleNavigation('Team')}>Meet the Team</button>
+              <button onClick={() => handleNavigation('Events')}>Events</button>
+              <button onClick={() => handleNavigation('Map')}>Map</button>
+            </div>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 5 } as React.CSSProperties}>
+            <button className="mobile-nav-button" onClick={() => handleNavigation('Life')}>
+              Life with KM
+            </button>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 6 } as React.CSSProperties}>
+            <button className="mobile-nav-button">
+              Testimonials
+            </button>
+            <div className="mobile-dropdown">
+              <button onClick={() => handleNavigation('Graduates')}>Our Graduates</button>
+              <button onClick={() => handleNavigation('Community')}>Our Community</button>
+            </div>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 7 } as React.CSSProperties}>
+            <button className="mobile-nav-button">
+              How can you help?
+            </button>
+            <div className="mobile-dropdown">
+              <button onClick={() => handleNavigation('Help')}>Help</button>
+              <button onClick={() => handleNavigation(PATHS.STUDENTPROFILE)}>Sponsor A Student</button>
+            </div>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 8 } as React.CSSProperties}>
+            <button className="mobile-nav-button" onClick={() => handleNavigation('Contact')}>
+              Contact Us
+            </button>
+          </li>
+
+          {/* Logout button at the bottom */}
+          <li className="mobile-nav-item" style={{ '--item-index': 9 } as React.CSSProperties}>
+            <button 
+              className="mobile-nav-button logout-button"
+              onClick={() => {
+                onLogout();
+                onClose();
+              }}
+            >
+              Logout
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  );
+};
 
 const AdminHomeHeader = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isStaff = user?.role === 'staff';
-  const defaultProfilePic = defaultAvatarImg; // Update default avatar path
-  const baseUrl = 'http://localhost:5175'; // Add base URL
+  const defaultProfilePic = defaultAvatarImg;
+  const baseUrl = 'http://localhost:5175';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const getImageUrl = (path: string) => {
@@ -44,7 +173,24 @@ const AdminHomeHeader = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isMobileMenuOpen]);
 
-  const toggleMobileMenu = () => {
+  // Effect to handle scroll lock
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.classList.add('body-lock');
+    } else {
+      document.body.classList.remove('body-lock');
+    }
+    
+    return () => {
+      document.body.classList.remove('body-lock');
+    };
+  }, [isMobileMenuOpen]);
+
+  const toggleMobileMenu = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsMobileMenuOpen(!isMobileMenuOpen);
     setShowProfileDropdown(false);
   };
@@ -152,45 +298,67 @@ const AdminHomeHeader = () => {
         </ul>
       </nav>
 
-      <div className="actions-container">
+      <div className="profile-section">
         <div className="profile-dropdown-container" ref={dropdownRef}>
-          <div className="profile-trigger" onClick={() => setShowProfileDropdown(!showProfileDropdown)}>
+          <div 
+            className="profile-trigger"
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+          >
+            <span className="admin-badge">{isStaff ? 'Staff' : 'Admin'}</span>
             <img 
               src={getProfilePhotoUrl()}
               alt={user?.name || 'User'}
-              className="admin-avatar" // or whatever class you're using
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.onerror = null; // Prevent infinite loop
-                target.src = defaultProfilePic;
-              }}
+              className="profile-avatar"
+              style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
             />
-            <span className="admin-name">{user?.name}</span>
-            <span className="material-icons">keyboard_arrow_down</span>
+            <span className="profile-name">{user?.name}</span>
+            <span className="dropdown-arrow">&#9662;</span>
           </div>
+
           <div className={`profile-dropdown-menu ${showProfileDropdown ? 'active' : ''}`}>
             <div className="profile-header">
               <div className="profile-info">
                 <span className="profile-name">{user?.name}</span>
-                <span className="profile-roles">{user?.role}</span>
+                <span className="profile-roles">{isStaff ? 'Staff Member' : 'Administrator'}</span>
               </div>
             </div>
-       
-            <Link to={isStaff ? PATHS.STAFF.DASHBOARD : PATHS.ADMIN.DASHBOARD} className="dropdown-item">
+            <a 
+              className="dropdown-item"
+              onClick={() => {
+                handleNavigation(isStaff ? PATHS.STAFF.DASHBOARD : PATHS.ADMIN.DASHBOARD);
+                setShowProfileDropdown(false);
+              }}
+            >
               {isStaff ? 'Staff Dashboard' : 'Admin Dashboard'}
-            </Link>
-            <div className="dropdown-item" onClick={() => {
-                    navigate('Forum');
-                    setShowProfileDropdown(false);
-                  }}>
-                    Forum
-                  </div>
-            <Link to={PATHS.ADMIN.SETTINGS} className="dropdown-item">
+            </a>
+            <a 
+              className="dropdown-item"
+              onClick={() => {
+                handleNavigation('Forum');
+                setShowProfileDropdown(false);
+              }}
+            >
+              Forum
+            </a>
+            <a 
+              className="dropdown-item"
+              onClick={() => {
+                handleNavigation(PATHS.ADMIN.SETTINGS);
+                setShowProfileDropdown(false);
+              }}
+            >
               Settings
-            </Link>
-            <div className="dropdown-item" onClick={handleLogout}>
+            </a>
+            <a 
+              className="dropdown-item"
+              onClick={() => {
+                handleLogout();
+                setShowProfileDropdown(false);
+              }}
+              style={{ color: '#DF2E38' }}
+            >
               Logout
-            </div>
+            </a>
           </div>
         </div>
       </div>
@@ -204,6 +372,16 @@ const AdminHomeHeader = () => {
         <div></div>
         <div></div>
       </button>
+
+      <MobileMenu 
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        onNavigate={handleNavigation}
+        isStaff={isStaff}
+        onLogout={handleLogout}
+        user={user}
+        getProfilePhotoUrl={getProfilePhotoUrl}
+      />
     </header>
   );
 };

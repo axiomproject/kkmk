@@ -289,6 +289,30 @@ const Help: React.FC = () => {
     alert('Item added to cart!');
   };
 
+  const handleFileUpload = async (file: File): Promise<string> => {
+    try {
+      // First, get a signed upload URL from our backend
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload to backend first
+      const uploadResponse = await api.post('/donations/upload-signature', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+
+      if (!uploadResponse.data?.url) {
+        throw new Error('Failed to get upload URL');
+      }
+
+      return uploadResponse.data.url;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  };
+
   const handleDonationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -306,26 +330,30 @@ const Help: React.FC = () => {
           return;
         }
 
-        // Create form data for file upload
-        const formDataToSend = new FormData();
-        formDataToSend.append('fullName', formData.fullName || '');
-        formDataToSend.append('email', formData.email || '');
-        formDataToSend.append('contactNumber', formData.contactNumber || '');
-        formDataToSend.append('amount', formData.amount.toString());
-        formDataToSend.append('message', formData.message || '');
-        formDataToSend.append('paymentMethod', paymentMethod);
-
-        // If there's a proof of payment file, append it
+        let proofOfPaymentUrl = '';
         if (formData.proofOfPayment) {
-          formDataToSend.append('proofOfPayment', formData.proofOfPayment);
+          try {
+            proofOfPaymentUrl = await handleFileUpload(formData.proofOfPayment);
+          } catch (error) {
+            alert('Failed to upload proof of payment. Please try again.');
+            return;
+          }
         }
 
+        // Create donation data
+        const donationData = {
+          fullName: formData.fullName || '',
+          email: formData.email || '',
+          contactNumber: formData.contactNumber || '',
+          amount: formData.amount.toString(),
+          message: formData.message || '',
+          paymentMethod: paymentMethod,
+          proofOfPayment: proofOfPaymentUrl, // Use the Cloudinary URL
+          date: new Date().toISOString().split('T')[0] // Add current date
+        };
+
         // Submit one-time donation
-        await api.post('/donations/monetary', formDataToSend, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
+        await api.post('/donations', donationData);
 
         alert('One-time donation submitted successfully!');
         
@@ -778,7 +806,7 @@ const Help: React.FC = () => {
                   type="file" 
                   name="proofOfDonation"
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       if (file.size > 5 * 1024 * 1024) {

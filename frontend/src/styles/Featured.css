@@ -6,73 +6,92 @@
   font-size: 1.5em;
 }
 
-.mainfeatured {
-  display: grid;
-  justify-content: center;
+.featured-highlights {
+  padding: 1rem;
+  font-family: Arial, sans-serif;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
-.featured-highlights {
-  padding: 2rem;
-  font-family: Arial, sans-serif;
+.mainfeatured {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 .highlights-header {
-  margin-bottom: 1rem; /* Reduced from 1.5rem to 1rem */
-  display: flex;
-  justify-content: center;
-  gap: 5rem;
-  align-items: center;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  padding: 0;
+  margin-bottom: 2rem;
+  box-sizing: border-box;
+}
+
+.highlights-header .img {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.highlightbg {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  display: block;
 }
 
 .highlightstext {
-  text-align: left;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* Ensures all content aligns to the left */
+  align-items: flex-start;
+  justify-content: center;
   gap: 1rem;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.highlights-header h1 {
-  font-size: 2rem;
-  margin-bottom: 1rem;
-  font-family: 'Poppins';
-  font-weight: bold;
-}
-
-.highlights-header p {
-  font-size: 1.2rem; 
-  margin-bottom: 1rem;
+.highlightstext p {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  margin: 0;
   font-family: 'Poppins';
   font-weight: 600;
-  width: 25rem;
   color: #242424;
+  width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-.highlights-header .explore {
-  font-size: 1.2rem;
-  margin-bottom: 3rem;
-  font-family: 'Poppins';
+.highlightstext .explore {
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
   font-weight: 400;
   color: #696969;
-  width: 28rem;
+  margin-bottom: 1rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
-.highlights-header .report-link {
+.report-link {
   font-size: 1rem;
   font-weight: bold;
   text-decoration: none;
-  transition: all 0.3s ease;
   color: #000 !important;
   font-family: "Poppins";
-  display: inline-block;
-  margin-top: 0.5rem;
-  align-self: flex-start;
-  padding-left: 0;
+  transition: all 0.3s ease;
 }
 
-.highlights-header .report-link:hover {
-  transition: all 0.3s ease;
-  color: #ff0000;
+.report-link:hover {
+  color: #ff0000 !important;
 }
 
 .highlights-grid {
@@ -89,11 +108,6 @@
   overflow: hidden;
   width: 300px;
   text-align: left;
-}
-
-.highlightbg {
-  width: 100%;
-  height: 20rem;
 }
 
 .card-image {
@@ -139,37 +153,33 @@
 }
 
 @media screen and (max-width: 992px) {
-  .highlights-header {
-    flex-direction: column;
-    gap: 2rem;
-    text-align: center;
+  .featured-highlights {
+    padding: 0.5rem;
   }
 
-  .highlights-header p, 
-  .highlights-header .explore {
-    width: 90%;
-    margin: 0 auto;
-    font-size: 1.1rem;
-    line-height: 1.5;
+  .mainfeatured {
+    padding: 0 0.5rem;
+  }
+
+  .highlights-header {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .highlightbg {
+    max-height: 300px;
+    margin-bottom: 1rem;
   }
 
   .highlightstext {
     align-items: center;
     text-align: center;
+    padding: 1rem;
   }
 
-  .highlights-header .report-link {
-    align-self: center;
-    margin-top: 1rem;
-  }
-
-  .card-title {
-    font-size: 1.15rem;
-  }
-
-  .card-description {
-    font-size: 0.95rem;
-    line-height: 1.4;
+  .highlightstext p,
+  .highlightstext .explore {
+    text-align: center;
   }
 }
 
@@ -208,17 +218,73 @@
 }
 
 @media screen and (max-width: 576px) {
+  .featured-highlights {
+    padding: 0.25rem;
+  }
+
+  .mainfeatured {
+    padding: 0 0.25rem;
+  }
+
+  .highlights-header {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .highlightbg {
+    max-height: 250px;
+  }
+
+  .highlightstext {
+    padding-top: 3.5rem;
+  }
+
+  .highlightstext p {
+    font-size: 1rem;
+  }
+
+  .highlightstext .explore {
+    font-size: 0.95rem;
+  }
+
+  .report-link {
+    font-size: 0.9rem;
+  }
+
   .h1Featured {
     font-size: 1.2em;
-    margin-bottom: 0.5rem; /* Reduced from 0.2rem to 0.5rem */
+    margin-bottom: 0.5rem; 
+    margin-top: 1.5rem;
   }
 
   .highlights-header {
     margin-bottom: 0.5rem; /* Reduced from 1rem to 0.5rem */
+    gap: 1rem;
+    padding: 0.5rem;
   }
 
   .highlights-header h1 {
     font-size: 1.75rem;
+  }
+
+  .highlights-header p, 
+  .highlights-header .explore {
+    font-size: 1rem;
+    padding: 0 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .highlightstext {
+    gap: 0.5rem;
+  }
+
+  .highlights-header .report-link {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  .highlightbg {
+    max-height: 15rem;
   }
 
   .card-title {
@@ -254,31 +320,34 @@
 }
 
 @media screen and (max-width: 375px) {
-  .h1Featured {
-    font-size: 1.2em;
-    margin-bottom: 0.35rem; /* Reduced from 0.2rem to 0.35rem */
+  .featured-highlights,
+  .mainfeatured {
+    padding: 0;
   }
 
   .highlights-header {
-    margin-bottom: 0.35rem; /* Reduced from 1rem to 0.35rem */
+    gap: 0.25rem;
   }
 
-  .highlights-header h1 {
-    font-size: 1.4rem;
+  .highlightbg {
+    max-height: 180px;
   }
 
-  .highlights-header p, 
-  .highlights-header .explore {
-    font-size: 0.9rem;
-    line-height: 1.3;
+  .highlightstext {
+    width: 90%;
+    padding: 0.25rem;
   }
 
-  .card-title {
-    font-size: 1rem;
-  }
-
-  .card-description {
+  .highlightstext p {
     font-size: 0.85rem;
+  }
+
+  .highlightstext .explore {
+    font-size: 0.8rem;
+  }
+
+  .report-link {
+    font-size: 0.8rem;
   }
 }
 
@@ -347,5 +416,42 @@
   .card-description {
     font-size: 1rem;
     line-height: 1.45;
+  }
+}
+
+@media screen and (max-width: 455px) {
+  .featured-highlights {
+    padding: 0.25rem 0;
+  }
+
+  .mainfeatured {
+    padding: 0;
+  }
+
+  .highlights-header {
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .highlightbg {
+    max-height: 200px;
+  }
+
+  .highlightstext {
+    padding: 0.5rem;
+    width: 95%;
+    margin: 0 auto;
+  }
+
+  .highlightstext p {
+    font-size: 0.9rem;
+  }
+
+  .highlightstext .explore {
+    font-size: 0.85rem;
+  }
+
+  .report-link {
+    font-size: 0.85rem;
   }
 }
