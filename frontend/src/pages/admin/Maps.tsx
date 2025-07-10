@@ -1,61 +1,79 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  MapContainer, 
-  TileLayer, 
-  Marker, 
-  Popup, 
-  Polygon,
-  useMap,
-  useMapEvents  // Add this import
-} from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMap } from 'react-leaflet';
 import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import api from '../../config/axios'; // Replace axios import
 import L from 'leaflet';
-import { Icon, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 // Remove or comment out this line
 // import 'leaflet.heat';
 import '../../styles/AdminMap.css';
 import { useNavigate } from 'react-router-dom';
 
-// Add this constant for directions URL
+// Import default marker icons
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
+
+// Constants
 const GOOGLE_MAPS_DIRECTIONS_URL = "https://www.google.com/maps/dir/?api=1";
+const KKMK_OFFICE_COORDINATES: [number, number] = [14.717955, 121.107932];
 
-// Import marker icons directly
-import markerIcon2x from '../../img/Emil.jpg';
-import markerIcon from '../../img/hya.jpg';
-import markerShadow from '../../img/jason.jpg';
-
-// Fix for default marker icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow
-});
-
-// Create a default marker icon
-const defaultIcon = new Icon({
-  iconUrl: '../../img/Emil.jpg',
-  iconRetinaUrl: '../../img/hya.jpg',
-  shadowUrl: '../../img/jason.jpg',
+// Initialize Leaflet default icon
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  iconRetinaUrl: iconRetina,
+  shadowUrl: iconShadow,
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
+  tooltipAnchor: [16, -28],
   shadowSize: [41, 41]
 });
 
-const KKMK_OFFICE_COORDINATES: [number, number] = [14.717955, 121.107932];
+L.Marker.prototype.options.icon = DefaultIcon;
+
+
 
 interface LocationMarker {
   id: number;
   lat: number;
   lng: number;
   name: string;
-  type: 'church' | 'event' | 'scholar' | 'office';  // Add 'office' type
+  type: 'event' | 'scholar' | 'office';  // Remove 'church' type
   details: any;  // Store any additional type-specific data
   intensity?: number;  // Add this for heatmap
 }
+
+
+// Create marker icons
+const markerIcons = {
+  office: L.icon({
+    iconUrl: `${window.location.origin}/images/kkmk-logo.png`,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+    popupAnchor: [0, -20],
+    className: 'office-marker'
+  }),
+  scholar: L.icon({
+    iconUrl: `${window.location.origin}/images/default-avatar.jpg`,
+    iconSize: [35, 35],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -17],
+    className: 'scholar-marker'
+  }),
+  event: L.icon({
+    iconUrl: `${window.location.origin}/images/default-event.png`,
+    iconSize: [35, 35],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -17],
+    className: 'event-marker'
+  })
+};
+
+
+const getMarkerIcon = (type: 'event' | 'scholar' | 'office') => {
+  return markerIcons[type] || markerIcons.event;
+};
 
 // Update the interface for events with coordinates
 interface DBEvent {
@@ -70,24 +88,6 @@ interface DBEvent {
   image?: string;
 }
 
-interface Church {
-  id: number;
-  name: string;
-  lat: number;
-  lng: number;
-  address: string;
-}
-
-interface Event {
-  id: number;
-  name: string;
-  lat: number;
-  lng: number;
-  address: string;
-  date: string;
-  description: string;
-}
-
 interface Scholar {
   id: number;
   name: string;
@@ -99,13 +99,7 @@ interface Scholar {
 
 // Add this new component before AdminMap
 const PersistentPopup: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const map = useMapEvents({
-    popupclose: (e: L.PopupEvent) => {
-      if (e.popup && 'openOn' in e.popup) {
-        e.popup.openOn(map);
-      }
-    }
-  });
+  const map = useMap();
   return null;
 };
 
@@ -117,7 +111,6 @@ enum MapType {
 enum LocationType {
   ALL = 'all',
   EVENTS = 'events',
-  CHURCHES = 'churches',
   SCHOLARS = 'scholars',
   OFFICE = 'office'  // Add this line
 }
@@ -231,40 +224,36 @@ interface SectorStatistics {
   SOUTH: SectorStats;
 }
 
-const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, number][], sectorData: Record<string, SectorData> }> = ({ polygon, sectorData }) => {
+const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, number][], sectorData: Record<string, SectorData> }> = ({ points, polygon, sectorData }) => {
   const map = useMap();
   const layersRef = useRef<any[]>([]);
   const legendRef = useRef<any>(null);
   const statsLegendRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!map) return;
+    if (!map || !polygon || polygon.length === 0) return;
 
     try {
-
+      // Clear existing layers
       if (layersRef.current) {
         layersRef.current.forEach(layer => {
-          if (layer) map.removeLayer(layer);
+          if (layer && map.hasLayer(layer)) {
+            map.removeLayer(layer);
+          }
         });
         layersRef.current = [];
       }
-      
-     
+
+      // Remove existing legends
       if (legendRef.current) {
         legendRef.current.remove();
         legendRef.current = null;
       }
-      
+
       if (statsLegendRef.current) {
         statsLegendRef.current.remove();
         statsLegendRef.current = null;
       }
-
-
-      const existingLegends = document.querySelectorAll('.sector-progress-container, .stats-legend');
-      existingLegends.forEach(element => {
-        element.parentNode?.removeChild(element);
-      });
 
       // Calculate total scholars and events for percentages
       const totalScholars = Object.values(sectorData).reduce((sum, data) => 
@@ -524,46 +513,55 @@ const HeatmapLayer: React.FC<{ points: LocationMarker[], polygon: [number, numbe
 // Add Payatas coordinates constant at the top level
 const PAYATAS_COORDINATES: [number, number] = [14.7147, 121.1037];
 
-// Update this component to allow free navigation
-const MapReset: React.FC<{ mapType: MapType }> = ({ mapType }) => {
+interface MapResetProps {
+  mapType: MapType;
+  markers: LocationMarker[];
+}
+
+const MapReset: React.FC<MapResetProps> = ({ mapType, markers }) => {
   const map = useMap();
 
-  useEffect(() => {
-    if (!map) return;
+  const fitMapToBounds = () => {
+    if (markers.length === 0) {
+      // If no markers, center on office location
+      map.setView(KKMK_OFFICE_COORDINATES, 15);
+      return;
+    }
 
-    const bounds = L.latLngBounds(PAYATAS_POLYGON);
+    // Create bounds from all valid markers
+    const validMarkers = markers.filter((marker: LocationMarker) => 
+      typeof marker.lat === 'number' && 
+      typeof marker.lng === 'number' &&
+      !isNaN(marker.lat) && 
+      !isNaN(marker.lng)
+    );
+
+    if (validMarkers.length === 0) {
+      // If no valid markers, center on office location
+      map.setView(KKMK_OFFICE_COORDINATES, 15);
+      return;
+    }
+
+    const bounds = L.latLngBounds(validMarkers.map((marker: LocationMarker) => [marker.lat, marker.lng]));
     
-    const fitMapToBounds = () => {
-      // Initial view centered on Payatas polygon
+    // Add office location to bounds
+    bounds.extend(KKMK_OFFICE_COORDINATES);
+
+    // Check if bounds are valid before fitting
+    if (bounds.isValid()) {
       map.fitBounds(bounds, {
-        padding: [35, 35],
-        maxZoom: 13.5,
-        animate: true,
-        duration: 1
+        padding: [50, 50],
+        maxZoom: 16
       });
-      
-      // Remove restrictions for both map types
-      map.setMinZoom(3); // Allow zooming out to see the world
-      map.setMaxZoom(18); // Allow zooming in for details
-      map.setMaxBounds(undefined); // Remove bounds restriction completely
-    };
+    } else {
+      // Fallback to office location if bounds are invalid
+      map.setView(KKMK_OFFICE_COORDINATES, 15);
+    }
+  };
 
-    // Initial fit
+  useEffect(() => {
     fitMapToBounds();
-
-    // Add resize handler
-    const resizeObserver = new ResizeObserver(() => {
-      // Don't refit bounds on resize to allow free navigation
-      // Just ensure the map fills the container
-      map.invalidateSize();
-    });
-
-    resizeObserver.observe(map.getContainer());
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [map, mapType]);
+  }, [mapType, markers]);
 
   return null;
 };
@@ -602,13 +600,7 @@ interface DistributionHotspot {
   lastDistribution: string;
 }
 
-const officeIcon = new Icon({
-  iconUrl: '/images/kkmk-logo.png', // Make sure to add this image to your public folder
-  iconSize: [40, 40],
-  iconAnchor: [20, 20],
-  popupAnchor: [0, -20],
-  className: 'office-marker'
-});
+// getMarkerIcon function is defined at the top of the file
 
 // First, create a constant for the office marker outside the component:
 const OFFICE_MARKER: LocationMarker = {
@@ -646,7 +638,8 @@ const AdminMap: React.FC = () => {
   const [verifiedScholars, setVerifiedScholars] = useState<Scholar[]>([]);
   const [scholarDistributions, setScholarDistributions] = useState<{[key: number]: Distribution[]}>({});
   const [scholarDistributionData, setScholarDistributionData] = useState<ScholarDistributionItem[]>([]);
-
+  const [filteredMarkers, setFilteredMarkers] = useState<LocationMarker[]>([]);
+  
   // Add Payatas, Quezon City coordinates
   const PAYATAS_COORDINATES: [number, number] = [14.7164, 121.1194];
   const DEFAULT_ZOOM = 14; // Closer zoom level for better area visibility
@@ -721,7 +714,7 @@ const AdminMap: React.FC = () => {
   const CHURCH_LOCATION: [number, number] = [14.715425, 121.104446]; // Ascension of Our Lord Parish coordinates
 
   // Create custom church icon
-  const churchIcon = new Icon({
+  const churchIcon = new L.Icon({
     iconUrl: '/images/jason.jpg', // Add a church icon image to your public folder
     iconSize: [32, 32],
     iconAnchor: [16, 32],
@@ -729,8 +722,8 @@ const AdminMap: React.FC = () => {
   });
 
   // Add new scholar icon
-  const scholarIcon = new Icon({
-    iconUrl: '/images/default-avatar.jpg',
+  const scholarIcon = new L.Icon({
+    iconUrl: `${window.location.origin}/images/default-avatar.jpg`,
     iconSize: [35, 35],
     iconAnchor: [17, 17],
     popupAnchor: [0, -17],
@@ -784,39 +777,28 @@ const AdminMap: React.FC = () => {
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const [churchesRes, eventsRes] = await Promise.all([
-          api.get('/churches'),
-          api.get('/events/locations')
+        // Remove churches from the Promise.all
+        const [eventsRes] = await Promise.all([
+          api.get('/events')
         ]);
 
-        const churches = churchesRes.data;
+        // Remove churches from data processing
         const events = eventsRes.data;
 
-        // Filter out events that don't have coordinates
-        const validEvents = events.filter((e: any) => e.lat && e.lng);
-
-        const allMarkers: LocationMarker[] = [
+        const markers: LocationMarker[] = [
           OFFICE_MARKER,
-          ...churches.map((c: any) => ({
-            id: c.id,
-            lat: c.lat,
-            lng: c.lng,
-            name: c.name,
-            type: 'church' as const,
-            details: c
-          })),
-          ...validEvents.map((e: any) => ({
+          ...events.map((e: any) => ({
             id: e.id,
-            lat: e.lat,
-            lng: e.lng,
-            name: e.name || e.title,
+            lat: parseFloat(e.latitude),
+            lng: parseFloat(e.longitude),
+            name: e.title,
             type: 'event' as const,
             details: e
           }))
         ];
 
-        setMarkers(allMarkers);
-        setActiveMarkers(allMarkers.length); // Update active markers count
+        setMarkers(markers);
+        setActiveMarkers(markers.length); // Update active markers count
         setLoading(false);
       } catch (error) {
         console.error('Error fetching locations:', error);
@@ -951,7 +933,7 @@ const AdminMap: React.FC = () => {
       const heatData = markers.map(marker => ({
         lat: marker.lat,
         lng: marker.lng,
-        intensity: marker.type === 'church' ? 1.0 : 0.5
+        intensity: marker.type === 'scholar' ? 1.0 : 0.5
       }));
       setHeatmapData(heatData);
     }
@@ -960,7 +942,6 @@ const AdminMap: React.FC = () => {
   useEffect(() => {
     const filteredMarkers = markers.filter(marker => {
       if (locationType === LocationType.ALL) return true;
-      if (locationType === LocationType.CHURCHES) return marker.type === 'church';
       if (locationType === LocationType.EVENTS) return marker.type === 'event';
       if (locationType === LocationType.SCHOLARS) return marker.type === 'scholar';
       if (locationType === LocationType.OFFICE) return marker.type === 'office';
@@ -986,7 +967,7 @@ const AdminMap: React.FC = () => {
           details: {
             ...scholar,
             // Use the profile_photo directly as it's already properly formatted
-            profile_photo: scholar.profile_photo || '/images/default-avatar.jpg'
+            profile_photo: scholar.profile_photo || `${window.location.origin}/images/default-avatar.jpg`
           }
         }));
 
@@ -1089,6 +1070,25 @@ const AdminMap: React.FC = () => {
     });
   };
 
+  const createPopupContent = (marker: LocationMarker) => {
+    return (
+      <div className="marker-popup">
+        <h3>{marker.name}</h3>
+        {marker.type === 'event' && (
+          <>
+            <p>Date: {marker.details.date}</p>
+            <p>Address: {marker.details.address}</p>
+            <p>{marker.details.description}</p>
+          </>
+        )}
+        {marker.type === 'scholar' && renderScholarPopup(marker)}
+        {marker.type === 'office' && (
+          <p>KKMK Main Office</p>
+        )}
+      </div>
+    );
+  };
+
   const renderStandardMap = () => (
     <>
       <TileLayer
@@ -1143,7 +1143,7 @@ const AdminMap: React.FC = () => {
       .slice(0, 3); // Show only last 3 distributions
 
     // Improved profile photo handling with BASE_URL
-    let profilePhotoUrl = '/images/default-avatar.jpg';
+    let profilePhotoUrl = `${window.location.origin}/images/default-avatar.jpg`;
     const photo = marker.details.profile_photo;
 
     if (photo) {
@@ -1186,7 +1186,7 @@ const AdminMap: React.FC = () => {
               onError={(e) => {
                 console.error('Failed to load image:', profilePhotoUrl);
                 const target = e.target as HTMLImageElement;
-                target.src = '/images/default-avatar.jpg';
+                target.src = `${window.location.origin}/images/default-avatar.jpg`;
                 target.onerror = null;
               }}
             />
@@ -1240,140 +1240,9 @@ const AdminMap: React.FC = () => {
     );
   };
 
-  const renderMapContent = () => {
-    // Don't render markers in heatmap mode
-    if (mapType === MapType.HEATMAP) {
-      return null;
-    }
-
-    const visibleMarkers = markers.filter(marker => {
-      if (locationType === LocationType.ALL) return true;
-      if (locationType === LocationType.CHURCHES) return marker.type === 'church';
-      if (locationType === LocationType.EVENTS) return marker.type === 'event';
-      if (locationType === LocationType.SCHOLARS) return marker.type === 'scholar';
-      if (locationType === LocationType.OFFICE) return marker.type === 'office';
-      return false;
-    });
-
-    return visibleMarkers.map(marker => {
-      const lat = Number(marker.lat);
-      const lng = Number(marker.lng);
-
-      if (isNaN(lat) || isNaN(lng)) {
-        console.warn('Invalid coordinates for marker:', marker);
-        return null;
-      }
-
-      // Create custom icon for events using their image
-      const getCustomIcon = () => {
-        if (marker.type === 'office') {
-          return officeIcon;
-        }
-        if (marker.type === 'event') {
-          const imageUrl = marker.details.image;
-          console.log('Using image URL for marker:', imageUrl);
-          
-          return new Icon({
-            iconUrl: imageUrl,
-            iconSize: [45, 45],
-            iconAnchor: [22, 22],
-            popupAnchor: [0, -22],
-            className: 'custom-event-marker',
-            tooltipAnchor: [16, -28]
-          });
-        }
-        
-        if (marker.type === 'scholar') {
-          // Create custom scholar icon using their profile photo with BASE_URL
-          let iconUrl = '/images/default-avatar.jpg';
-          const photo = marker.details.profile_photo;
-
-          if (photo) {
-            if (photo.startsWith('data:image')) {
-              iconUrl = photo;
-            } else if (photo.startsWith('http')) {
-              iconUrl = photo;
-            } else if (photo.startsWith('/uploads/')) {
-              iconUrl = `${API_BASE_URL}${photo}`;
-            }
-          }
-
-          return new Icon({
-            iconUrl: iconUrl,
-            iconSize: [35, 35],
-            iconAnchor: [17, 17],
-            popupAnchor: [0, -17],
-            className: 'scholar-marker',
-          });
-        }
-        
-        return marker.type === 'church' ? churchIcon : defaultIcon;
-      };
-
-      return (
-        <Marker
-          key={`${marker.type}-${marker.id}`}
-          position={[lat, lng]}
-          icon={getCustomIcon()}
-        >
-          <Popup
-            // Add these popup options for scholar type
-            {...(marker.type === 'scholar' ? {
-              minWidth: 280,
-              maxWidth: 280,
-              className: 'scholar-popup-wrapper',
-              closeButton: true,
-            } : {
-              className: ''
-            })}
-          >
-            <div className={`marker-popup ${marker.type} ${marker.type === 'scholar' ? 'scholar-popup' : ''}`}>
-              {marker.type === 'scholar' ? (
-                renderScholarPopup(marker)
-              ) : (
-                // ... existing popup content for other types ...
-                <>
-                  {marker.type === 'event' && (
-                    <div className="marker-image-container">
-                      <img
-                        src={marker.details.image}
-                        alt={marker.name}
-                        className="marker-event-image"
-                        onError={(e) => {
-                          console.error('Failed to load event image:', marker.details.rawImagePath);
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/images/default-event.jpg';
-                          target.onerror = null; // Prevent infinite error loops
-                        }}
-                      />
-                    </div>
-                  )}
-                  <h3>{marker.name}</h3>
-                  {marker.type === 'event' && (
-                    <>
-                      <p><strong>Date:</strong> {marker.details.date}</p>
-                      <p><strong>Location:</strong> {marker.details.address}</p>
-                      <p><strong>Description:</strong> {marker.details.description}</p>
-                      <button 
-                        className="view-details-btn"
-                        onClick={() => handleViewEventDetails(marker.details)}
-                      >
-                        Edit Event Details
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-          </Popup>
-        </Marker>
-      );
-    }).filter(Boolean); // Remove null values
-  };
-
   // Update the MapContainer settings
   const mapSettings = {
-    center: PAYATAS_COORDINATES,
+    center: KKMK_OFFICE_COORDINATES,
     zoom: 15,
     className: `admin-map ${mapType === MapType.HEATMAP ? 'heatmap-mode' : ''}`,
     zoomControl: true,
@@ -1775,35 +1644,37 @@ const handleDistribute = (itemId: number) => {
     <div className={`admin-map-container ${mapType === MapType.HEATMAP ? 'heatmap-mode' : ''}`}>
       <div className="map-header">
         <h1 className='location-h1'>Location Map Overview</h1>
-        <div className="map-type-selector">
-          <button 
-            className={`map-type-btn ${mapType === MapType.STANDARD ? 'active' : ''}`}
-            onClick={() => {
-              setMapType(MapType.STANDARD);
-            }}
-          >
-            Standard Map
-          </button>
-          <button 
-            className={`map-type-btn ${mapType === MapType.HEATMAP ? 'active' : ''}`}
-            onClick={() => setMapType(MapType.HEATMAP)}
-          >
-            Heatmap View
-          </button>
+        <div className="map-controls">
+          <div className="map-type-selector">
+            <button 
+              className={`map-type-btn ${mapType === MapType.STANDARD ? 'active' : ''}`}
+              onClick={() => {
+                setMapType(MapType.STANDARD);
+              }}
+            >
+              Standard Map
+            </button>
+            <button 
+              className={`map-type-btn ${mapType === MapType.HEATMAP ? 'active' : ''}`}
+              onClick={() => setMapType(MapType.HEATMAP)}
+            >
+              Heatmap View
+            </button>
+          </div>
+          <div className="map-filters">
+            <select 
+              value={locationType}
+              onChange={(e) => setLocationType(e.target.value as LocationType)}
+              className="location-filter"
+            >
+              <option value={LocationType.ALL}>All Locations</option>
+              <option value={LocationType.EVENTS}>Events</option>
+              <option value={LocationType.SCHOLARS}>Scholars</option>
+              <option value={LocationType.OFFICE}>Main Office</option>
+            </select>
+          </div>
+          {renderFilterControls()}
         </div>
-      <div className="map-filters">
-          <select 
-            value={locationType}
-            onChange={(e) => setLocationType(e.target.value as LocationType)}
-            className="location-filter"
-          >
-            <option value={LocationType.ALL}>All Locations</option>
-            <option value={LocationType.EVENTS}>Events</option>
-            <option value={LocationType.SCHOLARS}>Scholars</option>
-            <option value={LocationType.OFFICE}>Main Office</option>
-          </select>
-        </div>
-        {renderFilterControls()}
       </div>
 
       {loading ? (
@@ -1811,55 +1682,103 @@ const handleDistribute = (itemId: number) => {
       ) : (
         <>
           <div className="map-content">
-            <MapContainer {...mapSettings}>
-              <MapReset mapType={mapType} />
+            <MapContainer 
+              style={{ height: '100%', width: '100%' }}
+              center={mapSettings.center ?? PAYATAS_COORDINATES}
+              zoom={mapSettings.zoom ?? 15}
+              scrollWheelZoom={mapSettings.scrollWheelZoom ?? true}
+            >
+              <MapReset mapType={mapType} markers={filteredMarkers} />
               {mapType === MapType.STANDARD ? (
                 <>
-                  {renderStandardMap()}
-                  {renderMapContent()}
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  />
+                  {PAYATAS_POLYGON && PAYATAS_POLYGON.length > 0 && (
+                    <Polygon
+                      positions={PAYATAS_POLYGON}
+                      pathOptions={{
+                        color: '#374151',
+                        fillColor: 'transparent',
+                        weight: 2,
+                        dashArray: '5, 10'
+                      }}
+                    >
+                      <Popup>
+                        <h4>Payatas Boundary</h4>
+                      </Popup>
+                    </Polygon>
+                  )}
+                  {filteredMarkers.map(marker => (
+                    <Marker
+                      key={`${marker.type}-${marker.id}`}
+                      position={[marker.lat, marker.lng]}
+                      icon={getMarkerIcon(marker.type)}
+                    >
+                      <Popup>
+                        <div dangerouslySetInnerHTML={{ __html: createPopupContent(marker) }} />
+                      </Popup>
+                    </Marker>
+                  ))}
                 </>
               ) : (
                 <>
-                  {renderHeatmap()}
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  />
+                  {PAYATAS_POLYGON && PAYATAS_POLYGON.length > 0 && (
+                    <Polygon
+                      positions={PAYATAS_POLYGON}
+                      pathOptions={{
+                        color: '#FF0000',
+                        fillColor: 'transparent',
+                        weight: 2
+                      }}
+                    />
+                  )}
+                  <HeatmapLayer 
+                    points={filteredMarkers}
+                    polygon={PAYATAS_POLYGON}
+                    sectorData={sectorData}
+                  />
                 </>
               )}
             </MapContainer>
-            
-            {/* Sector stats panel */}
-            <div className="sector-stats-panel">
-              <h3>Area Statistics</h3>
-              {Object.entries(sectorData).map(([name, data]) => (
-                <div key={name} className="sector-stat-block">
-                  <div className="sector-stat-header">
-                    <span className="color-dot" style={{ backgroundColor: PAYATAS_SECTORS[name].color }}></span>
-                    <h4>{PAYATAS_SECTORS[name].name}</h4>
-                  </div>
-                  <div className="sector-stat-content">
-                    <div className="stat-row">
-                      <span>Scholars</span>
-                      <strong>{data.scholars.length}</strong>
-                    </div>
-                    <div className="stat-row">
-                      <span>Events</span>
-                      <strong>{data.events.length}</strong>
-                    </div>
-                    <div className="stat-row">
-                      <span>Distributions</span>
-                      <strong>{data.distributions}</strong>
-                    </div>
-                    <div className="distribution-percentage">
-                      {data.distributionPercentage.toFixed(1)}% of total distributions
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
-          {/* Render inventory panel */}
-          {renderInventoryPanel()}
+          {/* Sector stats panel */}
+          <div className="sector-stats-panel">
+            <h3>Area Statistics</h3>
+            {Object.entries(sectorData).map(([name, data]) => (
+              <div key={name} className="sector-stat-block">
+                <div className="sector-stat-header">
+                  <span className="color-dot" style={{ backgroundColor: PAYATAS_SECTORS[name].color }}></span>
+                  <h4>{PAYATAS_SECTORS[name].name}</h4>
+                </div>
+                <div className="sector-stat-content">
+                  <div className="stat-row">
+                    <span>Scholars</span>
+                    <strong>{data.scholars.length}</strong>
+                  </div>
+                  <div className="stat-row">
+                    <span>Events</span>
+                    <strong>{data.events.length}</strong>
+                  </div>
+                  <div className="stat-row">
+                    <span>Distributions</span>
+                    <strong>{data.distributions}</strong>
+                  </div>
+                  <div className="distribution-percentage">
+                    {data.distributionPercentage.toFixed(1)}% of total distributions
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-          {/* Add the scholar distribution panel */}
+          {renderInventoryPanel()}
           {renderScholarDistributionPanel()}
         </>
       )}

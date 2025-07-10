@@ -49,10 +49,11 @@ app.use((req, res, next) => {
 });
 
 // Public routes
-app.use('/api/events', eventRoutes); // This will make GET /api/events public
 app.use('/api/auth', authRoutes);
+app.use('/api/events', eventRoutes); // This will make GET /api/events public
 app.use('/api/contact', contactRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/content', contentRoutes);
 
 // Protected routes
 app.use('/api/admin', authMiddleware, adminRoutes);
@@ -63,7 +64,6 @@ app.use('/api/scholars', authMiddleware, scholarRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/forum', authMiddleware, forumRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);
-app.use('/api/content', authMiddleware, contentRoutes);
 app.use('/api/geocode', authMiddleware, geocodeRoutes);
 app.use('/api/inventory', authMiddleware, inventoryRoutes);
 
