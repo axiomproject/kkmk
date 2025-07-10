@@ -148,30 +148,18 @@ const EventPage: React.FC = () => {
     // Return default image if image url is null, undefined, or empty string
     if (!imageUrl) return defaultImage;
     
-    // Return the image URL if it's a valid URL
+    // Return the image URL if it's a Cloudinary URL or any other full URL
     if (imageUrl.startsWith('http')) return imageUrl;
     
-    // For debugging
-    console.log(`Processing image path: ${imageUrl}`);
-
-    // Check if it's already an absolute path from the server
-    if (imageUrl.startsWith('/uploads')) {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
-      console.log(`Resolving with base URL: ${baseUrl}${imageUrl}`);
-      return `${baseUrl}${imageUrl}`;
-    }
-    
-    // If it's a relative path, append API_URL and event uploads path
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
-    console.log(`Resolving relative path: ${baseUrl}/uploads/events/${imageUrl}`);
-    return `${baseUrl}/uploads/events/${imageUrl}`;
+    // Default fallback
+    return defaultImage;
   }
 
   // Modified fetchEvents function to handle first-name-only feedback
 const fetchEvents = async () => {
   try {
     setIsLoading(true);
-    // Use the public endpoint without auth requirements - notice no /api prefix
+    // Use the correct API endpoint with /api prefix
     const response = await api.get<BackendEvent[]>('/events');
     console.log('Raw event data:', response.data);
 

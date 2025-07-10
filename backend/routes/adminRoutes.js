@@ -1,56 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
-const scholarController = require('../controllers/scholarController'); // Add this line
+const scholarController = require('../controllers/scholarController');
 const adminModel = require('../models/adminModel');
 const roleAuth = require('../middleware/roleAuth');
 const eventController = require('../controllers/eventController');
-const multer = require('multer');
-const path = require('path');
-const authMiddleware = require('../middleware/authMiddleware'); // Add this line
-const db = require('../config/db'); // Add this line
-const bcrypt = require('bcryptjs'); // Add this line
-const fs = require('fs'); // Add this line
+const authMiddleware = require('../middleware/authMiddleware');
+const db = require('../config/db');
+const bcrypt = require('bcryptjs');
+const { uploads } = require('../config/cloudinaryConfig');
 
 // Add this constant for sponsor routes
 const authenticateToken = authMiddleware;
 
 // Near the top of the file, add this line to define authenticateAdmin
 const authenticateAdmin = roleAuth(['admin']); // This creates a middleware that only allows admin role
-
-// Configure multer for file upload
-const profileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const userRole = req.user.role;
-    const uploadDir = `uploads/${userRole}`;
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const userRole = req.user.role;
-    cb(null, `${userRole}-${req.user.id}-${Date.now()}${path.extname(file.originalname)}`);
-  }
-});
-
-const profileUpload = multer({ 
-  storage: profileStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  }
-});
 
 // Ensure only admin users can access these routes
 router.use(authenticateToken, (req, res, next) => {
@@ -60,90 +24,66 @@ router.use(authenticateToken, (req, res, next) => {
   next();
 });
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    console.log('Multer processing file:', file.fieldname);
-    // Create specific directory for file type
-    let uploadPath = 'uploads';
-    
-    // Use a dedicated path for volunteer evidence files
-    if (file.fieldname === 'skillEvidence') {
-      uploadPath = 'uploads/volunteer-evidence';
-      console.log('Using path for skill evidence:', uploadPath);
-    } else if (file.fieldname === 'adminPhoto') {
-      uploadPath = 'uploads/admin';
-    }
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadPath)) {
-      console.log('Creating directory:', uploadPath);
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    // Create a unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const filename = file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname);
-    console.log('Generated filename:', filename);
-    cb(null, filename);
-  }
-});
-
-// Set file filter for allowed file types
-const fileFilter = (req, file, cb) => {
-  console.log('Checking file type:', file.mimetype);
-  // Accept common document and image types
-  if (
-    file.mimetype === 'application/pdf' || 
-    file.mimetype === 'image/jpeg' || 
-    file.mimetype === 'image/png' ||
-    file.mimetype === 'image/jpg'
-  ) {
-    cb(null, true);
-  } else {
-    console.log('Rejected file with mimetype:', file.mimetype);
-    cb(new Error('Invalid file type. Only PDF, JPEG, and PNG are allowed.'), false);
-  }
-};
-
-// Configure multer upload
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  },
-  fileFilter: fileFilter
-});
-
-// Configure multipart form parser for volunteer creation
-const volunteerUpload = upload.fields([
-  { name: 'skillEvidence', maxCount: 1 }
-]);
-
-// Add logging middleware for all multipart requests
-router.use((req, res, next) => {
-  if (req.headers['content-type']?.includes('multipart/form-data')) {
-    console.log('Multipart form detected:', {
-      path: req.path,
-      method: req.method,
-      contentType: req.headers['content-type']
-    });
-  }
-  next();
-});
-
 // User management
 router.get('/users', roleAuth(['admin', 'staff']), adminController.getUsers);
 router.put('/users/:id', roleAuth(['admin', 'staff']), adminController.updateUser);
 router.delete('/users/:id', roleAuth(['admin', 'staff']), adminController.deleteUser);
 
+// Profile photo routes using Cloudinary
+router.put('/profile-photo/:id', roleAuth(['admin']), uploads.admin.single('profilePhoto'), adminController.updateProfilePhoto);
+router.put('/profile/:id', roleAuth(['admin']), uploads.admin.single('profilePhoto'), adminController.updateAdminProfile);
 
-// Volunteer management - Update these routes
+// Add profile update route
+router.put('/profile', 
+  authMiddleware,
+  roleAuth(['admin', 'staff']),
+  async (req, res) => {
+    try {
+      const { name, email, currentPassword, newPassword } = req.body;
+      const { role, id } = req.user;
+      const tableName = role === 'admin' ? 'admin_users' : 'staff_users';
+
+      // Get current user data
+      const userResult = await db.query(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
+      const user = userResult.rows[0];
+
+      // Verify current password
+      const validPassword = await bcrypt.compare(currentPassword, user.password);
+      if (!validPassword) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+
+      // Prepare update query
+      let updateQuery = `
+        UPDATE ${tableName}
+        SET name = $1, email = $2
+      `;
+      let queryParams = [name, email];
+
+      // Add password update if provided
+      if (newPassword) {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        updateQuery += `, password = $${queryParams.length + 1}`;
+        queryParams.push(hashedPassword);
+      }
+
+      // Add WHERE clause and RETURNING
+      updateQuery += ` WHERE id = $${queryParams.length + 1}
+                      RETURNING id, name, email, profile_photo, role`;
+      queryParams.push(id);
+
+      const result = await db.query(updateQuery, queryParams);
+      res.json({ user: result.rows[0] });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
+  }
+);
+
+// Volunteer management
 router.get('/volunteers', roleAuth(['admin', 'staff']), adminController.getVolunteers);
-router.post('/volunteers', roleAuth(['admin', 'staff']), volunteerUpload, adminController.createVolunteer);
+router.post('/volunteers', roleAuth(['admin', 'staff']), uploads.admin.single('skillEvidence'), adminController.createVolunteer);
 
 // Move bulk delete BEFORE the /:id routes
 router.delete('/volunteers/bulk', roleAuth(['admin', 'staff']), async (req, res) => {
@@ -173,12 +113,12 @@ router.delete('/volunteers/bulk', roleAuth(['admin', 'staff']), async (req, res)
   }
 });
 
-// Update this route to include the file upload middleware
+// Update volunteer routes
 router.get('/volunteers/:id', roleAuth(['admin', 'staff']), adminController.getVolunteerById);
-router.put('/volunteers/:id', roleAuth(['admin', 'staff']), volunteerUpload, adminController.updateVolunteer);
+router.put('/volunteers/:id', roleAuth(['admin', 'staff']), uploads.admin.single('skillEvidence'), adminController.updateVolunteer);
 router.delete('/volunteers/:id', roleAuth(['admin', 'staff']), adminController.deleteVolunteer);
 
-// Staff management (admin only) - Reorder routes to put bulk delete first
+// Staff management (admin only)
 router.get('/staff', roleAuth(['admin']), adminController.getStaffMembers);
 router.post('/staff', roleAuth(['admin']), adminController.createStaffMember);
 
@@ -289,87 +229,6 @@ router.get('/items-distributed', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Failed to get items distributed count' });
   }
 });
-
-// Add the profile photo upload route
-router.post('/profile-photo', 
-  authMiddleware, // Add main auth middleware first
-  roleAuth(['admin', 'staff']), 
-  profileUpload.single('profilePhoto'), 
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
-      }
-
-      const { role, id } = req.user;
-      const filePath = `/uploads/${role}/${req.file.filename}`;
-      const tableName = role === 'admin' ? 'admin_users' : 'staff_users';
-
-      // Replace db.one with db.query
-      const result = await db.query(
-        `UPDATE ${tableName} 
-         SET profile_photo = $1 
-         WHERE id = $2 
-         RETURNING id, name, email, profile_photo, role`,
-        [filePath, id]
-      );
-
-      res.json({ user: result.rows[0] });
-    } catch (error) {
-      console.error('Error updating profile photo:', error);
-      res.status(500).json({ error: 'Failed to update profile photo' });
-    }
-  }
-);
-
-// Add profile update route
-router.put('/profile', 
-  authMiddleware,
-  roleAuth(['admin', 'staff']),
-  async (req, res) => {
-    try {
-      const { name, email, currentPassword, newPassword } = req.body;
-      const { role, id } = req.user;
-      const tableName = role === 'admin' ? 'admin_users' : 'staff_users';
-
-      // Get current user data - replace db.one with db.query
-      const userResult = await db.query(`SELECT * FROM ${tableName} WHERE id = $1`, [id]);
-      const user = userResult.rows[0];
-
-      // Verify current password
-      const validPassword = await bcrypt.compare(currentPassword, user.password);
-      if (!validPassword) {
-        return res.status(401).json({ error: 'Current password is incorrect' });
-      }
-
-      // Prepare update query
-      let updateQuery = `
-        UPDATE ${tableName}
-        SET name = $1, email = $2
-      `;
-      let queryParams = [name, email];
-
-      // Add password update if provided
-      if (newPassword) {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        updateQuery += `, password = $${queryParams.length + 1}`;
-        queryParams.push(hashedPassword);
-      }
-
-      // Add WHERE clause and RETURNING
-      updateQuery += ` WHERE id = $${queryParams.length + 1}
-                      RETURNING id, name, email, profile_photo, role`;
-      queryParams.push(id);
-
-      // Replace db.one with db.query
-      const result = await db.query(updateQuery, queryParams);
-      res.json({ user: result.rows[0] });
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      res.status(500).json({ error: 'Failed to update profile' });
-    }
-  }
-);
 
 // Event management
 router.get('/events', eventController.getEvents);

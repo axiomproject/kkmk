@@ -422,7 +422,7 @@ const Home: React.FC = () => {
             })) || prev.statCards,
             features: savedContent.features?.map((feature: any) => ({
               ...feature,
-              image: feature.image ? getImageUrl(feature.image) : prev.features[0].image
+              image: feature.image || null // Don't transform the URL, it should already be in the correct format
             })) || prev.features,
             highlights: savedContent.highlights?.map((highlight: any) => ({
               ...highlight,
@@ -442,20 +442,11 @@ const Home: React.FC = () => {
           }));
         }
       } catch (error) {
-        // Removed console.error here
+        console.error('Error loading content:', error);
       }
     };
     loadContent();
   }, []);
-
-  const getImageUrl = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('data:') || path.startsWith('http')) return path;
-    if (path.startsWith('/uploads')) {
-      return `${import.meta.env.VITE_API_URL}${path}`;
-    }
-    return path;
-  };
 
   return (
     <div className="page-container">
@@ -576,7 +567,7 @@ const Home: React.FC = () => {
           <div className="cards-container">
             {content.features.map((feature, index) => (
               <div key={index} className="cards">
-                <img src={feature.image} alt={feature.title} className="icon" />
+                <img src={getImageUrl(feature.image)} alt={feature.title} className="icon" />
                 <h3>{feature.title}</h3>
                 <p>{feature.description}</p>
               </div>

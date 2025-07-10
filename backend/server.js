@@ -108,7 +108,7 @@ app.use('/api/forum', forumRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/scholars', scholarRoutes);
 app.use('/api/scholardonations', scholarDonationRoutes);
-app.use('/api/events', eventRoutes);
+app.use('/api', eventRoutes); // Changed from /api/events to /api to match route definitions
 app.use('/api', userRoutes);
 app.use('/api', authRoutes);
 
@@ -173,8 +173,9 @@ const startServer = async () => {
     try {
       connected = await db.testConnection();
       if (connected) {
-        const server = app.listen(process.env.PORT || port, () => {
-          console.log(`Server is running on port ${process.env.PORT || port}`);
+        console.log('Database connection test successful');
+        const server = app.listen(port, () => {
+          console.log(`Server is running on port ${port}`);
         });
 
         // Handle server shutdown gracefully
@@ -199,20 +200,14 @@ const startServer = async () => {
     } catch (error) {
       console.error(`Failed to start server (${retries} retries left):`, error);
       retries--;
-      if (retries > 0) {
-        console.log('Retrying in 5 seconds...');
-        await new Promise(resolve => setTimeout(resolve, 5000));
+      if (retries === 0) {
+        console.error('Failed to connect to database after all retries');
+        process.exit(1);
       }
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 5000));
     }
-  }
-
-  if (!connected) {
-    console.error('Failed to start server after multiple retries');
-    process.exit(1);
   }
 };
 
-startServer().catch(err => {
-  console.error('Unhandled error during server startup:', err);
-  process.exit(1);
-});
+startServer();

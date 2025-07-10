@@ -4,6 +4,7 @@ import { FaSearch, FaTimes } from 'react-icons/fa';
 import { useParams, useNavigate, useLocation } from 'react-router-dom'; // Add these imports
 import '../../../styles/Scholar.css';
 import api from '../../../config/axios'; // Replace axios import
+import { getImageUrl } from '../../../utils/imageUtils';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5175';
 
@@ -239,31 +240,27 @@ const ScholarProfile: React.FC = () => {
         }
       });
 
-      const response = await fetch(`${API_URL}/scholars/create`, {
-        method: 'POST',
-        body: formDataToSend,
-        credentials: 'include',
+      const response = await api.post('/scholars/create', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create scholar profile');
+      if (response.status !== 201) {
+        throw new Error('Failed to create scholar profile');
       }
 
-      const result = await response.json();
+      const result = response.data;
       console.log('Scholar created:', result);
       
       // Refresh the scholars list
-      const updatedScholars = await fetch(`${API_URL}/scholars`, {
-        credentials: 'include'
-      }).then(res => res.json());
-      setScholars(updatedScholars);
+      const updatedResponse = await api.get('/scholars');
+      setScholars(updatedResponse.data);
       
       // Reset form and close modal
       setFormData(initialFormState);
       setShowModal(false);
       
-      // Optional: Show success message
       alert('Scholar profile created successfully!');
       
     } catch (error) {
@@ -437,26 +434,23 @@ const handleUpdate = async (e: React.FormEvent) => {
       }
     });
 
-    const response = await fetch(`${API_URL}/scholars/${selectedScholar.id}`, {
-      method: 'PUT',
-      body: formDataToSend,
-      credentials: 'include'
+    const response = await api.put(`/scholars/${selectedScholar.id}`, formDataToSend, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
     });
 
-    if (!response.ok) throw new Error('Failed to update scholar');
+    if (!response.data) throw new Error('Failed to update scholar');
 
     // Refresh scholar list
-    const updatedScholars = await fetch(`${API_URL}/scholars`, {
-      credentials: 'include'
-    }).then(res => res.json());
-    
-    setScholars(updatedScholars);
+    const updatedResponse = await api.get('/scholars');
+    setScholars(updatedResponse.data);
     setIsEditMode(false);
     setSelectedScholar(null);
     alert('Scholar updated successfully!');
   } catch (error) {
     console.error('Error updating scholar:', error);
-    alert('Failed to update scholar');
+    alert(error instanceof Error ? error.message : 'Failed to update scholar. Please try again.');
   }
 };
 
@@ -759,6 +753,15 @@ const handleOpenAssignUserModal = (scholar: Scholar) => {
     }
   }, [showModal, isEditMode]);
 
+  // Add this helper function at the top level of the component
+  const getScholarImageUrl = (imageUrl?: string, profilePhoto?: string) => {
+    if (imageUrl?.includes('cloudinary.com')) return imageUrl;
+    if (profilePhoto?.includes('cloudinary.com')) return profilePhoto;
+    if (imageUrl) return `${API_URL}${imageUrl}`;
+    if (profilePhoto) return `${API_URL}${profilePhoto}`;
+    return '/images/default-avatar.jpg';
+  };
+
   const renderViewModal = () => {
     if (!selectedScholar) return null;
 
@@ -769,9 +772,7 @@ const handleOpenAssignUserModal = (scholar: Scholar) => {
           <h2>Scholar Details</h2>
           <div className="admin-scholar-details">
             <img 
-              src={selectedScholar.image_url ? `${selectedScholar.image_url}` : 
-                   selectedScholar.profile_photo ? `${API_URL}${selectedScholar.profile_photo}` : 
-                   "https://via.placeholder.com/150"}
+              src={getScholarImageUrl(selectedScholar.image_url, selectedScholar.profile_photo)} 
               alt={`${selectedScholar.first_name} ${selectedScholar.last_name}`}
               className="admin-scholar-detail-image"
             />
@@ -848,22 +849,6 @@ const handleOpenAssignUserModal = (scholar: Scholar) => {
     setFormData(initialFormState); // Reset to initial state
   };
 
-  const getImageUrl = (scholar: Scholar) => {
-    // Add null checks to image URL
-    if (!scholar) return '/images/default-avatar.jpg';
-    
-    const imageUrl = scholar.image_url;
-    const profilePhoto = scholar.profile_photo;
-    
-    if (imageUrl) {
-      return `${API_URL}${imageUrl}`;
-    } else if (profilePhoto) {
-      return `${API_URL}${profilePhoto}`;
-    }
-    
-    return '/images/default-avatar.jpg';
-  };
-
   return (
     <div className="admin-scholar-container">
       {/* Don't show the header and list when in direct view mode */}
@@ -906,7 +891,7 @@ const handleOpenAssignUserModal = (scholar: Scholar) => {
                   <div key={scholar.id} className="admin-scholar-card">
                     {/* ...existing card content... */}
                     <img 
-                    src={getImageUrl(scholar)} 
+                    src={getScholarImageUrl(scholar.image_url, scholar.profile_photo)} 
                     alt={`${scholar.first_name} ${scholar.last_name}`} 
                     className="admin-scholar-image"
                     onError={(e) => {
@@ -946,7 +931,7 @@ const handleOpenAssignUserModal = (scholar: Scholar) => {
                       <div key={scholar.id} className="admin-scholar-card inactive">
                         {/* ...existing card content... */}
                         <img 
-                    src={getImageUrl(scholar)} 
+                    src={getScholarImageUrl(scholar.image_url, scholar.profile_photo)} 
                     alt={`${scholar.first_name} ${scholar.last_name}`} 
                     className="admin-scholar-image"
                     onError={(e) => {
@@ -988,7 +973,7 @@ const handleOpenAssignUserModal = (scholar: Scholar) => {
                       <div key={scholar.id} className="admin-scholar-card graduated">
                         {/* ...existing card content... */}
                         <img 
-                    src={getImageUrl(scholar)} 
+                    src={getScholarImageUrl(scholar.image_url, scholar.profile_photo)} 
                     alt={`${scholar.first_name} ${scholar.last_name}`} 
                     className="admin-scholar-image"
                     onError={(e) => {

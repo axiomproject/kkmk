@@ -15,6 +15,11 @@ const api = axios.create({
 
 // Updated request interceptor
 api.interceptors.request.use((config) => {
+  // Don't set Content-Type for FormData - let the browser set it with the boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+
   // Remove /api prefix for upload URLs
   if (config.url?.includes('/uploads/')) {
     config.baseURL = (import.meta.env.VITE_API_URL || 'http://localhost:5175').replace('/api', '');
@@ -33,6 +38,9 @@ api.interceptors.request.use(
     }
     if (import.meta.env.DEV) {
       console.log('Request:', config.method?.toUpperCase(), config.url);
+      if (config.data instanceof FormData) {
+        console.log('Sending FormData:', Array.from(config.data.entries()));
+      }
     }
     return Promise.resolve(config);
   },

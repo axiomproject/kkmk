@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../config/axios'; // Replace axios import
 import '../../styles/ContentEditor.css';
+import { getImageUrl, getImageUrlFromResponse } from '../../utils/imageUtils';
 
 interface ContentSection {
   text: string;
@@ -102,6 +103,7 @@ export default function ContentEditor() {
         image: "",
       }
     ] : [],
+    features: [], // Initialize features array
     contactSections: selectedPage === 'contact' ? [
       {
         title: "Contact Support",
@@ -164,10 +166,68 @@ export default function ContentEditor() {
   const loadContent = async () => {
     try {
       const response = await api.get(`/content/${selectedPage}`);
-      setContent(response.data.content);
+      // Ensure features array exists and is properly initialized
+      const loadedContent = response.data.content;
+      if (selectedPage === 'home' && !loadedContent.features) {
+        loadedContent.features = [];
+      }
+      setContent(loadedContent);
     } catch (error) {
       console.error('Failed to load content:', error);
     }
+  };
+
+  const renderImagePreview = (imageUrl: string | undefined) => {
+    if (!imageUrl) return null;
+    const displayUrl = getImageUrl(imageUrl);
+    return (
+      <div className="image-preview">
+        <img 
+          src={displayUrl} 
+          alt="Preview" 
+          className="preview-image"
+          data-original-src={imageUrl}
+          onError={handleImageError}
+        />
+        <div className="url-display">
+          <p>Image URL:</p>
+          <input
+            type="text"
+            value={imageUrl}
+            readOnly
+            onClick={(e) => (e.target as HTMLInputElement).select()}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const renderSectionImage = (section: ContentSection, index: number) => {
+    return (
+      <div className="image-preview">
+        {section.image && (
+          <img 
+            src={getImageUrl(section.image)} 
+            alt={section.title || `Section ${index + 1}`}
+            data-original-src={section.image}
+            onError={handleImageError}
+          />
+        )}
+      </div>
+    );
+  };
+
+  const renderBannerImage = () => {
+    return content.bannerImage && (
+      <div className="image-preview">
+        <img 
+          src={getImageUrl(content.bannerImage)} 
+          alt="Banner"
+          data-original-src={content.bannerImage}
+          onError={handleImageError}
+        />
+      </div>
+    );
   };
 
   const handleImageUpload = async (file: File, sectionIndex: number) => {
@@ -182,38 +242,35 @@ export default function ContentEditor() {
   
       console.log('Uploading file:', file.name);
   
-      // Make sure proper headers are included for multipart/form-data
-      const response = await api.post('/content/upload-image', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/content/upload-image', formData);
   
       console.log('Upload response:', response.data);
   
-      const imagePath = response.data.imagePath;
-      if (!imagePath) {
-        throw new Error('No image path received from server');
+      const imageUrl = getImageUrlFromResponse(response.data);
+      if (!imageUrl) {
+        throw new Error('No image URL received from server');
       }
   
       if (sectionIndex === -1) {
-        // This is a banner image
-        setContent(prev => ({ ...prev, bannerImage: imagePath }));
-        console.log('Banner image updated:', imagePath);
+        setContent(prev => ({ ...prev, bannerImage: imageUrl }));
+        console.log('Banner image updated:', imageUrl);
       } else {
-        // This is a section image
         setContent(prev => {
           const newSections = [...prev.sections];
           newSections[sectionIndex] = {
             ...newSections[sectionIndex],
-            image: imagePath
+            image: imageUrl
           };
           return { ...prev, sections: newSections };
         });
       }
+
+      // Show preview
+      return renderImagePreview(imageUrl);
     } catch (error: any) {
       console.error('Failed to upload image:', error);
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
+      return null;
     }
   };
   
@@ -223,33 +280,28 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      console.log('Uploading file:', file.name);
+      const response = await api.post('/content/upload-image', formData);
 
-      const response = await api.post('/content/upload-image', formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      console.log('Upload response:', response.data);
-
-      const imagePath = response.data.imagePath;
-      if (!imagePath) {
-        throw new Error('No image path received from server');
+      const imageUrl = getImageUrlFromResponse(response.data);
+      if (!imageUrl) {
+        throw new Error('No image URL received from server');
       }
 
       setContent(prev => {
         const newTestimonials = [...(prev.testimonials || [])];
         newTestimonials[index] = {
           ...newTestimonials[index],
-          image: imagePath
+          image: imageUrl
         };
         return { ...prev, testimonials: newTestimonials };
       });
+
+      // Show preview
+      return renderImagePreview(imageUrl);
     } catch (error: any) {
-      console.error('Failed to upload image:', error);
+      console.error('Failed to upload testimonial image:', error);
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
+      return null;
     }
   };
 
@@ -258,24 +310,25 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/content/upload-image', formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/content/upload-image', formData);
 
-      const imagePath = response.data.imagePath;
-      if (!imagePath) throw new Error('No image path received');
+      const imageUrl = getImageUrlFromResponse(response.data);
+      if (!imageUrl) {
+        throw new Error('No image URL received from server');
+      }
 
       setContent(prev => {
         const newMembers = [...(prev.members || [])];
-        newMembers[index] = { ...newMembers[index], image: imagePath };
+        newMembers[index] = { ...newMembers[index], image: imageUrl };
         return { ...prev, members: newMembers };
       });
+
+      // Show preview
+      return renderImagePreview(imageUrl);
     } catch (error: any) {
-      console.error('Failed to upload image:', error);
+      console.error('Failed to upload team member image:', error);
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
+      return null;
     }
   };
 
@@ -284,24 +337,25 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/content/upload-image', formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/content/upload-image', formData);
 
-      const imagePath = response.data.imagePath;
-      if (!imagePath) throw new Error('No image path received');
+      const imageUrl = getImageUrlFromResponse(response.data);
+      if (!imageUrl) {
+        throw new Error('No image URL received from server');
+      }
 
       setContent(prev => {
         const newGalleryImages = [...(prev.galleryImages || [])];
-        newGalleryImages[index] = { ...newGalleryImages[index], src: imagePath };
+        newGalleryImages[index] = { ...newGalleryImages[index], src: imageUrl };
         return { ...prev, galleryImages: newGalleryImages };
       });
+
+      // Show preview
+      return renderImagePreview(imageUrl);
     } catch (error: any) {
-      console.error('Failed to upload image:', error);
+      console.error('Failed to upload gallery image:', error);
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
+      return null;
     }
   };
 
@@ -310,24 +364,25 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/content/upload-image', formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/content/upload-image', formData);
 
-      const imagePath = response.data.imagePath;
-      if (!imagePath) throw new Error('No image path received');
+      const imageUrl = getImageUrlFromResponse(response.data);
+      if (!imageUrl) {
+        throw new Error('No image URL received from server');
+      }
 
       setContent(prev => {
         const newCards = [...(prev.testimonialCards || [])];
-        newCards[index] = { ...newCards[index], image: imagePath };
+        newCards[index] = { ...newCards[index], image: imageUrl };
         return { ...prev, testimonialCards: newCards };
       });
+
+      // Show preview
+      return renderImagePreview(imageUrl);
     } catch (error: any) {
-      console.error('Failed to upload image:', error);
+      console.error('Failed to upload testimonial card image:', error);
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
+      return null;
     }
   };
 
@@ -336,27 +391,28 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/content/upload-image', formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/content/upload-image', formData);
 
-      const imagePath = response.data.imagePath;
-      if (!imagePath) throw new Error('No image path received');
+      const imageUrl = getImageUrlFromResponse(response.data);
+      if (!imageUrl) {
+        throw new Error('No image URL received from server');
+      }
 
       setContent(prev => ({
         ...prev,
         community: {
           title: prev.community?.title || '',
           description: prev.community?.description,
-          image: imagePath
+          image: imageUrl
         }
       }));
+
+      // Show preview
+      return renderImagePreview(imageUrl);
     } catch (error: any) {
-      console.error('Failed to upload image:', error);
+      console.error('Failed to upload community image:', error);
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
+      return null;
     }
   };
 
@@ -365,74 +421,100 @@ export default function ContentEditor() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/content/upload-image', formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/content/upload-image', formData);
 
-      const imagePath = response.data.imagePath;
-      if (!imagePath) throw new Error('No image path received');
+      const imageUrl = getImageUrlFromResponse(response.data);
+      if (!imageUrl) {
+        throw new Error('No image URL received from server');
+      }
 
       setContent(prev => {
         const newHighlights = [...(prev.highlights || [])];
-        newHighlights[index] = { ...newHighlights[index], image: imagePath };
+        newHighlights[index] = { ...newHighlights[index], image: imageUrl };
         return { ...prev, highlights: newHighlights };
       });
+
+      // Show preview
+      return renderImagePreview(imageUrl);
     } catch (error: any) {
-      console.error('Failed to upload image:', error);
+      console.error('Failed to upload highlight image:', error);
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
+      return null;
     }
   };
 
   const handleFeatureImageUpload = async (file: File, index: number) => {
     try {
+      console.log('Starting feature image upload for index:', index);
+      console.log('Current features state:', content.features);
+
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await api.post('/content/upload-image', formData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const response = await api.post('/content/upload-image', formData);
+      console.log('Upload response:', response);
 
-      const imagePath = response.data.imagePath;
-      if (!imagePath) throw new Error('No image path received');
+      const imageUrl = getImageUrlFromResponse(response.data);
+      if (imageUrl === '/images/default-event.png') {
+        throw new Error('Failed to get valid image URL from server');
+      }
+
+      console.log('Got image URL:', imageUrl);
 
       setContent(prev => {
-        const newFeatures = [...(prev.features || [])];
-        newFeatures[index] = { ...newFeatures[index], image: imagePath };
-        return { ...prev, features: newFeatures };
+        console.log('Previous state:', prev);
+        
+        // Create a new features array, ensuring it exists
+        const currentFeatures = Array.isArray(prev.features) ? [...prev.features] : [];
+        
+        // Make sure we have enough elements up to our target index
+        while (currentFeatures.length <= index) {
+          currentFeatures.push({
+            title: '',
+            description: '',
+            image: ''
+          });
+        }
+
+        // Update the specific feature
+        currentFeatures[index] = {
+          ...currentFeatures[index],
+          image: imageUrl
+        };
+
+        console.log('New features state:', currentFeatures);
+        
+        // Return the new state
+        return {
+          ...prev,
+          features: currentFeatures
+        };
       });
+
+      // Show preview
+      return renderImagePreview(imageUrl);
     } catch (error: any) {
-      console.error('Failed to upload image:', error);
+      console.error('Failed to upload feature image:', error);
       alert('Failed to upload image: ' + (error.response?.data?.error || error.message));
+      return null;
     }
   };
 
-  const getImageUrl = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('data:') || path.startsWith('http')) return path;
-    
-    // Remove any duplicate /api prefix
-    const cleanPath = path.replace('/api/', '/');
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
-    return `${backendUrl}${cleanPath}`;
-  };
-  
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    console.error('Image failed to load:', e.currentTarget.src);
-    // Set a default image or hide the element
-    e.currentTarget.style.display = 'none';
-    // Optionally show an error message or placeholder
-    const parent = e.currentTarget.parentElement;
-    if (parent) {
-      const errorMsg = document.createElement('div');
-      errorMsg.className = 'image-error';
-      errorMsg.textContent = 'Image failed to load';
-      parent.appendChild(errorMsg);
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const img = e.target as HTMLImageElement;
+    console.log('Image failed to load:', {
+      src: img.src,
+      originalSrc: img.getAttribute('data-original-src'),
+      alt: img.alt,
+      naturalWidth: img.naturalWidth,
+      naturalHeight: img.naturalHeight,
+    });
+
+    // Set default image based on context
+    const defaultImage = '/images/default-event.png';
+    if (img.src !== defaultImage) {
+      img.src = defaultImage;
+      img.onerror = null; // Prevent infinite loop if default image fails
     }
   };
 
@@ -444,8 +526,13 @@ export default function ContentEditor() {
         return;
       }
 
+      // Ensure all features have valid image URLs or null
       const contentToSave = {
         ...content,
+        features: content.features?.map(feature => ({
+          ...feature,
+          image: feature.image || null // Ensure null instead of undefined
+        })),
         sections: content.sections?.map(section => {
           if (selectedPage === 'contact') {
             return {
@@ -455,14 +542,14 @@ export default function ContentEditor() {
           }
           return {
             text: section.text || '',
-            image: section.image || '',
+            image: section.image || null, // Ensure null instead of undefined
             title: section.title || '',
             caption: section.caption || null
           };
         }) || []
       };
 
-      console.log('Sending content:', contentToSave);
+      console.log('Sending content to save:', contentToSave);
 
       const response = await api.put(
         `/content/${selectedPage}`,
@@ -470,6 +557,10 @@ export default function ContentEditor() {
       );
 
       console.log('Save response:', response.data);
+
+      // Update local state with the saved data
+      setContent(response.data.content);
+      
       alert('Content saved successfully');
     } catch (error: any) {
       console.error('Failed to save content:', error);
@@ -1135,85 +1226,131 @@ export default function ContentEditor() {
                   type="button" 
                   className="add-button"
                   onClick={() => {
-                    setContent(prev => ({
-                      ...prev,
-                      features: [...(prev.features || []), {
+                    console.log('Adding new feature');
+                    setContent(prev => {
+                      // Ensure features array exists
+                      const currentFeatures = [...(prev.features || [])];
+                      const newIndex = currentFeatures.length;
+                      console.log('New feature index:', newIndex);
+                      
+                      currentFeatures.push({
                         title: '',
                         description: '',
                         image: ''
-                      }]
-                    }));
+                      });
+                      
+                      console.log('Updated features:', currentFeatures);
+                      return { 
+                        ...prev, 
+                        features: currentFeatures 
+                      };
+                    });
                   }}
                 >
                   Add Feature
                 </button>
               </div>
               
-              {content.features?.map((feature, index) => (
-                <div key={index} className="section-box">
-                  <div className="section-header">
-                    <h3>Feature {index + 1}</h3>
-                    <button 
-                      type="button"
-                      className="remove-button"
-                      onClick={() => {
-                        const newFeatures = [...(content.features || [])];
-                        newFeatures.splice(index, 1);
-                        setContent(prev => ({ ...prev, features: newFeatures }));
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    className="text-input"
-                    value={feature.title}
-                    onChange={(e) => {
-                      const newFeatures = [...(content.features || [])];
-                      newFeatures[index] = { ...newFeatures[index], title: e.target.value };
-                      setContent(prev => ({ ...prev, features: newFeatures }));
-                    }}
-                    placeholder="Enter feature title"
-                  />
-                  <textarea
-                    className="text-input"
-                    value={feature.description}
-                    onChange={(e) => {
-                      const newFeatures = [...(content.features || [])];
-                      newFeatures[index] = { ...newFeatures[index], description: e.target.value };
-                      setContent(prev => ({ ...prev, features: newFeatures }));
-                    }}
-                    placeholder="Enter feature description"
-                  />
-                  <div className="image-upload-box">
-                    <h3>Feature Icon</h3>
+              {(content.features || []).map((feature, index) => {
+                console.log(`Rendering feature ${index}:`, feature);
+                const imageUrl = feature.image ? getImageUrl(feature.image) : null;
+                const showImage = imageUrl && imageUrl !== '/images/default-event.png';
+                
+                return (
+                  <div key={`feature-${index}`} className="section-box">
+                    <div className="section-header">
+                      <h3>Feature {index + 1}</h3>
+                      <button 
+                        type="button"
+                        className="remove-button"
+                        onClick={() => {
+                          console.log('Removing feature at index:', index);
+                          setContent(prev => {
+                            const currentFeatures = [...(prev.features || [])];
+                            currentFeatures.splice(index, 1);
+                            console.log('Features after removal:', currentFeatures);
+                            return { 
+                              ...prev, 
+                              features: currentFeatures 
+                            };
+                          });
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
                     <input
-                      type="file"
-                      className="file-input"
-                      id={`feature-image-${index}`}
-                      accept="image/*"
+                      type="text"
+                      className="text-input"
+                      value={feature.title || ''}
                       onChange={(e) => {
-                        if (e.target.files) {
-                          handleFeatureImageUpload(e.target.files[0], index);
-                        }
+                        setContent(prev => {
+                          const currentFeatures = [...(prev.features || [])];
+                          currentFeatures[index] = { 
+                            ...currentFeatures[index], 
+                            title: e.target.value 
+                          };
+                          return { 
+                            ...prev, 
+                            features: currentFeatures 
+                          };
+                        });
                       }}
+                      placeholder="Enter feature title"
                     />
-                    <label htmlFor={`feature-image-${index}`}>
-                      <span className="file-name-truncatee">Choose file</span>
-                    </label>
-                    {feature.image && (
-                      <div className="image-preview">
-                        <img 
-                          src={getImageUrl(feature.image)}
-                          alt={feature.title}
-                          onError={handleImageError}
-                        />
-                      </div>
-                    )}
+                    <textarea
+                      className="text-input"
+                      value={feature.description || ''}
+                      onChange={(e) => {
+                        setContent(prev => {
+                          const currentFeatures = [...(prev.features || [])];
+                          currentFeatures[index] = { 
+                            ...currentFeatures[index], 
+                            description: e.target.value 
+                          };
+                          return { 
+                            ...prev, 
+                            features: currentFeatures 
+                          };
+                        });
+                      }}
+                      placeholder="Enter feature description"
+                    />
+                    <div className="image-upload-box">
+                      <h3>Feature Icon</h3>
+                      <input
+                        type="file"
+                        className="file-input"
+                        id={`feature-image-${index}`}
+                        accept="image/*"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            console.log('Uploading feature image for index:', index);
+                            console.log('Current feature state:', feature);
+                            handleFeatureImageUpload(e.target.files[0], index);
+                          }
+                        }}
+                      />
+                      <label htmlFor={`feature-image-${index}`}>
+                        <span className="file-name-truncatee">Choose file</span>
+                      </label>
+                      {showImage && (
+                        <div className="image-preview">
+                          <img 
+                            src={imageUrl}
+                            alt={feature.title || `Feature ${index + 1}`}
+                            onError={(e) => {
+                              console.log('Image error for feature', index, e);
+                              handleImageError(e);
+                            }}
+                            data-feature-index={index}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

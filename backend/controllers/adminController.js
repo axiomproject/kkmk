@@ -1,11 +1,10 @@
 const AdminModel = require('../models/adminModel');
-const bcrypt = require('bcryptjs');
-const db = require('../config/db');
-const { uploads } = require('../config/cloudinaryConfig');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const { uploads, uploadToCloudinary } = require('../config/cloudinaryConfig');
 
-// Configure upload middleware
-const uploadVolunteerEvidence = uploads.admin.single('skillEvidence');
-const uploadProfilePhoto = uploads.admin.single('profilePhoto');
+// Use the pre-configured multer instances
+const uploadVolunteerEvidence = uploads.admin;
 
 // User Management
 const getUsers = async (req, res) => {
@@ -154,7 +153,7 @@ const createVolunteer = async (req, res) => {
       return res.status(403).json({ error: 'Not authorized' });
     }
 
-    uploadVolunteerEvidence(req, res, async (err) => {
+    uploadVolunteerEvidence.single('skillEvidence')(req, res, async (err) => {
       if (err) {
         return res.status(400).json({ error: err.message });
       }
@@ -243,7 +242,7 @@ const updateVolunteer = async (req, res) => {
   try {
     const { id } = req.params;
     
-    uploadVolunteerEvidence(req, res, async (err) => {
+    uploadVolunteerEvidence.single('skillEvidence')(req, res, async (err) => {
       if (err) {
         return res.status(400).json({ error: err.message });
       }
@@ -294,21 +293,18 @@ const deleteVolunteer = async (req, res) => {
 
 const updateProfilePhoto = async (req, res) => {
   try {
-    uploadProfilePhoto(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({ error: err.message });
-      }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No profile photo uploaded' });
+    }
 
-      if (!req.file) {
-        return res.status(400).json({ error: 'No profile photo uploaded' });
-      }
+    const { id } = req.params;
+    
+    // Upload to Cloudinary
+    const result = await uploadToCloudinary(req.file, 'admin');
+    const photoUrl = result.url;
 
-      const { id } = req.params;
-      const photoUrl = req.file.path;
-
-      const updatedProfile = await AdminModel.updateProfilePhoto(id, photoUrl);
-      res.json(updatedProfile);
-    });
+    const updatedProfile = await AdminModel.updateProfilePhoto(id, photoUrl);
+    res.json(updatedProfile);
   } catch (error) {
     console.error('Error updating profile photo:', error);
     res.status(500).json({ error: 'Failed to update profile photo' });
@@ -317,27 +313,23 @@ const updateProfilePhoto = async (req, res) => {
 
 const updateAdminProfile = async (req, res) => {
   try {
-    uploadProfilePhoto(req, res, async (err) => {
-      if (err) {
-        return res.status(400).json({ error: err.message });
-      }
+    const { id } = req.params;
+    const updates = { ...req.body };
 
-      const { id } = req.params;
-      const updates = { ...req.body };
+    // If a new photo was uploaded, add it to the updates
+    if (req.file) {
+      // Upload to Cloudinary
+      const result = await uploadToCloudinary(req.file, 'admin');
+      updates.profile_photo = result.url;
+    }
 
-      // If a new photo was uploaded, add it to the updates
-      if (req.file) {
-        updates.profile_photo = req.file.path;
-      }
+    // If password is being updated, hash it
+    if (updates.password) {
+      updates.password = await bcrypt.hash(updates.password, 10);
+    }
 
-      // If password is being updated, hash it
-      if (updates.password) {
-        updates.password = await bcrypt.hash(updates.password, 10);
-      }
-
-      const updatedProfile = await AdminModel.updateAdminProfile(id, updates);
-      res.json(updatedProfile);
-    });
+    const updatedProfile = await AdminModel.updateAdminProfile(id, updates);
+    res.json(updatedProfile);
   } catch (error) {
     console.error('Error updating admin profile:', error);
     res.status(500).json({ error: 'Failed to update admin profile' });
