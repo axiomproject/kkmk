@@ -441,44 +441,55 @@ header .title a {
 .hamburger {
   display: none;
   flex-direction: column;
-  justify-content: space-around;
-  width: 2.5rem; /* Slightly larger */
-  height: 2rem;
+  justify-content: space-between;
+  width: 30px;
+  height: 20px;
   background: transparent;
   border: none;
   cursor: pointer;
   padding: 0;
-  z-index: 10;
-  margin-left: 20px;
-  transition: all 0.3s ease-in-out;
-}
-
-.hamburger div {
-  width: 2.5rem;
-  height: 0.2rem; /* Thinner lines */
-  background: #333; /* Softer color */
-  border-radius: 20px; /* Rounder edges */
-  transition: all 0.3s ease-in-out;
+  z-index: 1000;
   position: relative;
-  transform-origin: 1px;
 }
 
-/* Smoother hamburger animation */
-.hamburger.active div:nth-child(1) {
-  transform: rotate(45deg) translate(0px, -2px);
+.hamburger-line {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background-color: #000;
+  transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  position: absolute;
 }
 
-.hamburger.active div:nth-child(2) {
+.hamburger-line:nth-child(1) {
+  top: 0;
+}
+
+.hamburger-line:nth-child(2) {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.hamburger-line:nth-child(3) {
+  bottom: 0;
+}
+
+.hamburger.active .hamburger-line:nth-child(1) {
+  transform: rotate(45deg);
+  top: 50%;
+}
+
+.hamburger.active .hamburger-line:nth-child(2) {
   opacity: 0;
-  transform: translateX(-20px);
 }
 
-.hamburger.active div:nth-child(3) {
-  transform: rotate(-45deg) translate(0px, 2px);
+.hamburger.active .hamburger-line:nth-child(3) {
+  transform: rotate(-45deg);
+  bottom: 40%;
 }
 
 /* Media queries for responsive design */
-@media (max-width: 1024px) {
+@media (max-width: 1637px) {
   .hamburger {
     display: flex;
   }
@@ -486,11 +497,10 @@ header .title a {
   .nav-container {
     display: none;
     position: fixed;
-    top: 80px; /* Reduced from 100px for better spacing */
     right: 0;
     width: 220px; /* Reduced from 280px */
     height: auto; /* Let height adjust to content */
-    max-height: calc(100vh - 100px); /* Max height with scroll if needed */
+    max-height: calc(100vh); /* Max height with scroll if needed */
     background: #f7f1e3; /* Updated background color */
     border: 1px solid rgba(0, 0, 0, 0.1); /* Subtle border to complement new background */
     padding: 1rem; /* Reduced padding */
@@ -941,7 +951,7 @@ header .title a {
 }
 
 /* Add mobile-specific styling for the button */
-@media (max-width: 1024px) {
+@media (max-width: 1637px) {
   .mobile-auth-buttons .apply-scholar-button {
     padding: 6px 12px;
     font-size: 0.9rem;
@@ -953,5 +963,293 @@ header .title a {
   .mobile-auth-buttons.two-buttons {
     flex-wrap: wrap;
     gap: 8px;
+  }
+}
+
+/* Base hamburger styles */
+.hamburger {
+  display: none;
+  cursor: pointer;
+  padding: 10px;
+  z-index: 1001;
+  background: transparent;
+  border: none;
+  margin-left: auto;
+}
+
+.hamburger div {
+  width: 28px;
+  height: 3px;
+  background-color: #1a1a1a;
+  margin: 6px 0;
+  border-radius: 2px;
+}
+
+.hamburger.active div:nth-child(1) {
+  display: none;
+}
+
+.hamburger.active div:nth-child(2) {
+  display: none;
+}
+
+.hamburger.active div:nth-child(3) {
+  display: none;
+}
+
+/* Base navigation styles */
+.nav-container {
+  display: flex;
+  align-items: center;
+}
+
+.nav-list {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 2rem;
+}
+
+.nav-item {
+  color: #000000;
+  font-family: "Poppins";
+}
+
+.nav-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Media queries */
+@media screen and (max-width: 1637px) {
+  .hamburger {
+    display: flex !important;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 2rem;
+    height: 2rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1001;
+    margin-left: 20px;
+  }
+
+  .hamburger div {
+    width: 2rem;
+    height: 0.25rem;
+    background-color: #333;
+    border-radius: 10px;
+    transition: all 0.3s linear;
+    position: relative;
+    transform-origin: 1px;
+  }
+
+  .hamburger.active div:nth-child(1) {
+    transform: rotate(45deg);
+  }
+
+  .hamburger.active div:nth-child(2) {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  .hamburger.active div:nth-child(3) {
+    transform: rotate(-45deg);
+  }
+
+  .desktop-nav {
+    display: none !important;
+  }
+
+  .mobile-menu {
+    display: block;
+  }
+}
+
+@media screen and (min-width: 1638px) {
+  .hamburger {
+    display: none !important;
+  }
+
+  .mobile-menu {
+    display: none !important;
+  }
+}
+
+/* Mobile auth buttons specific styles */
+@media screen and (max-width: 1637px) {
+  .mobile-auth-buttons {
+    display: flex !important;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+  }
+
+  .mobile-auth-buttons.two-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mobile-auth-buttons.single-button {
+    justify-content: center;
+  }
+
+  .mobile-auth-buttons .signup-button,
+  .mobile-auth-buttons .donate-button,
+  .mobile-auth-buttons .apply-scholar-button {
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+  }
+}
+
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 100px;
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 100px);
+  background-color: #FEF6E4;
+  z-index: 999;
+  overflow-y: auto;
+}
+
+.mobile-menu.active {
+  display: block;
+}
+
+.mobile-nav {
+  padding: 20px;
+}
+
+.mobile-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.mobile-nav-item {
+  margin-bottom: 20px;
+}
+
+.mobile-nav-button {
+  width: 100%;
+  padding: 15px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: "Poppins";
+  font-size: 16px;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-nav-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.mobile-dropdown {
+  padding-left: 20px;
+  margin-top: 10px;
+}
+
+.mobile-dropdown button {
+  width: 100%;
+  padding: 10px 15px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-family: "Poppins";
+  font-size: 14px;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-dropdown button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.mobile-auth-buttons {
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mobile-auth-buttons button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  font-family: "Poppins";
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-auth-buttons .signup-button {
+  background-color: transparent;
+  color: #DF2E38;
+}
+
+.mobile-auth-buttons .signup-button:hover {
+  color: #a51b22;
+}
+
+.mobile-auth-buttons .donate-button {
+  background-color: transparent;
+  color: #404040;
+}
+
+.mobile-auth-buttons .donate-button:hover {
+  color: #000000;
+}
+
+.mobile-auth-buttons .apply-scholar-button {
+  background-color: transparent;
+  color: #000000;
+}
+
+.mobile-auth-buttons .apply-scholar-button:hover {
+  color: #626262;
+}
+
+.mobile-nav-item {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0;
+}
+
+.mobile-dropdown {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px 20px;
+}
+
+.mobile-dropdown li {
+  padding: 0;
+}
+
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+  display: none;
+}
+
+@media screen and (max-width: 1637px) {
+  .mobile-menu-overlay {
+    display: block;
   }
 }
