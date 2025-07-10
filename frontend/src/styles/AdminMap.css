@@ -16,136 +16,29 @@
 }
 
 .map-content {
+  flex: 1;
   position: relative;
+  min-height: 800px;
   width: 100%;
-  height: 100vh;
-  min-height: 600px;
-  display: flex;
-  flex-direction: column;
+  margin-bottom: 20px;
 }
 
 .admin-map {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.admin-map.heatmap-mode {
-  background: rgba(0,0,0,0.05);
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 800px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1;
 }
 
 .leaflet-container {
-  width: 100%;
-  height: 100%;
-  min-height: 600px;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 800px;
   z-index: 1;
-  flex: 1;
-}
-
-/* Ensure proper marker icon sizing */
-.leaflet-marker-icon {
-  display: block !important;
-  border: none !important;
-  background-color: transparent !important;
-  width: auto !important;
-  height: auto !important;
-}
-
-/* Fix popup content styling */
-.marker-popup {
-  min-width: 200px;
-  padding: 10px;
-}
-
-.marker-popup h3 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.marker-popup p {
-  margin: 5px 0;
-  font-size: 14px;
-}
-
-/* Ensure proper control positioning */
-.leaflet-control-container {
-  position: absolute;
-  z-index: 1000;
-}
-
-/* Fix heatmap layer display */
-.heatmap-layer {
-  pointer-events: none;
-}
-
-/* Ensure proper sector polygon display */
-.leaflet-overlay-pane svg {
-  z-index: 1;
-}
-
-/* Fix marker icon display */
-.leaflet-marker-icon {
-  width: auto !important;
-  height: auto !important;
-  display: block !important;
-  border: none !important;
-  background: none !important;
-}
-
-/* Add map reset control styling */
-.map-reset-control {
-  background: white;
-  padding: 5px;
-  border: 2px solid rgba(0,0,0,0.2);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.map-reset-control:hover {
-  background: #f4f4f4;
-}
-
-/* Ensure proper filter controls display */
-.filter-controls {
-  position: absolute;
-  top: 10px;
-  left: 50px;
-  z-index: 1000;
-  background: white;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Fix inventory panel display */
-.inventory-panel {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1000;
-  background: white;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  max-width: 300px;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-/* Ensure proper distribution panel display */
-.distribution-panel {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  z-index: 1000;
-  background: white;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  max-width: 300px;
-  max-height: 40vh;
-  overflow-y: auto;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .map-header {
@@ -426,11 +319,10 @@
 }
 
 .scholar-marker {
-  width: 35px !important;
-  height: 35px !important;
+  border: 3px solid #4CAF50;
   border-radius: 50%;
-  border: 2px solid #fff !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
 }
 
 .marker-scholar-image {
@@ -820,6 +712,11 @@
   width: 100% !important;
 }
 
+.scholar-popup-content {
+  padding: 12px;
+  width: 100%;
+}
+
 .scholar-popup .profile-section {
   display: flex;
   gap: 12px;
@@ -998,11 +895,9 @@
 }
 
 .office-marker {
-  width: 40px !important;
-  height: 40px !important;
+  border: 2px solid #fff;
   border-radius: 50%;
-  border: 2px solid #fff !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 .popup-buttons {

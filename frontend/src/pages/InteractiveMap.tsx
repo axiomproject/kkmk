@@ -9,6 +9,7 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import iconRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import 'leaflet/dist/leaflet.css';
+import { Control } from 'leaflet';
 
 interface LocationMarker {
   id: number;
