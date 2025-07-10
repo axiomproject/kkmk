@@ -3,9 +3,11 @@ import { BsBell, BsBellFill } from 'react-icons/bs'; // Add BsBellFill import
 // Add these imports for expand/collapse icons
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import '../../styles/Header.css';
 import logo from '../img/kmlogo.png';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { PATHS } from '../routes/paths';
 import { User } from '../types/auth';
 import defaultAvatar from '../img/volunteer/defaultProfile.png'; // Add a default avatar image
@@ -61,6 +63,19 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
 
+  // Effect to handle scroll lock
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.classList.add('body-lock');
+    } else {
+      document.body.classList.remove('body-lock');
+    }
+    
+    return () => {
+      document.body.classList.remove('body-lock');
+    };
+  }, [isMobileMenuOpen]);
+
   const markAllNotificationsAsRead = async () => {
     const unreadNotifications = notifications.filter(n => !n.read);
     if (unreadNotifications.length === 0) return;
@@ -108,24 +123,29 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   };
 
   // Add toggle function for mobile menu
-  const toggleMobileMenu = () => {
-    console.log('Toggling mobile menu. Current state:', !isMobileMenuOpen);
+  const toggleMobileMenu = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setIsMobileMenuOpen(!isMobileMenuOpen);
     setShowProfileDropdown(false);
     setShowNotifications(false);
   };
 
-  // Add effect to handle body scroll when menu is open
+  // Add function to close mobile menu
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+    setShowProfileDropdown(false);
+    setShowNotifications(false);
+  };
+
+  // Cleanup effect for scroll lock
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.classList.remove('body-lock');
     };
-  }, [isMobileMenuOpen]);
+  }, []);
 
   
 
@@ -382,7 +402,10 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           src={logo} 
           alt="KM Logo" 
           className="logo-image" 
-          onClick={() => onNavigate('/')}
+          onClick={() => {
+            if (isMobileMenuOpen) closeMobileMenu();
+            onNavigate('/');
+          }}
           style={{ cursor: 'pointer' }}
         />
       </div>
@@ -390,37 +413,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
       {/* Desktop Navigation */}
       <nav className="nav-container desktop-nav">
         <ul className="nav-list">
-          {!user ? (
-            <div className="mobile-auth-buttons two-buttons">
-              <div className="apply-scholar-button" onClick={handleApplyAsScholar}>
-                Apply as Scholar
-              </div>
-              <div className="signup-button sign-up" onClick={() => onNavigate('Login')}>
-                Sign Up
-              </div>
-              <div className="donate-button donate">
-                <Link 
-                  to={`${PATHS.HELP}?tab=donate`} 
-                  className="donate-button donate"
-                  onClick={handleDonateClick}
-                >
-                  Donate
-                </Link>
-              </div>
-            </div>
-          ) : (
-            <div className="mobile-auth-buttons single-button">
-              <div className="donate-button donate">
-                <Link 
-                  to={`${PATHS.HELP}?tab=donate`} 
-                  className="donate-button donate"
-                  onClick={handleDonateClick}
-                >
-                  Donate
-                </Link>
-              </div>
-            </div>
-          )}
+       
 
           <li className="nav-item dropdown">
             <div className="nav-link-about">
@@ -501,187 +494,18 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         </ul>
       </nav>
 
-      {/* Hamburger Menu Button - Move this before the mobile-menu div */}
+      {/* Hamburger Menu Button */}
       <button 
         className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`}
-        onClick={toggleMobileMenu}
+        onClick={(e) => isMobileMenuOpen ? closeMobileMenu() : toggleMobileMenu(e)}
         aria-label="Toggle mobile menu"
+        type="button"
       >
-        <span className="hamburger-line"></span>
-        <span className="hamburger-line"></span>
-        <span className="hamburger-line"></span>
+        {isMobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
       </button>
 
       {/* Mobile Navigation */}
-      <div 
-        className={`mobile-menu ${isMobileMenuOpen ? 'active' : ''}`} 
-        onClick={(e) => e.stopPropagation()}
-        style={{ display: isMobileMenuOpen ? 'block' : 'none' }}
-      >
-        <nav className="mobile-nav">
-          <ul className="mobile-nav-list">
-            {!user ? (
-              <div className="mobile-auth-buttons two-buttons">
-                <button 
-                  className="apply-scholar-button" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    console.log('Apply Scholar button clicked');
-                    setIsMobileMenuOpen(false);
-                    handleApplyAsScholar();
-                  }}
-                >
-                  Apply as Scholar
-                </button>
-                <button 
-                  className="signup-button sign-up" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    console.log('Sign Up button clicked');
-                    handleMobileClick('Login', e);
-                  }}
-                >
-                  Sign Up
-                </button>
-                <button 
-                  className="donate-button donate"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    console.log('Donate button clicked');
-                    setIsMobileMenuOpen(false);
-                    handleDonateClick(e);
-                  }}
-                >
-                  Donate
-                </button>
-              </div>
-            ) : (
-              <div className="mobile-auth-buttons single-button">
-                <button 
-                  className="donate-button donate"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    console.log('Donate button clicked (logged in)');
-                    setIsMobileMenuOpen(false);
-                    handleDonateClick(e);
-                  }}
-                >
-                  Donate
-                </button>
-              </div>
-            )}
-
-            {/* About Us Section */}
-            <li className="mobile-nav-item">
-              <button 
-                className="mobile-nav-button"
-                onClick={(e) => handleMobileClick('Story', e)}
-              >
-                About Us
-              </button>
-              <ul className="mobile-dropdown">
-                <li>
-                  <button onClick={(e) => handleMobileClick('Story', e)}>
-                    Our Story
-                  </button>
-                </li>
-                <li>
-                  <button onClick={(e) => handleMobileClick('Partner', e)}>
-                    Partners and Sponsors
-                  </button>
-                </li>
-                <li>
-                  <button onClick={(e) => handleMobileClick('Team', e)}>
-                    Meet the Team
-                  </button>
-                </li>
-                <li>
-                  <button onClick={(e) => handleMobileClick('Events', e)}>
-                    Events
-                  </button>
-                </li>
-                <li>
-                  <button onClick={(e) => handleMobileClick('Map', e)}>
-                    Map
-                  </button>
-                </li>
-              </ul>
-            </li>
-
-            {/* Life with KM */}
-            <li className="mobile-nav-item">
-              <button 
-                className="mobile-nav-button"
-                onClick={(e) => handleMobileClick('Life', e)}
-              >
-                Life with KM
-              </button>
-            </li>
-
-            {/* Testimonials Section */}
-            <li className="mobile-nav-item">
-              <button 
-                className="mobile-nav-button"
-                onClick={(e) => handleMobileClick('Graduates', e)}
-              >
-                Testimonials
-              </button>
-              <ul className="mobile-dropdown">
-                <li>
-                  <button onClick={(e) => handleMobileClick('Graduates', e)}>
-                    Our Graduates
-                  </button>
-                </li>
-                <li>
-                  <button onClick={(e) => handleMobileClick('Community', e)}>
-                    Our Community
-                  </button>
-                </li>
-              </ul>
-            </li>
-
-            {/* How can you help Section */}
-            <li className="mobile-nav-item">
-              <button 
-                className="mobile-nav-button"
-                onClick={(e) => handleMobileClick('Help', e)}
-              >
-                How can you help?
-              </button>
-              <ul className="mobile-dropdown">
-                <li>
-                  <button onClick={(e) => handleMobileClick('Help', e)}>
-                    Help
-                  </button>
-                </li>
-                <li>
-                  <button onClick={(e) => handleMobileClick(PATHS.STUDENTPROFILE, e)}>
-                    Sponsor A Student
-                  </button>
-                </li>
-              </ul>
-            </li>
-
-            {/* Contact Us */}
-            <li className="mobile-nav-item">
-              <button 
-                className="mobile-nav-button"
-                onClick={(e) => handleMobileClick('Contact', e)}
-              >
-                Contact Us
-              </button>
-            </li>
-          </ul>
-        </nav>
-      </div>
-
-      {/* Add overlay when mobile menu is open */}
-      {isMobileMenuOpen && (
-        <div 
-          className="mobile-menu-overlay"
-          onClick={toggleMobileMenu}
-        />
-      )}
+      <MobileMenu isOpen={isMobileMenuOpen} onClose={closeMobileMenu} onNavigate={onNavigate} />
 
       <div className="actions-container">
         {user ? (
@@ -896,6 +720,140 @@ const formatTimeAgo = (date: Date) => {
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
   return date.toLocaleDateString();
+};
+
+const MobileMenu = ({ isOpen, onClose, onNavigate }: { isOpen: boolean; onClose: () => void; onNavigate: (path: string) => void }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavigation = (path: string) => {
+    onNavigate(path);
+    onClose();
+  };
+
+  const handleDonateClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const path = `${PATHS.HELP}?tab=donate`;
+    handleNavigation(path);
+    setTimeout(() => {
+      const donationForm = document.querySelector('.donation-form-container');
+      if (donationForm) {
+        donationForm.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 500);
+  };
+
+  // Updated function to check if applicant is from Payatas area and redirect if ineligible
+  const handleApplyAsScholar = () => {
+    // Ask user if they are from Payatas area
+    const isFromPayatas = window.confirm(
+      "KMFI Scholar Program Eligibility Check\n\n" +
+      "Scholars must be residents of Payatas, Quezon City to be eligible.\n\n" +
+      "Are you a resident of Payatas area?\n\n" +
+      "Press OK for Yes, Cancel for No"
+    );
+    
+    if (isFromPayatas) {
+      // User confirmed they are from Payatas - proceed with application
+      handleNavigation('Register');
+      
+      // Set the scholar role in localStorage temporarily to ensure it's picked up
+      localStorage.setItem('preselectedRole', 'scholar');
+    } else {
+      // User is not from Payatas - show alert and redirect to homepage
+      alert(
+        "We're sorry, but KMFI's scholar program is currently only available to residents of Payatas, Quezon City.\n\n" +
+        "Thank you for your interest. You may still explore other ways to get involved with our organization."
+      );
+      
+      // Redirect to homepage
+      handleNavigation('/');
+    }
+  };
+
+  return (
+    <div className={`mobile-menu ${isOpen ? 'active' : ''}`}>
+      <nav className="mobile-nav">
+        <ul className="mobile-nav-list">
+          {/* Action buttons at the top */}
+          <li className="mobile-nav-item auth-buttons" style={{ '--item-index': 0 } as React.CSSProperties}>
+            <div className="mobile-auth-container">
+              <button 
+                className="mobile-auth-button donate"
+                onClick={handleDonateClick}
+              >
+                Donate
+              </button>
+              <button 
+                className="mobile-auth-button apply"
+                onClick={() => {
+                  handleApplyAsScholar();
+                  onClose();
+                }}
+              >
+                Apply as Scholar
+              </button>
+              <button 
+                className="mobile-auth-button signup"
+                onClick={() => {
+                  handleNavigation('Register');
+                  onClose();
+                }}
+              >
+                Sign Up
+              </button>
+            </div>
+          </li>
+
+          {/* Regular navigation items */}
+          <li className="mobile-nav-item" style={{ '--item-index': 1 } as React.CSSProperties}>
+            <button className="mobile-nav-button">
+              About Us
+            </button>
+            <div className="mobile-dropdown">
+              <button onClick={() => handleNavigation('Story')}>Our Story</button>
+              <button onClick={() => handleNavigation('Partner')}>Partners and Sponsors</button>
+              <button onClick={() => handleNavigation('Team')}>Meet the Team</button>
+              <button onClick={() => handleNavigation('Events')}>Events</button>
+              <button onClick={() => handleNavigation('Map')}>Map</button>
+            </div>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 2 } as React.CSSProperties}>
+            <button className="mobile-nav-button" onClick={() => handleNavigation('Life')}>
+              Life with KM
+            </button>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 3 } as React.CSSProperties}>
+            <button className="mobile-nav-button">
+              Testimonials
+            </button>
+            <div className="mobile-dropdown">
+              <button onClick={() => handleNavigation('Graduates')}>Our Graduates</button>
+              <button onClick={() => handleNavigation('Community')}>Our Community</button>
+            </div>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 4 } as React.CSSProperties}>
+            <button className="mobile-nav-button">
+              How can you help?
+            </button>
+            <div className="mobile-dropdown">
+              <button onClick={() => handleNavigation('Help')}>Help</button>
+              <button onClick={() => handleNavigation(PATHS.STUDENTPROFILE)}>Sponsor A Student</button>
+            </div>
+          </li>
+
+          <li className="mobile-nav-item" style={{ '--item-index': 5 } as React.CSSProperties}>
+            <button className="mobile-nav-button" onClick={() => handleNavigation('Contact')}>
+              Contact Us
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  );
 };
 
 export default Header;
