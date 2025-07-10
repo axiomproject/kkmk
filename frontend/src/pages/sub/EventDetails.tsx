@@ -61,22 +61,11 @@ const EventDetails: React.FC = () => {
   const getImageUrl = (path: string | null) => {
     if (!path) return '/images/default-event.png';
     
-    console.log('Processing event image path:', path);
+    // Return the image URL if it's a Cloudinary URL or any other full URL
+    if (path.startsWith('http')) return path;
     
-    // Return the image URL if it's a data URL or starts with http
-    if (path.startsWith('data:') || path.startsWith('http')) return path;
-    
-    // Check if it's already an absolute path from the server (starts with /uploads)
-    if (path.startsWith('/uploads')) {
-      const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
-      console.log(`Resolving with base URL: ${baseUrl}${path}`);
-      return `${baseUrl}${path}`;
-    }
-    
-    // If it's a relative path, append API_URL and uploads path
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5175';
-    console.log(`Resolving relative path: ${baseUrl}/uploads/events/${path}`);
-    return `${baseUrl}/uploads/events/${path}`;
+    // Default fallback
+    return '/images/default-event.png';
   };
 
   // Update fetchEventDetails to use the public endpoint

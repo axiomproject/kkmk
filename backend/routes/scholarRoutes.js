@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const authenticateToken = require('../middleware/authenticateToken'); // Add this line
 const ScholarModel = require('../models/scholarModel');
 const ReportCardModel = require('../models/reportCardModel');
@@ -10,14 +12,20 @@ const emailService = require('../services/emailService'); // Add this import
 const db = require('../config/db'); // Use the shared db connection
 const notificationUtils = require('../utils/notificationUtils'); // Add this import
 
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/scholars');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'scholar-' + uniqueSuffix + path.extname(file.originalname));
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Configure multer for Cloudinary upload
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'scholars',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+    transformation: [{ width: 500, height: 500, crop: 'limit' }]
   }
 });
 
@@ -379,79 +387,38 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.put('/:id', upload.single('image'), async (req, res) => {
+// Create a new scholar
+router.post('/create', upload.single('image'), async (req, res) => {
   try {
-    const updates = { ...req.body };
-    
-    // Handle optional image upload
-    if (req.file) {
-      updates.imageUrl = `/uploads/scholars/${req.file.filename}`;
-    }
-
-    // Convert string values to appropriate types
-    if (updates.currentAmount) {
-      updates.currentAmount = parseFloat(updates.currentAmount);
-    }
-    
-    if (updates.amountNeeded) {
-      updates.amountNeeded = parseFloat(updates.amountNeeded);
-    }
-    
-    // Explicitly map form field names to the expected format for the model
     const scholarData = {
-      firstName: updates.firstName,
-      lastName: updates.lastName,
-      address: updates.address,
-      dateOfBirth: updates.dateOfBirth,
-      gradeLevel: updates.gradeLevel,
-      school: updates.school,
-      guardianName: updates.guardianName,
-      guardianPhone: updates.guardianPhone,
-      gender: updates.gender,
-      favoriteSubject: updates.favoriteSubject,
-      favoriteActivity: updates.favoriteActivity,
-      favoriteColor: updates.favoriteColor,
-      otherDetails: updates.otherDetails,
-      imageUrl: updates.imageUrl, // Use imageUrl consistently
-      status: updates.status,
-      currentAmount: updates.currentAmount,
-      amountNeeded: updates.amountNeeded
+      ...req.body,
+      imageUrl: req.file ? req.file.path : null
     };
 
-    console.log('Updating scholar with data:', scholarData);
-    
-    const updatedScholar = await ScholarModel.updateScholar(req.params.id, scholarData);
-    res.json(updatedScholar);
+    const scholar = await ScholarModel.createScholar(scholarData);
+    res.status(201).json(scholar);
   } catch (error) {
-    console.error('Error updating scholar:', error);
-    res.status(500).json({ error: 'Failed to update scholar' });
+    console.error('Error creating scholar:', error);
+    res.status(500).json({ error: 'Failed to create scholar' });
   }
 });
 
-// Update the route to match the frontend request
-router.post('/create', upload.single('image'), async (req, res) => {
+// Update a scholar
+router.put('/:id', upload.single('image'), async (req, res) => {
   try {
-    console.log('Received scholar data:', req.body);
-    
-    const scholarData = {
-      ...req.body,
-      imageUrl: req.file ? `/uploads/scholars/${req.file.filename}` : null,
-      status: req.body.status || 'active'
+    const updates = {
+      ...req.body
     };
 
-    const newScholar = await ScholarModel.createScholar(scholarData);
-
-    // Handle user assignment if userId is provided
-    if (req.body.userId) {
-      await ScholarModel.assignUser(newScholar.id, parseInt(req.body.userId));
+    if (req.file) {
+      updates.imageUrl = req.file.path;
     }
 
-    // Fetch the complete scholar data with user info
-    const finalScholar = await ScholarModel.getScholarById(newScholar.id);
-    res.status(201).json(finalScholar);
+    const scholar = await ScholarModel.updateScholar(req.params.id, updates);
+    res.json(scholar);
   } catch (error) {
-    console.error('Error creating scholar:', error);
-    res.status(500).json({ error: 'Failed to create scholar profile', details: error.message });
+    console.error('Error updating scholar:', error);
+    res.status(500).json({ error: 'Failed to update scholar' });
   }
 });
 

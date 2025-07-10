@@ -1,66 +1,78 @@
 const express = require('express');
 const path = require('path');
-// ...existing imports...
+const cors = require('cors');
+const authMiddleware = require('./middleware/authMiddleware');
+
+const app = express();
 
 // Add CORS configuration
 app.use(cors({
-  origin: 'http://localhost:5173', // Add your frontend URL
-  credentials: true
+  origin: [
+    'http://localhost:5173',  // Vite dev server
+    'http://localhost:5174',  // Alternative dev port
+    'http://localhost:3000',  // Common React dev port
+    'https://kmfi.onrender.com' // Production URL
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Configure static file serving - make sure this comes before your routes
+// Body parser middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Configure static file serving
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Add debug logging for static files
-app.use('/uploads', (req, res, next) => {
-  console.log('Static file request:', req.url);
-  console.log('Full path:', path.join(__dirname, 'uploads', req.url));
+// Import routes
+const eventRoutes = require('./routes/eventRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const adminAuthRoutes = require('./routes/adminAuthRoutes');
+const staffRoutes = require('./routes/staffRoutes');
+const donationRoutes = require('./routes/donationRoutes');
+const scholarRoutes = require('./routes/scholarRoutes');
+const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
+const forumRoutes = require('./routes/forumRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const contentRoutes = require('./routes/contentRoutes');
+const geocodeRoutes = require('./routes/geocodeRoutes');
+const inventoryRoutes = require('./routes/inventoryRoutes');
+
+// Debug middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
 
-// ...existing code...
+// Public routes
+app.use('/api/events', eventRoutes); // This will make GET /api/events public
+app.use('/api/auth', authRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
-// Ensure we have a public route for events that doesn't need authentication
-// This should be BEFORE any auth middleware is applied to the /events route
-app.use('/events', require('./routes/eventRoutes'));
-
-const adminRoutes = require('./routes/adminRoutes');
-const adminAuthRoutes = require('./routes/adminAuthRoutes');
-
-// ...existing middleware...
-
-// IMPORTANT: Fix routes configuration to prevent duplicate /api prefixes
-// =====================================================================
-
-// 1. First configure the public routes (no auth required)
-app.use('/events', require('./routes/eventRoutes'));
-
-// 2. Configure authenticated routes with proper middleware
-// Make sure we don't mount the same routes twice - remove this line:
-// app.use('/api', eventRoutes); // REMOVE THIS LINE - it causes duplication
-
-// 3. Configure authenticated routes correctly
-app.use('/api/events', authMiddleware, require('./routes/eventRoutes'));
-
-// 4. Keep other routes as they are
-app.use('/api/admin', adminRoutes);
+// Protected routes
+app.use('/api/admin', authMiddleware, adminRoutes);
 app.use('/api/admin/auth', adminAuthRoutes);
-app.use('/api/content', require('./routes/contentRoutes'));
+app.use('/api/staff', authMiddleware, staffRoutes);
+app.use('/api/donations', authMiddleware, donationRoutes);
+app.use('/api/scholars', authMiddleware, scholarRoutes);
+app.use('/api/users', authMiddleware, userRoutes);
+app.use('/api/forum', authMiddleware, forumRoutes);
+app.use('/api/notifications', authMiddleware, notificationRoutes);
+app.use('/api/content', authMiddleware, contentRoutes);
+app.use('/api/geocode', authMiddleware, geocodeRoutes);
+app.use('/api/inventory', authMiddleware, inventoryRoutes);
 
-// Add staff routes
-const staffRoutes = require('./routes/staffRoutes');
-app.use('/api/staff', staffRoutes);
-app.use('/donations', donationRoutes);
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
+});
 
-// Add static file serving for uploads
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Add donation routes
-const donationRoutes = require('./routes/donationRoutes');
-app.use('/donations', donationRoutes);
-
-// For authenticated routes, make sure middleware is applied correctly
-// Protected routes should use the /api prefix
-app.use('/api/events', authMiddleware, require('./routes/eventRoutes'));
+module.exports = app;
 
 

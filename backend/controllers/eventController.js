@@ -1,17 +1,26 @@
 const EventModel = require('../models/eventModel');
-const { uploads } = require('../config/cloudinaryConfig');
-const uploadEventImage = uploads.events.single('image');
+const { uploadToCloudinary } = require('../config/cloudinaryConfig');
+const multer = require('multer');
+
+// Configure multer for memory storage
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only images are allowed'));
+    }
+  }
+}).single('image');
 
 const eventController = {
   async getEvents(req, res) {
     try {
       const events = await EventModel.getAllEvents();
-      
-      // Add debug logging for requirements field
-      console.log('Sending events with requirements data:', 
-        events.map(e => ({ id: e.id, requirements: e.requirements }))
-      );
-      
       res.json(events);
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -33,59 +42,69 @@ const eventController = {
 
   async createEvent(req, res) {
     try {
-      uploadEventImage(req, res, async (err) => {
+      upload(req, res, async (err) => {
         if (err) {
           return res.status(400).json({ error: err.message });
         }
 
-        // Get the Cloudinary URL from the uploaded file
-        const imagePath = req.file ? req.file.path : null;
+        try {
+          let imageUrl = null;
+          if (req.file) {
+            const result = await uploadToCloudinary(req.file, 'events');
+            imageUrl = result.url;
+          }
 
-        const eventData = {
-          ...req.body,
-          imagePath
-        };
+          const eventData = {
+            ...req.body,
+            image: imageUrl
+          };
 
-        const event = await EventModel.createEvent(eventData);
-        
-        res.status(201).json({
-          ...event,
-          image: imagePath
-        });
+          const event = await EventModel.createEvent(eventData);
+          res.status(201).json(event);
+        } catch (error) {
+          console.error('Error in create event:', error);
+          res.status(500).json({ error: 'Failed to create event' });
+        }
       });
     } catch (error) {
-      console.error('Create event error:', error);
+      console.error('Error in create event outer:', error);
       res.status(500).json({ error: 'Failed to create event' });
     }
   },
 
   async updateEvent(req, res) {
     try {
-      uploadEventImage(req, res, async (err) => {
+      upload(req, res, async (err) => {
         if (err) {
           return res.status(400).json({ error: err.message });
         }
 
-        const eventId = parseInt(req.params.id);
-        if (isNaN(eventId)) {
-          return res.status(400).json({ error: 'Invalid event ID' });
+        try {
+          const eventId = parseInt(req.params.id);
+          if (isNaN(eventId)) {
+            return res.status(400).json({ error: 'Invalid event ID' });
+          }
+
+          let imageUrl = undefined;
+          if (req.file) {
+            const result = await uploadToCloudinary(req.file, 'events');
+            imageUrl = result.url;
+          }
+
+          const eventData = {
+            ...req.body,
+            ...(imageUrl && { image: imageUrl }) // Only include image if a new one was uploaded
+          };
+
+          const event = await EventModel.updateEvent(eventId, eventData);
+          res.json(event);
+        } catch (error) {
+          console.error('Error in update event:', error);
+          res.status(500).json({ error: 'Failed to update event' });
         }
-
-        const imagePath = req.file ? req.file.path : undefined;
-        const eventData = {
-          ...req.body
-        };
-
-        // Only update image if a new one was uploaded
-        if (imagePath) {
-          eventData.imagePath = imagePath;
-        }
-
-        const event = await EventModel.updateEvent(eventId, eventData);
-        res.json(event);
       });
     } catch (error) {
-      console.error('Update event error:', error);
+      console.error('Error in update event outer:', error);
       res.status(500).json({ error: 'Failed to update event' });
     }
   },

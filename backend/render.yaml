@@ -11,3 +11,9 @@ services:
         value: postgresql://neondb_owner:npg_gqPp1Y4ioKLu@ep-solitary-term-a1rjtcwe-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
       - key: PORT
         value: 5175
+      - key: CLOUDINARY_CLOUD_NAME
+        value: dvzbgapue
+      - key: CLOUDINARY_API_KEY
+        value: 539274975653933
+      - key: CLOUDINARY_API_SECRET
+        value: Lstsyvr-PR9eR9tp1v5pqjysoLI

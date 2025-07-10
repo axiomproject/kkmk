@@ -131,6 +131,41 @@
   object-fit: contain;
 }
 
+.url-display {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 4px;
+}
+
+.url-display p {
+  margin: 0 0 4px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.url-display input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  font-size: 0.9rem;
+  color: #333;
+  background-color: #f5f5f5;
+  cursor: pointer;
+}
+
+.url-display input:hover {
+  background-color: #f0f0f0;
+}
+
+.url-display input:focus {
+  outline: none;
+  border-color: #f26907;
+  background-color: #fff;
+}
+
 .save-buttonsss {
   background: #f35721;
   color: white;
@@ -371,4 +406,31 @@ max-width: calc(100% - 3rem);
 overflow: hidden;
 text-overflow: ellipsis;
 vertical-align: middle;
+}
+
+.image-error {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #fff3f3;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  color: #d32f2f;
+  font-size: 0.9rem;
+}
+
+.image-error p {
+  margin: 0 0 4px 0;
+  font-weight: 500;
+}
+
+.image-error small {
+  display: block;
+  color: #666;
+  word-break: break-all;
+  font-size: 0.8rem;
+}
+
+.image-preview img[src="/images/default-event.png"] {
+  opacity: 0.5;
+  border: 1px dashed #ffcdd2;
 }

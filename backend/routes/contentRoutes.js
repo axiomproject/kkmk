@@ -3,7 +3,6 @@ const router = express.Router();
 const contentController = require('../controllers/contentController');
 const roleAuth = require('../middleware/roleAuth');
 const authMiddleware = require('../middleware/authMiddleware');
-const multerConfig = require('../config/multerConfig');
 
 // Public routes
 router.get('/pages', contentController.getPages);
@@ -15,15 +14,13 @@ router.put('/:page',
   roleAuth(['admin', 'staff']), // Add staff role here
   express.json(), // JSON parser
   express.urlencoded({ extended: true }), // URL-encoded parser
-  multerConfig.none(), // Handle form-data without files
   contentController.updateContent
 );
 
 router.post('/upload-image',
   authMiddleware,
   roleAuth(['admin', 'staff']), // Add staff role here
-  multerConfig.uploadContentImage, // Use content-specific upload config
-  contentController.uploadImage
+  contentController.uploadContentImage
 );
 
 module.exports = router;

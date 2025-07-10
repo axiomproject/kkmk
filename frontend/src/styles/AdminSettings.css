@@ -1,209 +1,171 @@
 .admin-pages {
-  padding: 50px 20px;
+  padding: 2rem;
 }
 
 .admin-pages h1 {
-  color: #2c3e50;
-    font-size: 1.875rem;
-    font-weight: 600;
-    font-family: 'Poppins', sans-serif;
-    text-align: left;
+  color: #333;
+  margin-bottom: 2rem;
+  text-align: left;
+  font-size: 2rem;
 }
 
 .settings-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 30px;
-  padding: 20px;
+}
+
+@media (max-width: 1024px) {
+  .settings-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .settings-container {
+    grid-template-columns: 1fr;
+  }
 }
 
 .settings-section {
-  background: white;
-  padding: 30px;
-  border-radius: 15px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.settings-section:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .settings-section h2 {
-  color: #2c3e50;
-  font-size: 1.5rem;
-  margin-bottom: 25px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f0f2f5;
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  text-align: left;
 }
 
-.settings-form .form-group {
-  margin-bottom: 20px;
-  overflow-wrap: anywhere;
+/* Profile Photo Section */
+.settings-photo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
-/* Remove or comment out the generic form-group input styles */
-/* .form-group input {
+.settings-current-photo {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #FF8C00;
+}
+
+.settings-photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
   width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
-} */
-
-/* Make admin-input styles more specific */
-.settings-section .admin-input {
-  width: 100%;
-  padding: 12px 15px !important;
-  border: 2px solid #e9ecef !important;
-  border-radius: 8px !important;
-  font-size: 1rem !important;
-  transition: all 0.3s ease, border-color 0.3s ease !important;
-  background: #f8fafc !important;
-  color: #333 !important; /* Add this to ensure text is visible */
 }
 
-.settings-section .admin-input:focus {
-  border-color: #FF8C00 !important;  /* Changed to orange */
-  outline: none !important;
-  background: white !important;
-  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1) !important;  /* Changed to match orange */
-  color: #333 !important;
+/* Form Styles */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-/* Add this new style to handle the modal input as well */
-.admin-mpin-modal-content .admin-input {
-  width: 100%;
-  padding: 12px 15px !important;
-  border: 2px solid #e9ecef !important;
-  border-radius: 8px !important;
-  font-size: 1rem !important;
-  transition: all 0.3s ease, border-color 0.3s ease !important;
-  background: #f8fafc !important;
-  color: #333 !important;
-}
-
-.admin-mpin-modal-content .admin-input:focus {
-  border-color: #FF8C00 !important;
-  outline: none !important;
-  background: white !important;
-  box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.1) !important;
-  color: #333 !important;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #34495e;
+  color: #333;
   font-weight: 500;
-  font-size: 0.9rem;
 }
 
-.upload-button {
-  background: #ec6e00;
-  color: white;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
+.admin-input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  transition: border-color 0.2s;
 }
 
-.upload-button:hover {
-  background: #d66200;
-  transform: translateY(-2px);
-}
-
-.selected-file {
-  margin-top: 12px;
-  color: #2c3e50;
-  font-size: 0.9rem;
-  padding: 10px;
-  background: #f8fafc;
-  border-radius: 6px;
-  border: 1px dashed #cbd5e0;
-}
-
-.save-button {
-  background: #ec6e00;
-  color: white;
-  padding: 12px 32px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  width: 100%;
-  transition: all 0.3s ease;
-}
-
-.save-button:hover {
-  background: #d66200;
-  transform: translateY(-2px);
-}
-
-.save-button:disabled {
-  background: #cbd5e0;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.error-message {
-  color: #e53e3e;
-  font-size: 0.9rem;
-  margin: 8px 0;
-  padding: 10px;
-  background: #fff5f5;
-  border-radius: 6px;
-  border: 1px solid #fed7d7;
+.admin-input:focus {
+  border-color: #FF8C00;
+  outline: none;
 }
 
 .password-input-wrapper {
   position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .password-toggle-icon {
   position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 10px;
   cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
-}
-
-.password-toggle-icon:hover {
-  opacity: 1;
+  display: flex;
+  align-items: center;
 }
 
 .password-toggle-icon svg {
   width: 20px;
   height: 20px;
-  fill: #64748b;
+  fill: #666;
 }
 
+/* Buttons */
+.upload-button,
+.save-button {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.upload-button {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.save-button {
+  background-color: #FF8C00;
+  color: white;
+}
+
+.upload-button:hover {
+  background-color: #e0e0e0;
+}
+
+.save-button:hover {
+  background-color: #ff9d1a;
+}
+
+.upload-button:disabled,
+.save-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* MPIN Toggle */
 .mpin-toggle {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
-  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 60px;
-  height: 34px;
+  width: 50px;
+  height: 24px;
 }
 
 .toggle-switch input {
@@ -221,14 +183,14 @@
   bottom: 0;
   background-color: #ccc;
   transition: .4s;
-  border-radius: 34px;
+  border-radius: 24px;
 }
 
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 26px;
-  width: 26px;
+  height: 16px;
+  width: 16px;
   left: 4px;
   bottom: 4px;
   background-color: white;
@@ -237,7 +199,7 @@
 }
 
 input:checked + .toggle-slider {
-  background-color: #ec6e00;
+  background-color: #FF8C00;
 }
 
 input:checked + .toggle-slider:before {
@@ -245,10 +207,18 @@ input:checked + .toggle-slider:before {
 }
 
 .toggle-label {
-  margin-left: 10px;
-  font-size: 16px;
+  color: #333;
+  font-weight: 500;
 }
 
+/* Error Messages */
+.error-message {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Modal Styles */
 .admin-mpin-modal-overlay {
   position: fixed;
   top: 0;
@@ -257,78 +227,65 @@ input:checked + .toggle-slider:before {
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
 }
 
 .admin-mpin-modal-content {
-  background-color: white;
+  background: white;
   padding: 2rem;
   border-radius: 8px;
   width: 100%;
   max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .admin-mpin-modal-title {
-  color: #2c3e50;
-  font-size: 1.5rem;
+  color: #333;
   margin-bottom: 1rem;
+  font-size: 1.25rem;
 }
 
 .admin-mpin-modal-description {
-  color: #64748b;
+  color: #666;
   margin-bottom: 1.5rem;
 }
 
 .admin-mpin-modal-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 1rem;
   margin-top: 1.5rem;
 }
 
-.admin-mpin-cancel-button {
-  background-color: #e2e8f0;
-  color: #64748b;
+.admin-mpin-cancel-button,
+.admin-mpin-confirm-button {
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  border-radius: 4px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.admin-mpin-cancel-button:hover {
-  background-color: #cbd5e1;
+.admin-mpin-cancel-button {
+  background-color: #f0f0f0;
+  color: #333;
 }
 
 .admin-mpin-confirm-button {
-  background-color: #ec6e00;
+  background-color: #FF8C00;
   color: white;
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
+}
+
+.admin-mpin-cancel-button:hover {
+  background-color: #e0e0e0;
 }
 
 .admin-mpin-confirm-button:hover {
-  background-color: #d66200;
+  background-color: #ff9d1a;
 }
 
-@media (max-width: 768px) {
-  .admin-page {
-    padding: 20px;
-  }
-  
-  .settings-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .settings-section {
-    padding: 20px;
-  }
+/* Form Actions */
+.form-actions {
+  margin-top: 1rem;
 }

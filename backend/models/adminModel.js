@@ -979,10 +979,11 @@ const AdminModel = {
   },
 
   async updateProfilePhoto(adminId, photoPath) {
-    return await db.one(
+    const result = await db.query(
       'UPDATE admin_users SET profile_photo = $1, updated_at = NOW() WHERE id = $2 RETURNING id, profile_photo',
       [photoPath, adminId]
     );
+    return result.rows[0];
   },
 
   async updateAdminProfile(adminId, updates) {
@@ -1007,7 +1008,8 @@ const AdminModel = {
       RETURNING id, name, email, profile_photo
     `;
 
-    return await db.one(query, values);
+    const result = await db.query(query, values);
+    return result.rows[0];
   },
 
   // Add this new method or update an existing one to manage report cards with grade level

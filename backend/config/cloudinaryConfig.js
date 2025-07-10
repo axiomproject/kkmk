@@ -1,34 +1,83 @@
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
+// Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dvzbgapue',
+  api_key: process.env.CLOUDINARY_API_KEY || '539274975653933',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'Lstsyvr-PR9eR9tp1v5pqjysoLI'
 });
 
-// Create separate storage configurations for different upload types
-const createStorage = (folder) => {
-  return new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-      folder: folder,
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'pdf'],
-      transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+// Configure multer for temporary storage
+const storage = multer.memoryStorage();
+
+// Create multer instance with file size limits and file filter
+const createMulter = () => {
+  return multer({
+    storage: storage,
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+      files: 1 // Only allow 1 file per request
+    },
+    fileFilter: (req, file, cb) => {
+      // Accept images only
+      if (!file.originalname.match(/\.(jpg|jpeg|png|gif|svg)$/i)) {
+        return cb(new Error('Only image files are allowed!'), false);
+      }
+      cb(null, true);
     }
   });
 };
 
+// Create a single multer instance
+const upload = createMulter();
+
 // Create upload middleware for different types
 const uploads = {
-  events: multer({ storage: createStorage('events') }),
-  scholars: multer({ storage: createStorage('scholars') }),
-  donations: multer({ storage: createStorage('donations') }),
-  forum: multer({ storage: createStorage('forum') }),
-  admin: multer({ storage: createStorage('admin') }),
-  staff: multer({ storage: createStorage('staff') }),
-  content: multer({ storage: createStorage('content') }) // Add content uploads
+  events: upload,
+  scholars: upload,
+  donations: upload,
+  forum: upload,
+  admin: upload,
+  staff: upload,
+  content: upload
+};
+
+// Function to upload to Cloudinary
+const uploadToCloudinary = async (file, folder) => {
+  try {
+    if (!file || !file.buffer) {
+      throw new Error('Invalid file object');
+    }
+
+    // Create a base64 string from buffer
+    const b64 = Buffer.from(file.buffer).toString('base64');
+    const dataURI = `data:${file.mimetype};base64,${b64}`;
+    
+    // Upload to Cloudinary with optimizations
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: folder,
+      resource_type: 'auto',
+      quality: 'auto:good', // Automatic quality optimization
+      fetch_format: 'auto', // Automatic format optimization
+      flags: 'attachment', // Treat as attachment
+      use_filename: false, // Don't use original filename
+      unique_filename: true, // Ensure unique filenames
+      timeout: 120000 // 2 minute timeout
+    });
+
+    // Return the complete Cloudinary URL and metadata
+    return {
+      url: result.secure_url,
+      public_id: result.public_id,
+      format: result.format,
+      resource_type: result.resource_type,
+      version: result.version
+    };
+  } catch (error) {
+    console.error('Cloudinary upload error:', error);
+    throw error;
+  }
 };
 
 // Test Cloudinary configuration
@@ -46,5 +95,6 @@ const testCloudinaryConnection = async () => {
 module.exports = {
   cloudinary,
   uploads,
+  uploadToCloudinary,
   testCloudinaryConnection
 }; 

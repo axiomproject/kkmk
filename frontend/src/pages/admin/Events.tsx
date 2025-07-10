@@ -231,15 +231,8 @@ const resolveImageUrl = (imagePath: string | null): string => {
   // For debugging
   console.log('Resolving image URL for:', imagePath);
   
-  // If it's already a full URL, return as is
+  // If it's a Cloudinary URL or any other full URL, return as is
   if (imagePath.startsWith('http')) return imagePath;
-  
-  // If it starts with '/uploads', append the base URL
-  if (imagePath.startsWith('/uploads')) {
-    const baseUrl = axios.defaults.baseURL || 'http://localhost:5175';
-    console.log(`Resolved URL: ${baseUrl}${imagePath}`);
-    return `${baseUrl}${imagePath}`;
-  }
   
   // For relative paths without leading slash
   if (!imagePath.startsWith('/')) {

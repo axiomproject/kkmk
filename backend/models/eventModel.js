@@ -43,26 +43,16 @@ const EventModel = {
         // Parse skill_requirements JSON if it exists
         if (event.skill_requirements) {
           try {
-            console.log(`Raw skill_requirements for event ${event.id}:`, event.skill_requirements);
             processedEvent.skill_requirements = JSON.parse(event.skill_requirements);
-            console.log(`Parsed skill_requirements for event ${event.id}:`, processedEvent.skill_requirements);
           } catch (e) {
             console.error(`Error parsing skill_requirements JSON for event ${event.id}:`, e);
-            console.error('Raw value:', event.skill_requirements);
             processedEvent.skill_requirements = [];
           }
         } else {
-          console.log(`No skill_requirements found for event ${event.id}`);
           processedEvent.skill_requirements = [];
         }
         
         return processedEvent;
-      });
-      
-      // Add debug logging
-      events.forEach(event => {
-        console.log(`Event ${event.id} skill_requirements:`, 
-          event.skill_requirements || 'None');
       });
       
       return events;
@@ -88,10 +78,8 @@ const EventModel = {
         if (event.skill_requirements_text) {
           try {
             event.skill_requirements = JSON.parse(event.skill_requirements_text);
-            console.log(`Parsed skill_requirements for event ${event.id}:`, event.skill_requirements);
           } catch (e) {
             console.error(`Error parsing skill_requirements JSON for event ${event.id}:`, e);
-            console.error('Raw value:', event.skill_requirements_text);
             event.skill_requirements = [];
           }
         } else {
@@ -159,16 +147,12 @@ const EventModel = {
     const {
       title, date, location, description,
       totalVolunteers, currentVolunteers, 
-      totalScholars, currentScholars, // Add new scholar fields
+      totalScholars, currentScholars,
       status,
       contactPhone, contactEmail, startTime, endTime,
-      imagePath, latitude, longitude, requirements,
+      image, latitude, longitude, requirements,
       skillRequirements
     } = eventData;
-
-    console.log('Creating event with requirements:', requirements);
-    console.log('Creating event with skill requirements:', skillRequirements);
-    console.log('Creating event with scholar counts:', { totalScholars, currentScholars });
 
     // Parse skill requirements if it's a string
     let processedSkillRequirements = skillRequirements;
@@ -181,13 +165,22 @@ const EventModel = {
       }
     }
 
-    // Debug logging to see what's being sent to the database
-    const params = [
-      title, date, location, imagePath, description,
+    const result = await db.query(`
+      INSERT INTO events (
+        title, date, location, image, description,
+        total_volunteers, current_volunteers,
+        total_scholars, current_scholars,
+        status, contact_phone, contact_email,
+        start_time, end_time, latitude, longitude,
+        requirements, skill_requirements
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      RETURNING *
+    `, [
+      title, date, location, image, description,
       parseInt(totalVolunteers) || 0,
       parseInt(currentVolunteers) || 0,
-      parseInt(totalScholars) || 0, // Add total scholars
-      parseInt(currentScholars) || 0, // Add current scholars
+      parseInt(totalScholars) || 0,
+      parseInt(currentScholars) || 0,
       status,
       contactPhone || '',
       contactEmail || '',
@@ -197,53 +190,21 @@ const EventModel = {
       longitude ? parseFloat(longitude) : null,
       requirements || '',
       processedSkillRequirements ? JSON.stringify(processedSkillRequirements) : null
-    ];
-    
-    console.log('Database parameters:', params);
+    ]);
 
-    // Replace db.one with db.query
-    const result = await db.query(
-      `INSERT INTO events (
-        title, date, location, image, description,
-        total_volunteers, current_volunteers, 
-        total_scholars, current_scholars,
-        status,
-        contact_phone, contact_email, start_time, end_time,
-        latitude, longitude, requirements, skill_requirements
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
-      RETURNING *`,
-      params
-    );
-    
-    const createdEvent = result.rows[0];
-    
-    // Parse skill_requirements JSON for the return value
-    if (createdEvent.skill_requirements && typeof createdEvent.skill_requirements === 'string') {
-      try {
-        createdEvent.skill_requirements = JSON.parse(createdEvent.skill_requirements);
-      } catch (e) {
-        console.error('Error parsing created event skill_requirements:', e);
-      }
-    }
-    
-    console.log('Created event:', createdEvent);
-    return createdEvent;
+    return result.rows[0];
   },
 
   async updateEvent(id, eventData) {
     const {
       title, date, location, description,
-      totalVolunteers, currentVolunteers, 
-      totalScholars, currentScholars, // Add new scholar fields
+      totalVolunteers, currentVolunteers,
+      totalScholars, currentScholars,
       status,
       contactPhone, contactEmail, startTime, endTime,
-      imagePath, latitude, longitude, requirements,
+      image, latitude, longitude, requirements,
       skillRequirements
     } = eventData;
-
-    console.log('Updating event with requirements:', requirements);
-    console.log('Updating event with skill requirements:', skillRequirements);
-    console.log('Updating event with scholar counts:', { totalScholars, currentScholars });
 
     // Parse skill requirements if it's a string
     let processedSkillRequirements = skillRequirements;
@@ -256,81 +217,55 @@ const EventModel = {
       }
     }
 
-    // Create base array of values
-    const values = [
-      title,
-      date,
-      location,
-      description,
-      parseInt(totalVolunteers),
-      parseInt(currentVolunteers),
-      parseInt(totalScholars) || 0, // Add total scholars
-      parseInt(currentScholars) || 0, // Add current scholars
-      status,
-      contactPhone,
-      contactEmail,
-      startTime,
-      endTime,
-      latitude ? parseFloat(latitude) : null,
-      longitude ? parseFloat(longitude) : null,
-      requirements || '',
-      processedSkillRequirements ? JSON.stringify(processedSkillRequirements) : null
-    ];
-    
-    console.log('Update values:', values);
+    // Build the update query dynamically based on whether image is provided
+    const updateFields = [];
+    const values = [];
+    let paramCount = 1;
 
-    // Start building the query
-    let query = `
-      UPDATE events SET
-        title = $1,
-        date = $2,
-        location = $3,
-        description = $4,
-        total_volunteers = $5,
-        current_volunteers = $6,
-        total_scholars = $7,
-        current_scholars = $8,
-        status = $9,
-        contact_phone = $10,
-        contact_email = $11,
-        start_time = $12,
-        end_time = $13,
-        latitude = $14,
-        longitude = $15,
-        requirements = $16,
-        skill_requirements = $17,
-        updated_at = CURRENT_TIMESTAMP
-    `;
-
-    // If there's a new image, add it to the query
-    if (imagePath) {
-      query += `, image = $${values.length + 1}`;
-      values.push(imagePath);
-    }
-
-    // Add the WHERE clause with the ID at the end
-    query += ` WHERE id = $${values.length + 1} RETURNING *`;
-    values.push(id);  // Add the ID as the last parameter
-
-    console.log('Full UPDATE query:', query);
-    console.log('Query parameters:', values);
-
-    // Replace db.one with db.query
-    const result = await db.query(query, values);
-    
-    const updatedEvent = result.rows[0];
-    
-    // Parse skill_requirements JSON for the return value
-    if (updatedEvent.skill_requirements && typeof updatedEvent.skill_requirements === 'string') {
-      try {
-        updatedEvent.skill_requirements = JSON.parse(updatedEvent.skill_requirements);
-      } catch (e) {
-        console.error('Error parsing updated event skill_requirements:', e);
+    // Helper function to add a field to the update query
+    const addField = (fieldName, value) => {
+      if (value !== undefined) {
+        updateFields.push(`${fieldName} = $${paramCount}`);
+        values.push(value);
+        paramCount++;
       }
+    };
+
+    // Add all fields that should be updated
+    addField('title', title);
+    addField('date', date);
+    addField('location', location);
+    addField('description', description);
+    addField('total_volunteers', parseInt(totalVolunteers) || 0);
+    addField('current_volunteers', parseInt(currentVolunteers) || 0);
+    addField('total_scholars', parseInt(totalScholars) || 0);
+    addField('current_scholars', parseInt(currentScholars) || 0);
+    addField('status', status);
+    addField('contact_phone', contactPhone || '');
+    addField('contact_email', contactEmail || '');
+    addField('start_time', startTime);
+    addField('end_time', endTime);
+    addField('latitude', latitude ? parseFloat(latitude) : null);
+    addField('longitude', longitude ? parseFloat(longitude) : null);
+    addField('requirements', requirements || '');
+    addField('skill_requirements', processedSkillRequirements ? JSON.stringify(processedSkillRequirements) : null);
+
+    // Only add image field if it's provided
+    if (image !== undefined) {
+      addField('image', image);
     }
-    
-    console.log('Updated event:', updatedEvent);
-    return updatedEvent;
+
+    // Add the id as the last parameter
+    values.push(id);
+
+    const result = await db.query(`
+      UPDATE events
+      SET ${updateFields.join(', ')}
+      WHERE id = $${paramCount}
+      RETURNING *
+    `, values);
+
+    return result.rows[0];
   },
 
   async deleteEvent(id) {

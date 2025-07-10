@@ -110,18 +110,25 @@ const AdminHeader = () => {
 
   const getImageUrl = (path: string) => {
     if (!path) return '';
-    if (path.startsWith('data:') || path.startsWith('http')) return path;
-    return `${import.meta.env.VITE_API_URL}${path}`;
+    if (path.includes('cloudinary.com') || path.startsWith('data:') || path.startsWith('http')) return path;
+    return `${API_URL}${path}`;
   };
 
   // Add helper function to resolve avatar URL
   const resolveAvatarUrl = (avatarUrl: string | null | undefined): string => {
     if (!avatarUrl) return defaultAvatarImg;
     
+    // Handle Cloudinary URLs
+    if (avatarUrl.includes('cloudinary.com')) {
+      return avatarUrl;
+    }
+    
+    // Handle other external URLs
     if (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:')) {
       return avatarUrl;
     }
     
+    // Handle local URLs
     if (avatarUrl.startsWith('/uploads/')) {
       return `${API_URL}${avatarUrl}`;
     }
@@ -336,8 +343,9 @@ const AdminHeader = () => {
     navigate('/login');
   };
 
+  // Update the getProfilePhotoUrl function to handle Cloudinary URLs
   const getProfilePhotoUrl = () => {
-    console.log('Getting profile photo for user:', user); // Debug log
+    console.log('Getting profile photo for user:', user); // Keep debug log
     
     if (!user?.profilePhoto) {
       console.log('No profile photo, using default');

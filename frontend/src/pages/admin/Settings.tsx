@@ -79,19 +79,19 @@ const AdminSettings = () => {
       const formData = new FormData();
       formData.append('profilePhoto', selectedFile);
 
-      const endpoint = isAdmin ? '/admin/profile-photo' : '/staff/profile-photo';
-      const response = await api.post(endpoint, formData, {
+      const endpoint = isAdmin ? `/admin/profile-photo/${user?.id}` : `/staff/profile-photo/${user?.id}`;
+      const response = await api.put(endpoint, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      if (response.data?.user) {
+      if (response.data) {
         console.log('Profile photo update response:', response.data);
-        // Ensure we're updating all necessary user data
+        // Update user with the Cloudinary URL directly
         updateUser({
-          ...response.data.user,
-          profilePhoto: response.data.user.profile_photo // Ensure this matches the backend response
+          ...user,
+          profilePhoto: response.data.profile_photo
         });
         alert('Profile photo updated successfully');
         setSelectedFile(null);
@@ -106,6 +106,13 @@ const AdminSettings = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Add helper function to handle profile photo URL
+  const getProfilePhotoUrl = (photoUrl: string | null | undefined): string => {
+    if (!photoUrl) return '/images/default-avatar.jpg';
+    if (photoUrl.includes('cloudinary.com')) return photoUrl;
+    return `${import.meta.env.VITE_API_URL}${photoUrl}`;
   };
 
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,50 +232,46 @@ const AdminSettings = () => {
 
   return (
     <div className="admin-pages">
-      <h1>Settings</h1>
+      <h1>Account Settings</h1>
       <div className="settings-container">
-        {/* Photo Upload Section */}
+        {/* Profile Photo Section */}
         <section className="settings-section">
           <h2>Profile Photo</h2>
-          <form onSubmit={handleSubmit} className="settings-form">
-            <div className="form-group">
+          <div className="settings-photo">
+            <img 
+              src={selectedFile ? URL.createObjectURL(selectedFile) : getProfilePhotoUrl(user?.profilePhoto)}
+              alt="Profile"
+              className="settings-current-photo"
+            />
+            <div className="settings-photo-actions">
               <input
                 type="file"
-                id="profilePhoto"
                 ref={fileInputRef}
-                accept="image/*"
                 onChange={handleFileChange}
-                className="admin-input"
+                accept="image/*"
                 style={{ display: 'none' }}
               />
-              <button
-                type="button"
+              <button 
+                type="button" 
                 onClick={handleButtonClick}
                 className="upload-button"
+                disabled={loading}
               >
                 Choose Photo
               </button>
               {selectedFile && (
-                <div className="selected-file">
-                  Selected: {selectedFile.name}
-                </div>
+                <button 
+                  type="button"
+                  onClick={handleSubmit}
+                  className="save-button"
+                  disabled={loading}
+                >
+                  {loading ? 'Uploading...' : 'Save Photo'}
+                </button>
               )}
             </div>
-            {photoError && (
-              <div className="error-message">
-                {photoError}
-              </div>
-            )}
-            <div className="form-actions">
-              <button 
-                type="submit" 
-                className="save-button"
-                disabled={!selectedFile || loading}
-              >
-                {loading ? 'Uploading...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
+            {photoError && <p className="error-message">{photoError}</p>}
+          </div>
         </section>
 
         {/* Profile Information Section */}
