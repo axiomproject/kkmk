@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import api from '../../config/axios'; // Replace axios import
+import { motion } from "framer-motion";
+import api from '../../config/axios';
 import "../../styles/OurStory.css";
 import bannerImage from '../../img/story.png';
 import storyImage from '../../img/father.png'; 
@@ -14,6 +15,45 @@ interface PageContent {
     caption?: string;
   }[];
 }
+
+// Animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const fadeInLeft = {
+  hidden: { opacity: 0, x: -50 },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const fadeInRight = {
+  hidden: { opacity: 0, x: 50 },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 1 },
+  visible: {
+    opacity: 1,
+    transition: {
+      delayChildren: 0.3,
+      staggerChildren: 0.2
+    }
+  }
+};
 
 const Story = () => {
   const [content, setContent] = useState<PageContent>({ 
@@ -34,6 +74,7 @@ const Story = () => {
       }
     ]
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   const getImageUrl = (path: string) => {
     if (!path) return '';
@@ -44,25 +85,18 @@ const Story = () => {
     return path;
   };
 
-  // Add debug logging for image loading
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, fallback: string) => {
-    console.error('Image failed to load:', {
-      src: e.currentTarget.src,
-      fallback,
-      error: e
-    });
     e.currentTarget.src = fallback;
   };
 
   useEffect(() => {
     const loadContent = async () => {
       try {
+        setIsLoading(true);
         const response = await api.get('/content/story');
-        console.log('Loaded content:', response.data); // Debug log
         
         if (response.data && response.data.content) {
           const savedContent = response.data.content;
-          console.log('Processing saved content:', savedContent); // Debug log
           
           setContent(prev => ({
             bannerImage: savedContent.bannerImage ? getImageUrl(savedContent.bannerImage) : bannerImage,
@@ -77,43 +111,76 @@ const Story = () => {
           }));
         }
       } catch (error) {
-        console.error('Failed to load content:', error);
+        // Handle error silently
+      } finally {
+        setIsLoading(false);
       }
     };
     loadContent();
   }, []);
 
   return (
-    <div className="home-container">
-      <img 
+    <motion.div 
+      className="home-container"
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+    >
+      {/* Banner with loading optimization */}
+      <motion.img 
         src={getImageUrl(content.bannerImage)} 
         alt="Banner" 
-        className="banner-image"
+        className={`banner-image ${isLoading ? 'loading' : 'loaded'}`}
         onError={(e) => handleImageError(e, bannerImage)}
+        loading="eager"
+        decoding="async"
+        variants={fadeInUp}
       />
-      {content.sections.map((section, index) => (
-        <div key={index} className="story-section">
-          <div className={`story-content ${index > 0 ? 'reverse-layout' : ''}`}>
-            <div className="story-text">
-              <p>{section.text}</p>
+
+      <motion.div variants={staggerContainer}>
+        {content.sections.map((section, index) => (
+          <motion.div 
+            key={index} 
+            className="story-section"
+            variants={fadeInUp}
+          >
+            <div className={`story-content ${index > 0 ? 'reverse-layout' : ''}`}>
+              <motion.div 
+                className="story-text"
+                variants={index % 2 === 0 ? fadeInLeft : fadeInRight}
+              >
+                <p>{section.text}</p>
+              </motion.div>
+              <motion.div 
+                className="story-image-container"
+                variants={index % 2 === 0 ? fadeInRight : fadeInLeft}
+              >
+                {section.image && (
+                  <>
+                    <img 
+                      src={getImageUrl(section.image)}
+                      alt={section.caption || `Section ${index + 1}`}
+                      className={index === 0 ? 'story-image' : index === 1 ? 'mission-image' : 'org-image'}
+                      onError={(e) => handleImageError(e, [storyImage, missionImage, orgImage][index])}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {section.caption && (
+                      <motion.p 
+                        className="story-caption"
+                        variants={fadeInUp}
+                      >
+                        {section.caption}
+                      </motion.p>
+                    )}
+                  </>
+                )}
+              </motion.div>
             </div>
-            <div className="story-image-container">
-              {section.image && (
-                <>
-                  <img 
-                    src={getImageUrl(section.image)}
-                    alt={section.caption || `Section ${index + 1}`}
-                    className={index === 0 ? 'story-image' : index === 1 ? 'mission-image' : 'org-image'}
-                    onError={(e) => handleImageError(e, [storyImage, missionImage, orgImage][index])}
-                  />
-                  {section.caption && <p className="story-caption">{section.caption}</p>}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </motion.div>
   );
 };
 

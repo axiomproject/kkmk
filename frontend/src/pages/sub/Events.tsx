@@ -106,6 +106,78 @@ interface PastEvent extends Event {
   }[];
 }
 
+// Add these animation variants near the top of the file, after the interfaces
+const carouselVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut"
+    }
+  }
+};
+
+const imageVariants = {
+  hidden: { scale: 1.1, opacity: 0 },
+  visible: { 
+    scale: 1, 
+    opacity: 1,
+    transition: {
+      duration: 0.8,
+      ease: "easeOut"
+    }
+  }
+};
+
+// Add these animation variants near the top, after the existing variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const tabVariants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
+const titleVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.6,
+      ease: "easeOut"
+    }
+  }
+};
+
 const EventPage: React.FC = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
@@ -161,18 +233,18 @@ const fetchEvents = async () => {
     setIsLoading(true);
     // Use the correct API endpoint with /api prefix
     const response = await api.get<BackendEvent[]>('/events');
-    console.log('Raw event data:', response.data);
+    // console.log('Raw event data:', response.data);
 
     const currentDate = new Date();
     
     // Process all events
     const processedEvents = response.data.map(event => {
       // Add extensive debug logging for skill requirements
-      console.log(`Processing event ${event.id}, title: ${event.title}`);
+      // console.log(`Processing event ${event.id}, title: ${event.title}`);
       
       // Debug log for skill requirements
-      console.log(`Event ${event.id} skill requirements:`, 
-        event.skillRequirements || event.skill_requirements || 'None');
+      // console.log(`Event ${event.id} skill requirements:`, 
+      //   event.skillRequirements || event.skill_requirements || 'None');
       
       // Make sure we properly extract the skill requirements
       let processedSkillRequirements = null;
@@ -215,10 +287,10 @@ const fetchEvents = async () => {
         };
       }
 
-      // Debug feedback data more extensively
-      if (isPast) {
-        console.log(`Past event ${event.id} (${event.title}) feedback details:`, event.feedback);
-      }
+      // // Debug feedback data more extensively
+      // if (isPast) {
+      //   console.log(`Past event ${event.id} (${event.title}) feedback details:`, event.feedback);
+      // }
       
       // Process feedback data if it exists - only keep volunteer feedback with comments
       let processedFeedback;
@@ -239,9 +311,9 @@ const fetchEvents = async () => {
             comment: item.comment,
             createdAt: item.created_at
           }));
-        console.log(`Event ${event.id}: Processed ${processedFeedback.length} filtered feedback items`);
+        // console.log(`Event ${event.id}: Processed ${processedFeedback.length} filtered feedback items`);
       } else {
-        console.log(`Event ${event.id}: No feedback data available, will fetch separately`);
+        // console.log(`Event ${event.id}: No feedback data available, will fetch separately`);
       }
       
       return {
@@ -271,7 +343,7 @@ const fetchEvents = async () => {
         .filter(event => event.isPast && (!event.feedback || event.feedback.length === 0))
         .map(async (event) => {
           try {
-            console.log(`Fetching additional feedback for event ${event.id}`);
+            // console.log(`Fetching additional feedback for event ${event.id}`);
             const feedbackResponse = await api.get(`/public/feedback/${event.id}`);
             if (feedbackResponse.data && feedbackResponse.data.feedback) {
               console.log(`Retrieved ${feedbackResponse.data.feedback.length} feedback items for event ${event.id}`);
@@ -299,27 +371,27 @@ const fetchEvents = async () => {
         })
     );
 
-    console.log('Past events after feedback fetch:', processedEvents.map(e => 
-      `${e.id}: ${e.title} - ${e.feedback?.length || 0} feedback items`
-    ));
+    // console.log('Past events after feedback fetch:', processedEvents.map(e => 
+    //   `${e.id}: ${e.title} - ${e.feedback?.length || 0} feedback items`
+    // ));
 
       // Now separate future and past events
       const futureEvents = processedEvents.filter(event => !event.isPast);
       const pastEventsList = processedEvents.filter(event => event.isPast) as PastEvent[];
       
-      console.log('Transformed future events:', futureEvents.length);
-      console.log('Transformed past events:', pastEventsList.length);
+      // console.log('Transformed future events:', futureEvents.length);
+      // console.log('Transformed past events:', pastEventsList.length);
       
-      // Debug each event's skill requirements 
-      futureEvents.forEach(event => {
-        console.log(`Event ${event.id} (${event.title}) final skill requirements:`, 
-          JSON.stringify(event.skillRequirements));
-      });
+      // // Debug each event's skill requirements 
+      // futureEvents.forEach(event => {
+      //   console.log(`Event ${event.id} (${event.title}) final skill requirements:`, 
+      //     JSON.stringify(event.skillRequirements));
+      // });
       
-      // Debug past events specifically for feedback
-      pastEventsList.forEach(event => {
-        console.log(`Past event ${event.id} (${event.title}): has ${event.feedback?.length || 0} feedback items`);
-      });
+      // // Debug past events specifically for feedback
+      // pastEventsList.forEach(event => {
+      //   console.log(`Past event ${event.id} (${event.title}): has ${event.feedback?.length || 0} feedback items`);
+      // });
       
       setEvents(futureEvents);
       setPastEvents(pastEventsList);
@@ -339,18 +411,18 @@ const fetchEvents = async () => {
           userSkills = user.skills;
         }
         
-        console.log('User skills before categorization:', userSkills);
+        // console.log('User skills before categorization:', userSkills);
         
-        // Debug which events match user skills
-        futureEvents.forEach(event => {
-          if (event.skillRequirements && event.skillRequirements.length > 0) {
-            const matchingSkills = event.skillRequirements.filter(
-                (req: { skill: string, count: number }) => userSkills.includes(req.skill)
-              );
-            console.log(`Event ${event.id} (${event.title}) matching skills:`, 
-              matchingSkills.length > 0 ? matchingSkills.map((m: { skill: string, count: number }) => m.skill) : 'None');
-          }
-        });
+        // // Debug which events match user skills
+        // futureEvents.forEach(event => {
+        //   if (event.skillRequirements && event.skillRequirements.length > 0) {
+        //     const matchingSkills = event.skillRequirements.filter(
+        //         (req: { skill: string, count: number }) => userSkills.includes(req.skill)
+        //       );
+        //     console.log(`Event ${event.id} (${event.title}) matching skills:`, 
+        //       matchingSkills.length > 0 ? matchingSkills.map((m: { skill: string, count: number }) => m.skill) : 'None');
+        //   }
+        // });
         
         categorizeEvents(futureEvents, userSkills);
       } else {
@@ -449,322 +521,388 @@ const fetchEvents = async () => {
       transition={{ duration: 0.3 }}
     >
       <section className="hero">
-        <Carousel indicators={true} interval={3000} pause="hover">
-          <Carousel.Item>
-            <img
-              className="d-block w-100"
-              src="https://kmpayatasb.org/wp-content/uploads/2024/02/SLT-9.jpg"
-              alt="First slide"
-            />
-          </Carousel.Item>
-          <Carousel.Item>
-            <img
-              className="d-block w-100"
-              src="https://www.reedelsevier.com.ph/wp-content/uploads/2017/08/corporate-social-responsibility-image.jpg"
-              alt="Second slide"
-            />
-          </Carousel.Item>
-          <Carousel.Item>
-            <img
-              className="d-block w-100"
-              src="https://kmpayatasb.org/wp-content/uploads/2024/07/449175130_1202453737441028_1645834846612611749_n-1380x657.jpg"
-              alt="Third slide"
-            />
-          </Carousel.Item>
-        </Carousel>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={carouselVariants}
+        >
+          <Carousel indicators={true} interval={3000} pause="hover">
+            <Carousel.Item>
+              <motion.div variants={imageVariants}>
+                <img
+                  className="d-block w-100"
+                  src="https://kmpayatasb.org/wp-content/uploads/2024/02/SLT-9.jpg"
+                  alt="First slide"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                />
+              </motion.div>
+            </Carousel.Item>
+            <Carousel.Item>
+              <motion.div variants={imageVariants}>
+                <img
+                  className="d-block w-100"
+                  src="https://www.reedelsevier.com.ph/wp-content/uploads/2017/08/corporate-social-responsibility-image.jpg"
+                  alt="Second slide"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </motion.div>
+            </Carousel.Item>
+            <Carousel.Item>
+              <motion.div variants={imageVariants}>
+                <img
+                  className="d-block w-100"
+                  src="https://kmpayatasb.org/wp-content/uploads/2024/07/449175130_1202453737441028_1645834846612611749_n-1380x657.jpg"
+                  alt="Third slide"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </motion.div>
+            </Carousel.Item>
+          </Carousel>
+        </motion.div>
       </section>
 
       <section className="events-section">
-        <Tabs
-          activeKey={activeTab}
-          onSelect={(k) => setActiveTab(k || "featured")}
-          className="event-tabs mb-4"
-          fill
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
         >
-          <Tab eventKey="featured" title="Featured Events">
-            {isLoading && <div className="loading-indicator">Loading events...</div>}
-            {error && <div className="error-message">{error}</div>}
-            
-            {/* Recommended Events Section - Only show if user is a volunteer and there are recommendations */}
-            {user && user.role === 'volunteer' && recommendedEvents.length > 0 && (
-              <>
-                <h2 className="section-title recommended-title">
-                  <span className="highlight">Recommended For You</span> 
-                  <span className="subtitle">Based on your skills</span>
-                </h2>
-                <div className="events-grid recommended-grid">
-                  {recommendedEvents.map((event) => {
+          <Tabs
+            activeKey={activeTab}
+            onSelect={(k) => setActiveTab(k || "featured")}
+            className="event-tabs mb-4"
+            fill
+          >
+            <Tab eventKey="featured" title="Featured Events">
+              {isLoading && <div className="loading-indicator">Loading events...</div>}
+              {error && <div className="error-message">{error}</div>}
+              
+              {/* Recommended Events Section */}
+              {user && user.role === 'volunteer' && recommendedEvents.length > 0 && (
+                <>
+                  <motion.h2 
+                    className="section-title recommended-title"
+                    variants={titleVariants}
+                  >
+                    <span className="highlight">Recommended For You</span> 
+                    <span className="subtitle">Based on your skills</span>
+                  </motion.h2>
+                  <motion.div 
+                    className="events-grid recommended-grid"
+                    variants={containerVariants}
+                  >
+                    {recommendedEvents.map((event) => {
+                      // Match the admin page's volunteer calculations
+                      const volunteersNeeded = event.totalVolunteers - event.currentVolunteers;
+                      const progress = (event.currentVolunteers / event.totalVolunteers) * 100;
+
+                      return (
+                        <motion.div 
+                          key={event.id} 
+                          className="event-card recommended"
+                          onClick={() => handleCardClick(event.id)}
+                          variants={cardVariants}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="event-image">
+                            <img 
+                              src={event.image || defaultImage} 
+                              alt={event.title} 
+                              className="event-image"
+                              onError={(e) => {
+                                console.error(`Failed to load image: ${event.image}`);
+                                const target = e.target as HTMLImageElement;
+                                target.src = defaultImage; // Use our defined default image constant
+                                target.onerror = null; // Prevent infinite loop
+                              }} 
+                            />
+                            <div className="recommended-badge">
+                              <FaStar /> Matches Your Skills
+                            </div>
+                          </div>
+                          <div className="event-content">
+                            <h4>{event.title}</h4>
+                            <p><FaMapMarkerAlt /> {event.location}</p>
+                            <p><FaCalendarAlt /> {formatDateForDisplay(event.date)}</p>
+                            {event.startTime && event.endTime && (
+                              <p><FaClock /> {getDisplayTime(event.startTime, event.endTime)}</p>
+                            )}
+                            <div className="progress-bar-container">
+                              <div
+                                className="progress-bar"
+                                style={{ 
+                                  width: `${progress}%`,
+                                  backgroundColor: progress === 100 ? '#28a745' : undefined
+                                }}
+                              >
+                                <span className="progress-percentage">
+                                  {progress < 5 ? '' : `${Math.round(progress)}%`}
+                                </span>
+                              </div>
+                              {progress < 5 && (
+                                <span className="progress-percentage">
+                                  {Math.round(progress)}%
+                                </span>
+                              )}
+                            </div>
+                            <p className="volunteers-needed">
+                              {volunteersNeeded > 0
+                                ? `${volunteersNeeded} more volunteers needed`
+                                : "No more volunteers needed"}
+                            </p>
+                            <p className="event-status">Status: {event.status}</p>
+                            
+                            {/* Display matching skills */}
+                            {event.skillRequirements && user?.skills && (
+                              <div className="matching-skills">
+                                <div className="skills-label">Matching Skills:</div>
+                                <div className="skills-badges">
+                                  {event.skillRequirements
+                                    .filter(req => 
+                                      Array.isArray(user.skills) && user.skills.includes(req.skill)
+                                    )
+                                    .map(req => (
+                                      <span key={req.skill} className="skill-badge">
+                                        {req.skill.replace('_', ' ')}
+                                      </span>
+                                    ))
+                                  }
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                </>
+              )}
+
+              {/* Other Events Section */}
+              <motion.h2 
+                className={`section-title ${user && user.role === 'volunteer' && recommendedEvents.length > 0 ? 'other-events' : ''}`}
+                variants={titleVariants}
+              >
+                {user && user.role === 'volunteer' && recommendedEvents.length > 0 
+                  ? <span className="other-events-title">
+                      <span className="highlight">Other Events</span>
+                      <span className="subtitle">Browse all available opportunities</span>
+                    </span>
+                  : 'All Events'}
+              </motion.h2>
+              
+              {otherEvents.length > 0 ? (
+                <motion.div 
+                  className="events-grid"
+                  variants={containerVariants}
+                >
+                  {otherEvents.map((event) => {
                     // Match the admin page's volunteer calculations
                     const volunteersNeeded = event.totalVolunteers - event.currentVolunteers;
                     const progress = (event.currentVolunteers / event.totalVolunteers) * 100;
 
                     return (
-                      <div 
-                        key={event.id} 
-                        className="event-card recommended"
+                      <motion.div
+                        key={event.id}
+                        className="event-card"
                         onClick={() => handleCardClick(event.id)}
+                        variants={cardVariants}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                       >
-                        <div className="event-image">
-                          <img 
-                            src={event.image || defaultImage} 
-                            alt={event.title} 
-                            className="event-image"
-                            onError={(e) => {
-                              console.error(`Failed to load image: ${event.image}`);
-                              const target = e.target as HTMLImageElement;
-                              target.src = defaultImage; // Use our defined default image constant
-                              target.onerror = null; // Prevent infinite loop
-                            }} 
-                          />
-                          <div className="recommended-badge">
-                            <FaStar /> Matches Your Skills
-                          </div>
-                        </div>
-                        <div className="event-content">
-                          <h4>{event.title}</h4>
-                          <p><FaMapMarkerAlt /> {event.location}</p>
-                          <p><FaCalendarAlt /> {formatDateForDisplay(event.date)}</p>
-                          {event.startTime && event.endTime && (
-                            <p><FaClock /> {getDisplayTime(event.startTime, event.endTime)}</p>
-                          )}
-                          <div className="progress-bar-container">
-                            <div
-                              className="progress-bar"
-                              style={{ 
-                                width: `${progress}%`,
-                                backgroundColor: progress === 100 ? '#28a745' : undefined
-                              }}
-                            >
-                              <span className="progress-percentage">
-                                {progress < 5 ? '' : `${Math.round(progress)}%`}
-                              </span>
-                            </div>
-                            {progress < 5 && (
-                              <span className="progress-percentage">
-                                {Math.round(progress)}%
-                              </span>
-                            )}
-                          </div>
-                          <p className="volunteers-needed">
-                            {volunteersNeeded > 0
-                              ? `${volunteersNeeded} more volunteers needed`
-                              : "No more volunteers needed"}
-                          </p>
-                          <p className="event-status">Status: {event.status}</p>
-                          
-                          {/* Display matching skills */}
-                          {event.skillRequirements && user?.skills && (
-                            <div className="matching-skills">
-                              <div className="skills-label">Matching Skills:</div>
-                              <div className="skills-badges">
-                                {event.skillRequirements
-                                  .filter(req => 
-                                    Array.isArray(user.skills) && user.skills.includes(req.skill)
-                                  )
-                                  .map(req => (
-                                    <span key={req.skill} className="skill-badge">
-                                      {req.skill.replace('_', ' ')}
-                                    </span>
-                                  ))
-                                }
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-
-            {/* Other Events Section */}
-            <h2 className={`section-title ${user && user.role === 'volunteer' && recommendedEvents.length > 0 ? 'other-events' : ''}`}>
-              {user && user.role === 'volunteer' && recommendedEvents.length > 0 
-                ? <span className="other-events-title">
-                    <span className="highlight">Other Events</span>
-                    <span className="subtitle">Browse all available opportunities</span>
-                  </span>
-                : 'All Events'}
-            </h2>
-            
-            {otherEvents.length > 0 ? (
-              <div className="events-grid">
-                {otherEvents.map((event) => {
-                  // Match the admin page's volunteer calculations
-                  const volunteersNeeded = event.totalVolunteers - event.currentVolunteers;
-                  const progress = (event.currentVolunteers / event.totalVolunteers) * 100;
-
-                  return (
-                    <div
-                      key={event.id}
-                      className="event-card"
-                      onClick={() => handleCardClick(event.id)}
-                    >
-                      <img 
-                        src={event.image || defaultImage} 
-                        alt={event.title} 
-                        className="event-image"
-                        onError={(e) => {
-                          console.error(`Failed to load image: ${event.image}`);
-                          const target = e.target as HTMLImageElement;
-                          target.src = defaultImage; // Use our defined default image constant
-                          target.onerror = null; // Prevent infinite loop
-                        }} 
-                      />
-                      <h4>{event.title}</h4>
-                      <p><FaMapMarkerAlt /> {event.location}</p>
-                      <p><FaCalendarAlt /> {formatDateForDisplay(event.date)}</p>
-                      {event.startTime && event.endTime && (
-                        <p><FaClock /> {getDisplayTime(event.startTime, event.endTime)}</p>
-                      )}
-                      <div className="progress-bar-container">
-                        <div
-                          className="progress-bar"
-                          style={{ 
-                            width: `${progress}%`,
-                            backgroundColor: progress === 100 ? '#28a745' : undefined
-                          }}
-                        >
-                          <span className="progress-percentage">
-                            {progress < 5 ? '' : `${Math.round(progress)}%`}
-                          </span>
-                        </div>
-                        {progress < 5 && (
-                          <span className="progress-percentage">
-                            {Math.round(progress)}%
-                          </span>
-                        )}
-                      </div>
-                      <p className="volunteers-needed">
-                        {volunteersNeeded > 0
-                          ? `${volunteersNeeded} more volunteers needed`
-                          : "No more volunteers needed"}
-                      </p>
-                      <p className="event-status">Status: {event.status}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="no-events">
-                {recommendedEvents.length > 0 
-                  ? 'No other events available at the moment.' 
-                  : 'No events available at the moment.'}
-              </div>
-            )}
-          </Tab>
-          
-          <Tab eventKey="past" title="Past Events">
-            <div className="past-events-container">
-              <h2 className="section-title">
-                <span className="highlight">Past Events</span> </h2>
-                <h5>
-                <span className="subtitle">Our successful community initiatives</span></h5>
-             
-              
-              {isLoading && <div className="loading-indicator">Loading past events...</div>}
-              {error && <div className="error-message">{error}</div>}
-              
-              {pastEvents.length > 0 ? (
-                <div className="past-events-list">
-                  {pastEvents.map((event) => (
-                    <div key={event.id} className="past-event-card">
-                      <div className="past-event-image">
                         <img 
                           src={event.image || defaultImage} 
                           alt={event.title} 
+                          className="event-image"
                           onError={(e) => {
+                            console.error(`Failed to load image: ${event.image}`);
                             const target = e.target as HTMLImageElement;
-                            target.src = defaultImage;
-                            target.onerror = null;
+                            target.src = defaultImage; // Use our defined default image constant
+                            target.onerror = null; // Prevent infinite loop
                           }} 
                         />
-                        <div className="past-event-badge">
-                          <FaCheckCircle /> Completed
+                        <h4>{event.title}</h4>
+                        <p><FaMapMarkerAlt /> {event.location}</p>
+                        <p><FaCalendarAlt /> {formatDateForDisplay(event.date)}</p>
+                        {event.startTime && event.endTime && (
+                          <p><FaClock /> {getDisplayTime(event.startTime, event.endTime)}</p>
+                        )}
+                        <div className="progress-bar-container">
+                          <div
+                            className="progress-bar"
+                            style={{ 
+                              width: `${progress}%`,
+                              backgroundColor: progress === 100 ? '#28a745' : undefined
+                            }}
+                          >
+                            <span className="progress-percentage">
+                              {progress < 5 ? '' : `${Math.round(progress)}%`}
+                            </span>
+                          </div>
+                          {progress < 5 && (
+                            <span className="progress-percentage">
+                              {Math.round(progress)}%
+                            </span>
+                          )}
                         </div>
-                      </div>
-                      <div className="past-event-content">
-                        <h3>{event.title}</h3>
-                        <p className="past-event-date">
-                          <FaCalendarAlt /> {formatDateForDisplay(event.date)}
+                        <p className="volunteers-needed">
+                          {volunteersNeeded > 0
+                            ? `${volunteersNeeded} more volunteers needed`
+                            : "No more volunteers needed"}
                         </p>
-                        <p className="past-event-location">
-                          <FaMapMarkerAlt /> {event.location}
-                        </p>
-                        
-                        <div className="past-event-metrics">
-                          <div className="metric">
-                            <FaUsers className="metric-icon" />
-                            <div className="metric-content">
-                              <span className="metric-value">
-                                {event.successMetrics?.volunteersParticipated || event.currentVolunteers}
-                              </span>
-                              <span className="metric-label">Volunteers Participated</span>
+                        <p className="event-status">Status: {event.status}</p>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              ) : (
+                <motion.div 
+                  className="no-events"
+                  variants={cardVariants}
+                >
+                  {recommendedEvents.length > 0 
+                    ? 'No other events available at the moment.' 
+                    : 'No events available at the moment.'}
+                </motion.div>
+              )}
+            </Tab>
+            
+            <Tab eventKey="past" title="Past Events">
+              <motion.div 
+                className="past-events-container"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <motion.h2 
+                  className="section-title"
+                  variants={titleVariants}
+                >
+                  <span className="highlight">Past Events</span>
+                </motion.h2>
+                <motion.h5 variants={titleVariants}>
+                  <span className="subtitle">Our successful community initiatives</span>
+                </motion.h5>
+                
+                {isLoading && <div className="loading-indicator">Loading past events...</div>}
+                {error && <div className="error-message">{error}</div>}
+                
+                {pastEvents.length > 0 ? (
+                  <motion.div 
+                    className="past-events-list"
+                    variants={containerVariants}
+                  >
+                    {pastEvents.map((event) => (
+                      <motion.div 
+                        key={event.id} 
+                        className="past-event-card"
+                        variants={cardVariants}
+                        whileHover={{ scale: 1.01 }}
+                      >
+                        <div className="past-event-image">
+                          <img 
+                            src={event.image || defaultImage} 
+                            alt={event.title} 
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = defaultImage;
+                              target.onerror = null;
+                            }} 
+                          />
+                          <div className="past-event-badge">
+                            <FaCheckCircle /> Completed
+                          </div>
+                        </div>
+                        <div className="past-event-content">
+                          <h3>{event.title}</h3>
+                          <p className="past-event-date">
+                            <FaCalendarAlt /> {formatDateForDisplay(event.date)}
+                          </p>
+                          <p className="past-event-location">
+                            <FaMapMarkerAlt /> {event.location}
+                          </p>
+                          
+                          <div className="past-event-metrics">
+                            <div className="metric">
+                              <FaUsers className="metric-icon" />
+                              <div className="metric-content">
+                                <span className="metric-value">
+                                  {event.successMetrics?.volunteersParticipated || event.currentVolunteers}
+                                </span>
+                                <span className="metric-label">Volunteers Participated</span>
+                              </div>
+                            </div>
+                            
+                            <div className="metric">
+                              <FaUser className="metric-icon" />
+                              <div className="metric-content">
+                                <span className="metric-value">
+                                  {event.currentScholars || event.successMetrics?.scholarsHelped || 0}
+                                </span>
+                                <span className="metric-label">Scholar Members Helped</span>
+                              </div>
                             </div>
                           </div>
                           
-                          <div className="metric">
-                            <FaUser className="metric-icon" />
-                            <div className="metric-content">
-                              <span className="metric-value">
-                                {event.currentScholars || event.successMetrics?.scholarsHelped || 0}
-                              </span>
-                              <span className="metric-label">Scholar Members Helped</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <p className="past-event-success-message">
-                          This event was successfully completed with {event.successMetrics?.volunteersParticipated || event.currentVolunteers} volunteers 
-                          who made a positive impact by helping {event.currentScholars || event.successMetrics?.scholarsHelped || 0} scholar members.
-                        </p>
-                  
-                    
-                        
-                        {/* Improved volunteer feedback section with fallback checks */}
-                        {event.feedback && Array.isArray(event.feedback) && event.feedback.length > 0 ? (
-                          <div className="past-event-feedback">
-                            <h4>Volunteer Feedback</h4>
-                            <div className="feedback-items">
-                              {/* Show up to 2 feedback items */}
-                              {event.feedback.slice(0, 2).map((item) => (
-                                <div key={item.id} className="feedback-item">
-                                  <div className="feedback-header">
-                                    <span className="feedback-author">
-                                      {item.userName} 
-                                      {item.userRole && <small> ({item.userRole})</small>}
-                                    </span>
-                                    {renderStars(item.rating)}
+                          <p className="past-event-success-message">
+                            This event was successfully completed with {event.successMetrics?.volunteersParticipated || event.currentVolunteers} volunteers 
+                            who made a positive impact by helping {event.currentScholars || event.successMetrics?.scholarsHelped || 0} scholar members.
+                          </p>
+                      
+                      
+                      
+                          {/* Improved volunteer feedback section with fallback checks */}
+                          {event.feedback && Array.isArray(event.feedback) && event.feedback.length > 0 ? (
+                            <div className="past-event-feedback">
+                              <h4>Volunteer Feedback</h4>
+                              <div className="feedback-items">
+                                {/* Show up to 2 feedback items */}
+                                {event.feedback.slice(0, 2).map((item) => (
+                                  <div key={item.id} className="feedback-item">
+                                    <div className="feedback-header">
+                                      <span className="feedback-author">
+                                        {item.userName} 
+                                        {item.userRole && <small> ({item.userRole})</small>}
+                                      </span>
+                                      {renderStars(item.rating)}
+                                    </div>
+                                    <p className="feedback-comment">"{item.comment}"</p>
                                   </div>
-                                  <p className="feedback-comment">"{item.comment}"</p>
-                                </div>
-                              ))}
-                              {/* Add "View more" link if there are more than 2 feedback items */}
-                              {event.feedback.length > 2 && (
-                                <div className="view-more-feedback" onClick={() => handleCardClick(event.id)}>
-                                  <span>View more feedback ({event.feedback.length - 2} more)</span>
-                                </div>
-                              )}
+                                ))}
+                                {/* Add "View more" link if there are more than 2 feedback items */}
+                                {event.feedback.length > 2 && (
+                                  <div className="view-more-feedback" onClick={() => handleCardClick(event.id)}>
+                                    <span>View more feedback ({event.feedback.length - 2} more)</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="no-feedback">
-                            <p>No volunteer feedback available for this event.</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="no-events">
-                  No past events available at the moment.
-                </div>
-              )}
-            </div>
-          </Tab>
-        </Tabs>
+                          ) : (
+                            <div className="no-feedback">
+                              <p>No volunteer feedback available for this event.</p>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div 
+                    className="no-events"
+                    variants={cardVariants}
+                  >
+                    No past events available at the moment.
+                  </motion.div>
+                )}
+              </motion.div>
+            </Tab>
+          </Tabs>
+        </motion.div>
       </section>
     </motion.div>
   );

@@ -72,9 +72,9 @@ const MobileMenu = ({ isOpen, onClose, onNavigate, isStaff, onLogout, user, getP
 
           {/* Regular navigation items */}
           <li className="mobile-nav-item" style={{ '--item-index': 4 } as React.CSSProperties}>
-            <button className="mobile-nav-button">
+            <div className="mobile-nav-button section-title">
               About Us
-            </button>
+            </div>
             <div className="mobile-dropdown">
               <button onClick={() => handleNavigation('Story')}>Our Story</button>
               <button onClick={() => handleNavigation('Partner')}>Partners and Sponsors</button>
@@ -85,15 +85,18 @@ const MobileMenu = ({ isOpen, onClose, onNavigate, isStaff, onLogout, user, getP
           </li>
 
           <li className="mobile-nav-item" style={{ '--item-index': 5 } as React.CSSProperties}>
-            <button className="mobile-nav-button" onClick={() => handleNavigation('Life')}>
+            <button 
+              className="mobile-nav-button"
+              onClick={() => handleNavigation('Life')}
+            >
               Life with KM
             </button>
           </li>
 
           <li className="mobile-nav-item" style={{ '--item-index': 6 } as React.CSSProperties}>
-            <button className="mobile-nav-button">
+            <div className="mobile-nav-button section-title">
               Testimonials
-            </button>
+            </div>
             <div className="mobile-dropdown">
               <button onClick={() => handleNavigation('Graduates')}>Our Graduates</button>
               <button onClick={() => handleNavigation('Community')}>Our Community</button>
@@ -101,9 +104,9 @@ const MobileMenu = ({ isOpen, onClose, onNavigate, isStaff, onLogout, user, getP
           </li>
 
           <li className="mobile-nav-item" style={{ '--item-index': 7 } as React.CSSProperties}>
-            <button className="mobile-nav-button">
+            <div className="mobile-nav-button section-title">
               How can you help?
-            </button>
+            </div>
             <div className="mobile-dropdown">
               <button onClick={() => handleNavigation('Help')}>Help</button>
               <button onClick={() => handleNavigation(PATHS.STUDENTPROFILE)}>Sponsor A Student</button>
@@ -335,10 +338,10 @@ const AdminHomeHeader = () => {
               className="dropdown-item"
               onClick={() => {
                 handleNavigation('Forum');
-                setShowProfileDropdown(false);
+                    setShowProfileDropdown(false);
               }}
             >
-              Forum
+                    Forum
             </a>
             <a 
               className="dropdown-item"

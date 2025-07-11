@@ -1094,22 +1094,21 @@ header .title a {
 
 .mobile-menu {
   position: fixed;
-  top: 100px;
-  left: 0;
+  top: 0;
+  right: -100%;
   width: 100%;
-  height: calc(100vh - 100px);
-  background-color: #FEF6E4;
-  z-index: 999;
+  max-width: 400px;
+  height: 100vh;
+  background: #FEF6E4;
+  z-index: 1000;
+  transition: right 0.3s ease-in-out;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  padding: 20px 0;
 }
 
 .mobile-menu.active {
-  opacity: 1;
-  visibility: visible;
+  right: 0;
 }
 
 .mobile-nav-list {
@@ -1138,6 +1137,7 @@ header .title a {
   gap: 10px;
   padding: 15px;
   margin-bottom: 10px;
+  margin-top: 50px; /* Add margin to avoid overlapping with close button */
 }
 
 .mobile-auth-button {
@@ -1307,5 +1307,37 @@ header .title a {
 
 .mobile-dropdown li {
   padding: 0;
+}
+
+.mobile-nav-title {
+  width: 100%;
+  padding: 15px;
+  text-align: left;
+  font-family: "Poppins";
+  font-size: 16px;
+  color: #666;
+  background-color: #f5f5f5;
+  cursor: default;
+  user-select: none;
+  font-weight: 500;
+}
+
+.close-button {
+  position: sticky;
+  top: 20px;
+  float: right;
+  right: 20px;
+  background: none;
+  border: none;
+  color: #333;
+  cursor: pointer;
+  z-index: 1002;
+  padding: 8px;
+  transition: color 0.2s ease;
+  margin-bottom: -40px; /* Prevent content shift */
+}
+
+.close-button:hover {
+  color: #DF2E38;
 }
 

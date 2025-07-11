@@ -1,32 +1,57 @@
-.team-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 40px;
-    padding: 20px;
-  }
-  
-  .team-card {
-    text-align: center;
-    padding: 10px;
+.banner-image {
+  width: 100%;
+  height: auto;
+  max-height: 600px;
+  object-fit: cover;
+  padding: 0 !important;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
 
-  }
-  
-  .image-placeholder {
-    width: 200px;
-    height: 250px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    overflow: hidden;
-    border-radius: 8px;
-    background-color: #f5f5f5;
-    background-size: cover;
-    background-position: center;
-    transition: transform 0.3s ease;
-  }
-  
-  .profile-1 {
+.banner-image.loading {
+  opacity: 0;
+}
+
+.banner-image.loaded {
+  opacity: 1;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 40px;
+  padding: 20px;
+  margin-top: 2rem;
+}
+
+.team-card {
+  text-align: center;
+  padding: 10px;
+}
+
+.team-member-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.image-placeholder {
+  width: 200px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: #f5f5f5;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.3s ease;
+}
+
+.profile-1 {
     background-image: url("../../src/img/team-placeholder.svg");
   }
   
@@ -129,20 +154,37 @@
     min-height: calc(114vh - 162px);
 }
 
-.banner-image {
-    width: 100%; 
-    height: auto; 
-    padding: 0px !important;
-    background-size: cover;
-    background-position: center;
+.team-member-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  opacity: 1;
 }
 
-.team-member-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-    transition: transform 0.3s ease;
+.team-member-image.loading {
+  opacity: 0;
+}
+
+.team-member-image.loaded {
+  opacity: 1;
+}
+
+.team-member-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.2;
+}
+
+.team-member-role {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+  font-style: italic;
+  line-height: 1.4;
 }
 
 .image-placeholder:hover,
@@ -185,6 +227,14 @@
         padding: 8px;
     }
 
+    .team-member-name {
+        font-size: 0.95rem;
+    }
+
+    .team-member-role {
+        font-size: 0.85rem;
+    }
+
     .team-name {
         font-size: 15px;
     }
@@ -209,6 +259,14 @@
     .team-member-image {
         width: 180px;
         height: 220px;
+    }
+
+    .team-member-name {
+        font-size: 0.9rem;
+    }
+
+    .team-member-role {
+        font-size: 0.8rem;
     }
 
     .team-name {
@@ -244,6 +302,10 @@
     .team-card {
         padding: 5px;
         margin-bottom: 20px;
+    }
+
+    .team-member-container {
+        gap: 0.5rem;
     }
 
     .team-name {

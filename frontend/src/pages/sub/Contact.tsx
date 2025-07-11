@@ -206,7 +206,7 @@ const Contact: React.FC = () => {
 
     <div className="secondSection">
         <div className='locations'>
-            <div className="map-container">
+            <div className="map-container1">
                 <div ref={mapRef} style={{ height: '400px', width: '400px' }}></div>
             </div>
             <div className='locationtext'>

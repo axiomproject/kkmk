@@ -53,6 +53,12 @@ body {
   max-width: 100%;
   height: auto;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.banner-image.loaded {
+  opacity: 1;
 }
 
 .content-section {
@@ -275,6 +281,8 @@ body {
   border-radius: 4px;
   font-size: 1rem;
   background: transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  will-change: border-color, box-shadow;
 }
 
 .form-groupss textarea {
@@ -349,7 +357,8 @@ body {
   border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, transform 0.1s ease;
+  will-change: transform, background-color;
   width: 100%;
   margin-top: 1rem;
   font-family: "Poppins";
@@ -357,6 +366,10 @@ body {
 
 .submit-button:hover {
   background-color: #e6c832;
+}
+
+.submit-button:active {
+  transform: scale(0.98);
 }
 
 .donation-note {
@@ -2159,6 +2172,9 @@ select:focus {
   padding: 1rem;
   background-color: #fff;
   border-top: 1px solid #e0e0e0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+  will-change: max-height;
 }
 
 .faq-answer p {
@@ -3078,4 +3094,308 @@ select:focus {
   .past-event-feedback h4 {
     font-size: 1rem;
   }
+}
+
+/* Add to existing CSS */
+
+/* Banner image loading optimization */
+.banner-image {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.banner-image.loaded {
+  opacity: 1;
+}
+
+/* Smooth tab transitions */
+.tab-content {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.tab-content.fade-in {
+  opacity: 1;
+}
+
+.tab-content.fade-out {
+  opacity: 0;
+}
+
+/* Optimize image loading */
+img {
+  will-change: transform, opacity;
+}
+
+/* Smooth FAQ transitions */
+.faq-answer {
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+}
+
+/* Optimize performance for animations */
+.partner-section,
+.sponsor-container,
+.donate-container,
+.volunteer-container {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Add loading placeholder styles */
+.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Optimize tab button interactions */
+.tab-button {
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  will-change: transform, background-color;
+}
+
+.tab-button:active {
+  transform: scale(0.98);
+}
+
+/* Optimize form interactions */
+.form-groupss input,
+.form-groupss select,
+.form-groupss textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  will-change: border-color, box-shadow;
+}
+
+/* Add smooth hover effects */
+.partner-icon,
+.donate-picture img,
+.volunteer-picture img {
+  transition: transform 0.3s ease;
+}
+
+.partner-icon:hover,
+.donate-picture img:hover,
+.volunteer-picture img:hover {
+  transform: scale(1.02);
+}
+
+/* Optimize FAQ animations */
+.faq-question {
+  transition: background-color 0.2s ease;
+  will-change: background-color;
+}
+
+.faq-answer {
+  transition: max-height 0.3s ease-in-out;
+  will-change: max-height;
+}
+
+/* Add responsive optimizations */
+@media (max-width: 768px) {
+  .banner-image {
+    height: auto;
+    max-height: 300px;
+    object-fit: cover;
+  }
+  
+  .partner-section,
+  .sponsor-container,
+  .donate-container,
+  .volunteer-container {
+    flex-direction: column;
+  }
+}
+
+/* Optimize form submission feedback */
+.submit-button {
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  will-change: transform, background-color;
+}
+
+.submit-button:active {
+  transform: scale(0.98);
+}
+
+/* Add loading state for form submission */
+.submit-button.loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.submit-button.loading::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: button-loading 0.8s linear infinite;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@keyframes button-loading {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+/* Add Partner-specific styles */
+
+/* Partner page title animations */
+.ph {
+  position: relative;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.ph::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #e6c832;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.6s ease;
+}
+
+.ph.visible::after {
+  transform: scaleX(1);
+}
+
+/* Partner page image optimizations */
+.story-image,
+.organization-image {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.story-image:hover,
+.organization-image:hover {
+  transform: scale(1.02);
+}
+
+/* Partner section layout optimizations */
+.story-content {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 1200px;
+  transition: opacity 0.3s ease;
+}
+
+.story-content.reverse-layout {
+  flex-direction: row-reverse;
+}
+
+/* Partner text content optimizations */
+.story-text {
+  flex: 1;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.story-text:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Partner image container optimizations */
+.story-image-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.story-image-container:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive optimizations for Partner page */
+@media (max-width: 768px) {
+  .story-content {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .story-content.reverse-layout {
+    flex-direction: column;
+  }
+
+  .story-text {
+    padding: 1rem;
+  }
+
+  .story-image-container {
+    width: 100%;
+    margin: 1rem 0;
+  }
+
+  .story-image,
+  .organization-image {
+    width: 100%;
+    height: auto;
+    max-height: 300px;
+    object-fit: cover;
+  }
+}
+
+/* Loading state animations for Partner page */
+.story-section {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.story-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Optimize performance for Partner page animations */
+.story-section,
+.story-content,
+.story-text,
+.story-image-container {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }

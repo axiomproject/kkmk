@@ -53,6 +53,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes); // This will make GET /api/events public
 app.use('/api/contact', contactRoutes);
 app.use('/api/feedback', feedbackRoutes);
+app.use('/api/public/feedback', feedbackRoutes);
 app.use('/api/content', contentRoutes);
 
 // Protected routes
