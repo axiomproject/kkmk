@@ -193,6 +193,53 @@
   transform: translateX(20px);
   transition: all 0.3s ease-in-out;
   transition-delay: calc(0.1s * var(--item-index));
+  margin-bottom: 0;
+}
+
+.mobile-nav-item:not(.profile-section) {
+  border-bottom: 1px solid #eee;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.mobile-nav-item.profile-section {
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 5px;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.mobile-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-profile-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mobile-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mobile-profile-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.mobile-profile-role {
+  font-size: 0.85rem;
+  color: #666;
 }
 
 .mobile-menu.active .mobile-nav-item {
@@ -202,42 +249,64 @@
 
 .mobile-nav-button {
   width: 100%;
-  padding: 15px 0;
+  padding: 8px 15px;
   background: none;
   border: none;
   color: #333;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   text-align: left;
   cursor: pointer;
   transition: color 0.2s ease;
   font-family: "Poppins", sans-serif;
+  margin: 0;
 }
 
-.mobile-nav-button:hover {
+.mobile-nav-button.section-title {
+  color: #666;
+  font-weight: 600;
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 15px 5px 15px;
+  margin: 0;
+}
+
+.mobile-nav-button.section-title::after {
+  content: '›';
+  font-size: 1.2rem;
+  transform: rotate(90deg);
+  opacity: 0.5;
+}
+
+.mobile-nav-button:not(.section-title):hover {
   color: #000;
 }
 
 .mobile-dropdown {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding-left: 20px;
+  padding: 0 0 5px 15px;
+  background-color: #f8f9fa;
+  margin-top: 0;
 }
 
 .mobile-dropdown button {
   background: none;
   border: none;
-  padding: 10px 0;
-  color: #666;
+  padding: 6px 15px;
+  color: #333;
   text-align: left;
   cursor: pointer;
   transition: color 0.2s ease;
   font-family: "Poppins", sans-serif;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  margin: 0;
 }
 
 .mobile-dropdown button:hover {
   color: #000;
+  background-color: #edf0f2;
 }
 
 .mobile-nav-button.logout-button {
@@ -250,33 +319,33 @@
 
 /* Add mobile profile styles */
 .mobile-nav-item.profile-section {
-  padding: 20px;
-  border-bottom: 1px solid #eee;
+  padding: 15px;
   background-color: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 5px;
 }
 
 .mobile-profile-header {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
 }
 
 .mobile-profile-avatar {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-profile-info {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .mobile-profile-name {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #333;
 }
@@ -284,12 +353,18 @@
 .mobile-profile-role {
   font-size: 0.85rem;
   color: #666;
-  margin-top: 2px;
+}
+
+/* Ensure profile section is visible when menu is active */
+.mobile-menu.active .mobile-nav-item.profile-section {
+  opacity: 1;
+  transform: translateX(0);
 }
 
 /* Adjust spacing for other menu items */
 .mobile-nav-item:not(.profile-section) {
-  padding: 10px 20px;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 /* Media Queries */

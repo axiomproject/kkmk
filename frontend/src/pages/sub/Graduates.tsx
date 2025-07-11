@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import api from '../../config/axios'; // Replace axios import
+import { motion, AnimatePresence } from "framer-motion"; // Import framer-motion
+import api from '../../config/axios';
 import "../../styles/Graduates.css";
 import bannerImage from "../../img/coverphoto1.png";
 
@@ -17,9 +18,53 @@ interface PageContent {
   testimonials: TestimonialSection[];
 }
 
+// Animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" }
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const imageVariant = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: "easeOut" }
+  }
+};
+
+const modalVariant = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.3, ease: "easeOut" }
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.8,
+    transition: { duration: 0.2, ease: "easeIn" }
+  }
+};
+
 const Graduates = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<TestimonialSection | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [content, setContent] = useState<PageContent>({
     bannerImage: bannerImage,
     headerText: "Graduate Testimonials",
@@ -54,6 +99,8 @@ const Graduates = () => {
         }
       } catch (error) {
         console.error('Failed to load content:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     loadContent();
@@ -72,58 +119,109 @@ const Graduates = () => {
   };
 
   return (
-    <div className="home-container">
+    <motion.div 
+      className="home-container"
+      initial="hidden"
+      animate="visible"
+      variants={staggerContainer}
+    >
       <img 
         src={content.bannerImage} 
         alt="Banner" 
-        className="banner-image"
+        className={`banner-image ${isLoading ? 'loading' : 'loaded'}`}
+        onLoad={() => setIsLoading(false)}
+        loading="eager"
+        decoding="async"
       />
-      <div className="introduction">
-        <h1 className="Testimonial">{content.headerText}</h1>
-        <h4 className="h4-testimonial">{content.subText}</h4>
-      </div>
+      <motion.div 
+        className="introduction"
+        variants={fadeInUp}
+      >
+        <motion.h1 
+          className="Testimonial"
+          variants={fadeInUp}
+        >
+          {content.headerText}
+        </motion.h1>
+        <motion.h4 
+          className="h4-testimonial"
+          variants={fadeInUp}
+        >
+          {content.subText}
+        </motion.h4>
+      </motion.div>
 
-      <div className="image-grid1">
+      <motion.div 
+        className="image-grid1"
+        variants={staggerContainer}
+      >
         {content.testimonials.map((testimonial, i) => (
-          <div
+          <motion.div
             className="image-wrapper1"
             key={i}
             onClick={() => openModal(testimonial)}
+            variants={imageVariant}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <img
               src={testimonial.image || `/images/${8 + i}.jpg`}
               alt={testimonial.name}
               className="gallery-image1"
+              loading={i < 4 ? "eager" : "lazy"}
+              decoding="async"
             />
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
-      {isModalOpen && modalContent && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <span className="modal-close" onClick={closeModal}>
-              &times;
-            </span>
-            <div className="modal-content-testimonials">
-              <img
-                src={modalContent.image || `/images/${8 + content.testimonials.findIndex(t => t.name === modalContent.name)}.jpg`}
-                alt={modalContent.name}
-                className="modal-image"
-              />
-              <div className="modal-text">
-                <h2 className="modal-title">{modalContent.name}</h2>
-                <h5 className="modal-subtitle">{modalContent.subtitle}</h5>
-              </div>
-              <div 
-                className="modal-description" 
-                dangerouslySetInnerHTML={{ __html: modalContent.description }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <AnimatePresence>
+        {isModalOpen && modalContent && (
+          <motion.div 
+            className="modal-overlay" 
+            onClick={closeModal}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={modalVariant}
+          >
+            <motion.div 
+              className="modal-box" 
+              onClick={(e) => e.stopPropagation()}
+              variants={fadeInUp}
+            >
+              <span className="modal-close" onClick={closeModal}>
+                &times;
+              </span>
+              <motion.div 
+                className="modal-content-testimonials"
+                variants={fadeInUp}
+              >
+                <img
+                  src={modalContent.image || `/images/${8 + content.testimonials.findIndex(t => t.name === modalContent.name)}.jpg`}
+                  alt={modalContent.name}
+                  className="modal-image"
+                  loading="eager"
+                  decoding="async"
+                />
+                <motion.div 
+                  className="modal-text"
+                  variants={fadeInUp}
+                >
+                  <h2 className="modal-title">{modalContent.name}</h2>
+                  <h5 className="modal-subtitle">{modalContent.subtitle}</h5>
+                </motion.div>
+                <motion.div 
+                  className="modal-description" 
+                  dangerouslySetInnerHTML={{ __html: modalContent.description }}
+                  variants={fadeInUp}
+                />
+              </motion.div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };
 

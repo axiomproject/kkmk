@@ -529,7 +529,7 @@ const InteractiveMap: React.FC = () => {
             };
           });
 
-        console.log('Processed events:', futureEvents);
+        // console.log('Processed events:', futureEvents);
         setMarkers([OFFICE_MARKER, ...futureEvents]);
       } catch (error) {
         console.error('Failed to fetch events:', error);

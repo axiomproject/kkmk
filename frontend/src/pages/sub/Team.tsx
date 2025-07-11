@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from '../../config/axios';
 import "../../styles/OurTeam.css";
 import bannerImage from "../../img/team.png";
+import placeholderImage from "../../img/team-placeholder.svg";
 
 interface TeamMember {
   name: string;
@@ -20,9 +21,10 @@ const Team = () => {
     bannerImage: bannerImage,
     members: []
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   const getImageUrl = (path: string) => {
-    if (!path) return '';
+    if (!path) return placeholderImage;
     if (path.startsWith('data:') || path.startsWith('http')) return path;
     if (path.startsWith('/uploads')) {
       return `${import.meta.env.VITE_API_URL}${path}`;
@@ -30,19 +32,26 @@ const Team = () => {
     return path;
   };
 
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = placeholderImage;
+  };
+
   useEffect(() => {
     const loadContent = async () => {
       try {
+        setIsLoading(true);
         const response = await api.get('/content/team');
         if (response.data?.content) {
           const savedContent = response.data.content;
           setContent(prev => ({
-            bannerImage: savedContent.bannerImage ? getImageUrl(savedContent.bannerImage) : prev.bannerImage,
-            members: savedContent.members || prev.members
+            bannerImage: savedContent.bannerImage ? getImageUrl(savedContent.bannerImage) : bannerImage,
+            members: savedContent.members || []
           }));
         }
       } catch (error) {
         console.error('Failed to load content:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
     loadContent();
@@ -50,22 +59,31 @@ const Team = () => {
 
   return (
     <div className="home-container">
-      <img src={content.bannerImage} alt="Banner" className="banner-image" />
+      <img 
+        src={content.bannerImage} 
+        alt="Team Banner" 
+        className={`banner-image ${isLoading ? 'loading' : 'loaded'}`}
+        onError={handleImageError}
+        loading="eager"
+        decoding="async"
+      />
       <div className="team-grid">
         {content.members.map((member, index) => (
           <div key={index} className="team-card">
-            <div className={`image-placeholder`}>
-              {member.image ? (
+            <div className="team-member-container">
                 <img 
-                  src={getImageUrl(member.image)} 
+                  src={member.image ? getImageUrl(member.image) : placeholderImage} 
                   alt={member.name} 
                   className="team-member-image"
+                  onError={handleImageError}
+                  loading="lazy"
+                  decoding="async"
                 />
-              ) : null}
+              </div>
+              <h4 className="team-member-name">{member.name}</h4>
+              <p className="team-member-role">{member.subText}</p>
             </div>
-            <h4 className="team-name">{member.name}</h4>
-            <p className="team-subtext">{member.subText}</p>
-          </div>
+        
         ))}
       </div>
     </div>

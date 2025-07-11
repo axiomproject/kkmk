@@ -182,6 +182,11 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   // Update click outside handler
   useEffect(() => {
     const handleClickOutside = async (event: MouseEvent) => {
+      // Don't close if clicking on a nav title
+      if ((event.target as Element).closest('.mobile-nav-title')) {
+        return;
+      }
+
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowProfileDropdown(false);
       }
@@ -191,6 +196,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           setShowNotifications(false);
         }
       }
+      // Only close mobile menu if clicking outside the nav container and not on a nav title
       if (isMobileMenuOpen && !(event.target as Element).closest('.nav-container')) {
         setIsMobileMenuOpen(false);
       }
@@ -358,7 +364,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
 
   // Add debug logs to track navigation
   const handleNavigation = (path: string) => {
-    console.log('Navigation handler called with path:', path);
+    // console.log('Navigation handler called with path:', path);
     setIsMobileMenuOpen(false);
     onNavigate(path);
   };
@@ -367,7 +373,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const handleDonateClick = (e: React.MouseEvent) => {
     e.preventDefault();
     const path = `${PATHS.HELP}?tab=donate`;
-    console.log('Donate click, navigating to:', path);
+    // console.log('Donate click, navigating to:', path);
     onNavigate(path);
     setTimeout(() => {
       const donationForm = document.querySelector('.donation-form-container');
@@ -391,7 +397,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const handleMobileClick = (path: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Mobile click detected for path:', path);
+    // console.log('Mobile click detected for path:', path);
     handleNavigation(path);
   };
 
@@ -796,7 +802,7 @@ const MobileMenu = ({ isOpen, onClose, onNavigate }: { isOpen: boolean; onClose:
               <button 
                 className="mobile-auth-button signup"
                 onClick={() => {
-                  handleNavigation('Register');
+                  handleNavigation('Login');
                   onClose();
                 }}
               >
@@ -807,9 +813,12 @@ const MobileMenu = ({ isOpen, onClose, onNavigate }: { isOpen: boolean; onClose:
 
           {/* Regular navigation items */}
           <li className="mobile-nav-item" style={{ '--item-index': 1 } as React.CSSProperties}>
-            <button className="mobile-nav-button">
+            <div 
+              className="mobile-nav-title"
+              onClick={(e) => e.stopPropagation()}
+            >
               About Us
-            </button>
+            </div>
             <div className="mobile-dropdown">
               <button onClick={() => handleNavigation('Story')}>Our Story</button>
               <button onClick={() => handleNavigation('Partner')}>Partners and Sponsors</button>
@@ -826,9 +835,12 @@ const MobileMenu = ({ isOpen, onClose, onNavigate }: { isOpen: boolean; onClose:
           </li>
 
           <li className="mobile-nav-item" style={{ '--item-index': 3 } as React.CSSProperties}>
-            <button className="mobile-nav-button">
+            <div 
+              className="mobile-nav-title"
+              onClick={(e) => e.stopPropagation()}
+            >
               Testimonials
-            </button>
+            </div>
             <div className="mobile-dropdown">
               <button onClick={() => handleNavigation('Graduates')}>Our Graduates</button>
               <button onClick={() => handleNavigation('Community')}>Our Community</button>
@@ -836,9 +848,12 @@ const MobileMenu = ({ isOpen, onClose, onNavigate }: { isOpen: boolean; onClose:
           </li>
 
           <li className="mobile-nav-item" style={{ '--item-index': 4 } as React.CSSProperties}>
-            <button className="mobile-nav-button">
+            <div 
+              className="mobile-nav-title"
+              onClick={(e) => e.stopPropagation()}
+            >
               How can you help?
-            </button>
+            </div>
             <div className="mobile-dropdown">
               <button onClick={() => handleNavigation('Help')}>Help</button>
               <button onClick={() => handleNavigation(PATHS.STUDENTPROFILE)}>Sponsor A Student</button>
