@@ -141,7 +141,7 @@
   right: -400px;
   width: 300px;
   height: 100vh;
-  background-color: #fff;
+  background-color: #fef6e4;
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
   transition: right 0.3s ease;
   z-index: 1000;
@@ -422,7 +422,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
-  background-color: #fff;
+  background-color: #fef6e4;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   position: relative;
   z-index: 1000;
