@@ -42,9 +42,9 @@ services:
       - key: CLOUDINARY_CLOUD_NAME
         value: dvzbgapue
       - key: CLOUDINARY_API_KEY
-        value: ***REMOVED***
+        sync: false
       - key: CLOUDINARY_API_SECRET
-        value: ***REMOVED***
+        sync: false
 
 databases:
   - name: kkmk

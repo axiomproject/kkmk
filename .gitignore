@@ -29,3 +29,8 @@ dist-ssr
 /backend/uploads/donations
 /backend/uploads/events
 /backend/public
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example

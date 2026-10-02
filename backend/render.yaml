@@ -8,12 +8,12 @@ services:
       - key: NODE_ENV
         value: production
       - key: PROD_DATABASE_URL
-        value: postgresql://neondb_owner:***REMOVED***@ep-solitary-term-a1rjtcwe-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+        sync: false
       - key: PORT
         value: 5175
       - key: CLOUDINARY_CLOUD_NAME
         value: dvzbgapue
       - key: CLOUDINARY_API_KEY
-        value: ***REMOVED***
+        sync: false
       - key: CLOUDINARY_API_SECRET
-        value: ***REMOVED***
+        sync: false
